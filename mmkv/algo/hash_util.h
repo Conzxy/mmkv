@@ -15,7 +15,7 @@ struct Hash;
 
 template<>
 struct Hash<std::string> {
-  uint64_t operator()(std::string const& x) noexcept {
+  uint64_t operator()(std::string const& x) const noexcept {
     return XXH64(x.c_str(), x.size(), 0);
   }
 };
@@ -23,7 +23,7 @@ struct Hash<std::string> {
 #define BASIC_TYPE_SPECILIZATION(type) \
 template<> \
 struct Hash<type> { \
-  uint64_t operator()(type x) noexcept { \
+  uint64_t operator()(type x) const noexcept { \
     return XXH64(&x, sizeof(x), 0); \
   } \
 };
@@ -33,7 +33,7 @@ BASIC_TYPE_SPECILIZATION(int)
 // Get Key
 template<typename K>
 struct GetKey {
-  K const& operator()(K const& key) const noexcept {
+  constexpr K const& operator()(K const& key) const noexcept {
     return key;
   }
 };

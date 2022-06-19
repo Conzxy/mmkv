@@ -1,0 +1,82 @@
+#ifndef _MMKV_DICTIONARY_H_
+#define _MMKV_DICTIONARY_H_
+
+#include "hash_table.h"
+#include "hash_util.h"
+#include "mmkv/algo/key_value.h"
+#include "mmkv/algo/libc_allocator_with_realloc.h"
+
+namespace mmkv {
+namespace algo {
+
+template<typename K, typename V, typename HF=Hash<K>, typename EK=EqualKey<K>, typename Alloc=LibcAllocatorWithRealloc<KeyValue<K, V>>>
+class Dictionary {
+  using Rep = HashTable<K, KeyValue<K, V>, HF, GetKey<KeyValue<K, V>>, EK, LibcAllocatorWithRealloc<KeyValue<K, V>>>;
+ public:
+  using key_type = typename Rep::key_type;
+  using value_type = typename Rep::value_type;
+  using mapped_type = V;
+  using reference = typename Rep::reference;
+  using const_reference = typename Rep::const_reference;
+  using pointer = typename Rep::pointer;
+  using const_pointer = typename Rep::const_pointer;
+  using hash_function = typename Rep::hash_function;
+  using equal_key = typename Rep::equal_key;
+  using allocator_type = typename Rep::allocator_type;
+  using size_type = typename Rep::size_type;
+  
+  Dictionary() = default;
+  ~Dictionary() = default;
+  
+  bool Insert(value_type const& elem) {
+    return rep_.Insert(elem);
+  }
+
+  value_type* Insert(value_type&& elem) {
+    return rep_.Insert(elem);
+  }
+  
+  template<typename U1, typename U2> 
+  value_type* InsertKv(U1&& key, U2&& value) {
+    return rep_.Insert(value_type{ std::forward<U1>(key), std::forward<U2>(value) });
+  }
+  
+  value_type* Find(key_type const& key) {
+    return rep_.Find(key);
+  }
+
+  value_type const* Find(key_type const& key) const {
+    return rep_.Find(key);
+  }
+  
+  size_type Erase(K const& key) {
+    return rep_.Erase(key);
+  }
+
+  size_type size() const noexcept {
+    return rep_.size();
+  }
+  
+  bool empty() const noexcept {
+    return rep_.empty();
+  }
+  
+  value_type& operator[](key_type const& key) {
+    auto slot = Find(key);
+
+    if (!slot) {
+      slot = rep_.Insert(value_type{key, mapped_type{}});
+    }
+    
+    assert(slot);
+    return slot->value;
+  }
+
+ private:
+  Rep rep_;
+};
+
+} // algo 
+} // mmkv
+
+#endif // _MMKV_DICTIONARY_H_

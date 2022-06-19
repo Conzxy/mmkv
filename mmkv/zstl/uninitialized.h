@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <type_traits>
+
 #include "iterator.h"
 
 namespace zstl {
@@ -21,9 +22,18 @@ OI UninitializedMoveIfNoexcept(II first, II last, OI output) {
 template<typename II, typename=zstl::enable_if_t<!std::is_trivial<iter_value_t<II>>::value>>
 II UninitializedDefaultConstruct(II first, II last) {
   using ValueType = iter_value_t<II>;
+  
+  auto old_first = first; 
+  try {
+    for (; first != last; ++first) {
+      new(std::addressof(*first)) ValueType();
+    }
+  } catch (...) {
+    for (; old_first != first; ++old_first) {
+      old_first->~ValueType();
+    }
 
-  for (; first != last; ++first) {
-    new(std::addressof(*first)) ValueType();
+    throw;
   }
 
   return last;

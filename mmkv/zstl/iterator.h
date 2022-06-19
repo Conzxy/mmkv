@@ -1,10 +1,9 @@
 #ifndef _ZSTL_ITERATOR_H
 #define _ZSTL_ITERATOR_H
 
-#include "mmkv/zstl/type_traits.h"
-
 #include <iterator>
-#include <type_traits>
+
+#include "mmkv/zstl/type_traits.h"
 
 namespace zstl {
 

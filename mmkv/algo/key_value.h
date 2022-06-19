@@ -7,7 +7,7 @@ namespace algo {
 template<typename K, typename V>
 struct KeyValue {
   K key;
-  V Value;
+  V value;
 };
 
 } // namespace algo
