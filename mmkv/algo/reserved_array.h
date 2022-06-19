@@ -4,8 +4,8 @@
 #include <initializer_list>
 #include <iterator>
 #include <memory>
-#include <type_traits>
 #include <utility>
+#include <assert.h>
 
 #include "mmkv/zstl/type_traits.h"
 #include "mmkv/zstl/uninitialized.h"
@@ -84,6 +84,10 @@ class ReservedArray : protected Alloc {
     : data_(AllocTraits::allocate(*this, n))
     , end_(data_+n)
   {
+    if (data_ == NULL) {
+      throw std::bad_alloc{}; 
+    }
+
     zstl::UninitializedDefaultConstruct(data_, end_);
   } 
 
@@ -112,12 +116,16 @@ class ReservedArray : protected Alloc {
 
   size_type GetSize() const noexcept { return end_ - data_; }
   size_type size() const noexcept { return end_ - data_; }
-  
+  bool empty() const noexcept { return data_ == end_; }  
+
   reference operator[](size_type i) noexcept {
+    assert(i < size());
+
     return data_[i];
   }
 
   const_reference operator[](size_type i) const noexcept {
+    assert(i < size());
     return data_[i];
   }
   
@@ -127,44 +135,87 @@ class ReservedArray : protected Alloc {
   const_pointer end() const noexcept { return end_; }
   const_pointer cbegin() const noexcept { return data_; }
   const_pointer cend() const noexcept { return end_; }
+  
+  void swap(ReservedArray& other) noexcept {
+    std::swap(data_, other.data_);
+    std::swap(end_, other.end_);
+  }
 
  private:
   template<typename U, zstl::enable_if_t<can_reallocate<U>::value, int> =0>
   void Reallocate(size_type n) {
-      data_ = this->reallocate(data_, n);
+      // Failed to call the reallocate(),
+      // the old memory block is not freed
+      auto tmp = this->reallocate(data_, n);
+
+      if (tmp != NULL) {
+        return;
+      }
+
+      data_ = tmp;
       end_ = data_ + n;
   }
 
   template<typename U, zstl::enable_if_t<!can_reallocate<U>::value, char> =0>
   void Reallocate(size_type n) {
-      auto tmp = AllocTraits::allocate(*this, n);
-      
-      end_ = zstl::UninitializedMoveIfNoexcept(data_, end_, tmp);
-      end_ = zstl::UninitializedDefaultConstruct(end_, tmp+n);
+      // To ensure exception-safe,
+      // set data_ and end_ at last
+      auto new_data = AllocTraits::allocate(*this, n);
+      if (new_data == NULL) {
+        return;
+      } 
+  
+      auto new_end = new_data;
+
+      try {
+        new_end = zstl::UninitializedMoveIfNoexcept(data_, end_, new_end);
+        new_end = zstl::UninitializedDefaultConstruct(new_end, new_data+n);
+      } catch (...) {
+        AllocTraits::deallocate(*this, new_data, n);
+        throw;
+      }
 
       AllocTraits::deallocate(*this, data_, GetSize());
-      data_ = tmp;
+      data_ = new_data;
+      end_ = new_end;
   }
 
   template<typename U, zstl::enable_if_t<can_reallocate<U>::value, char> =0>
   void Shrink_impl(size_type n) {
-    data_ = this->reallocate(data_, n);
+    auto tmp = this->reallocate(data_, n);
+
+    if (tmp == NULL) {
+      return;
+    }
+
+    data_ = tmp;
     end_ = data_ + n;
   }
 
   template<typename U, zstl::enable_if_t<!can_reallocate<U>::value, int> =0>
   void Shrink_impl(size_type n) {
-    auto tmp = AllocTraits::allocate(*this, n);
-    const auto count = size() - n; 
-    
-    end_ = zstl::UninitializedMoveIfNoexcept(data_, data_+n, tmp);
+    auto new_data = AllocTraits::allocate(*this, n);
+    if (new_data == NULL) {
+      return;
+    } 
 
-    for (size_t i = 0; i < count; ++i) {
-      AllocTraits::destroy(*this, data_+n+i);
+    auto new_end = new_data;
+    const auto count = size() - n; 
+
+    try {
+      new_end = zstl::UninitializedMoveIfNoexcept(data_, data_+n, new_end);
+
+      for (size_t i = 0; i < count; ++i) {
+        AllocTraits::destroy(*this, data_+n+i);
+      }
+    } catch (...) {
+      AllocTraits::deallocate(*this, new_data, n);
+      throw;
     }
 
     AllocTraits::deallocate(*this, data_, GetSize());
-    data_ = tmp;
+    data_ = new_data;
+    end_ = new_end;
   }
 
   T* data_;
@@ -173,5 +224,14 @@ class ReservedArray : protected Alloc {
 
 } // algo
 } // mmkv
+
+namespace std {
+
+template<typename T>
+constexpr void swap(mmkv::algo::ReservedArray<T>& x, mmkv::algo::ReservedArray<T>& y) noexcept(noexcept(x.swap(y))) {
+  x.swap(y);
+}
+
+} // std
 
 #endif // _MMKV_ALGO_RESERVED_ARRAY_H_

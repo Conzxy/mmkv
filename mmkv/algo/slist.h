@@ -39,8 +39,9 @@ template<typename T>
 class SlistIterator {
   friend class SlistConstIterator<T>;
 
-  using Node = SNode<T>;
   using Self = SlistIterator;
+ public:
+  using Node = SNode<T>;
   using value_type = T;
   using reference = T&;
   using const_reference = T const&;
@@ -49,7 +50,6 @@ class SlistIterator {
   using difference_type = std::ptrdiff_t;
   using iterator_category = std::forward_iterator_tag;
 
- public:
   SlistIterator() = default;
   explicit SlistIterator(Node* node) : node_(node) {
   }
@@ -83,8 +83,9 @@ class SlistIterator {
 
 template<typename T>
 class SlistConstIterator {
-  using Node = SNode<T>;
   using Self = SlistConstIterator;
+ public:
+  using Node = SNode<T>;
   using value_type = T;
   using reference = T&;
   using const_reference = T const&;
@@ -93,7 +94,6 @@ class SlistConstIterator {
   using difference_type = std::ptrdiff_t;
   using iterator_category = std::forward_iterator_tag;
 
- public:
   SlistConstIterator() = default;
   explicit SlistConstIterator(Node const* node) : node_(node) {
   }
@@ -101,6 +101,8 @@ class SlistConstIterator {
   explicit SlistConstIterator(Node* node) : node_(node) {
   }
   
+  // Don't declare as SlistIterator<T> const&
+  // since it is just a pointer wrapper 
   SlistConstIterator(SlistIterator<T> iter) : node_(iter.node_) {
   } 
 
@@ -136,10 +138,10 @@ using NodeAlloctor = typename Alloc::template rebind<SNode<T>>::other;
 
 template<typename T, typename Alloc=LibcAllocatorWithRealloc<T>>
 class Slist : protected NodeAlloctor<T, Alloc> {
-  using Node = SNode<T>;
   using NodeAllocTraits = std::allocator_traits<NodeAlloctor<T, Alloc>>;
 
  public: 
+  using Node = SNode<T>;
   using size_type = std::size_t;
   using value_type = T;
   using reference = T&;
@@ -173,6 +175,16 @@ class Slist : protected NodeAlloctor<T, Alloc> {
   
   bool IsEmpty() const noexcept { return header_ == nullptr; }
   bool empty() const noexcept { return header_ == nullptr; } 
+  
+  value_type& Front() noexcept {
+    assert(header_);
+    return header_->value;
+  }
+
+  value_type const& Front() const noexcept {
+    assert(header_);
+    return header_->value;
+  }
 
   // For debugging
   size_type GetSize() const noexcept {
@@ -196,16 +208,51 @@ class Slist : protected NodeAlloctor<T, Alloc> {
     }
 
     header_ = node;
+  }
+  
+  Node* ExtractFront() noexcept {
+    auto ret = header_;
+    header_ = header_->next;
+    ret->next = nullptr;
+    
+    return ret;
+  }
+  
+  Node const* ExtractFront() const noexcept {
+    return const_cast<Node*>(this)->ExtractFront();
+  }
+
+  iterator Search(value_type const& value) {
+    return SearchIf([&value](value_type const& val) { return val == value; });
   } 
   
+  const_iterator Search(value_type const& value) const {
+    return const_iterator(const_cast<Slist*>(this)->Search(value));
+  }
+  
+  template<typename UnaryPred>
+  iterator SearchIf(UnaryPred pred) {
+    return iterator(SearchNodeIf(pred));
+  }
+
+  template<typename UnaryPred>
+  const_iterator SearchIf(UnaryPred pred) const {
+    return const_iterator(SearchNodeIf(pred));
+  }
+
   Node* ExtractNode(value_type const& value) {
+    return ExtractNodeIf([&value](value_type const& val) { return value == val; });
+  } 
+
+  template<typename UnaryPred> 
+  Node* ExtractNodeIf(UnaryPred pred) {
     if (!header_) {
       return nullptr;
     }
   
     Node* ret = nullptr;
 
-    if (header_->value == value) {
+    if (pred(header_->value)) {
       ret = header_;
       header_ = ret->next;
       ret->next = nullptr;
@@ -213,7 +260,7 @@ class Slist : protected NodeAlloctor<T, Alloc> {
     }
 
     for (Node* header = header_; header->next; header = header->next) {
-      if (header->next->value == value) {
+      if (pred(header->next->value)) {
         ret = header->next;
         header->next = header->next->next;
         ret->next = nullptr;
@@ -224,8 +271,9 @@ class Slist : protected NodeAlloctor<T, Alloc> {
     return ret;
   }
   
-  size_type Erase(value_type const& value) {
-    auto node = ExtractNode(value);
+  template<typename UnaryPred>
+  size_type EraseIf(UnaryPred pred) {
+    auto node = ExtractNodeIf(pred);
 
     if (node) {
       DropNode(node);
@@ -235,7 +283,30 @@ class Slist : protected NodeAlloctor<T, Alloc> {
     return 0;
   }
 
+  size_type Erase(value_type const& value) {
+    return EraseIf([&value](value_type const& val) {
+        return value == val;
+        });
+  }
+  
+  void swap(Slist& other) noexcept {
+    std::swap(header_, other.header_);
+  }
+
  private:
+  template<typename UnaryPred>
+  Node* SearchNodeIf(UnaryPred pred) const {
+    for (auto header = header_;
+         header;
+         header = header->next) {
+      if (pred(header->value)) {
+        return header;
+      }
+    }
+
+    return nullptr;
+  }
+
   Node* AllocateNode() {
     return NodeAllocTraits::allocate(*this, 1);
   }
@@ -248,7 +319,13 @@ class Slist : protected NodeAlloctor<T, Alloc> {
   template<typename... Args>
   Node* CreateNode(Args&&... args) {
     auto node = AllocateNode();
-    ConstructNode(node, std::forward<Args>(args)...);
+    try {
+      ConstructNode(node, std::forward<Args>(args)...);
+    } catch (...) {
+      FreeNode(node);
+      throw;
+    }
+
     return node;
   }
 
@@ -271,5 +348,14 @@ class Slist : protected NodeAlloctor<T, Alloc> {
 
 } // algo
 } // mmkv
+
+namespace std {
+
+template<typename T>
+constexpr void swap(mmkv::algo::Slist<T>& x, mmkv::algo::Slist<T>& y) noexcept(noexcept(x.swap(y))) {
+  x.swap(y);
+}
+
+} // std
 
 #endif // _MMKV_ALGO_SLIST_H_
