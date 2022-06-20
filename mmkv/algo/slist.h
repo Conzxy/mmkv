@@ -1,141 +1,23 @@
 #ifndef _MMKV_ALGO_SLIST_H_
 #define _MMKV_ALGO_SLIST_H_
 
+#include <initializer_list>
 #include <stddef.h>
-#include <iterator>
 #include <memory>
 
 #include "libc_allocator_with_realloc.h"
+#include "internal/slist_iterator.h"
 
 namespace mmkv {
 namespace algo {
 
-template<typename T>
-struct SNode {
-  SNode* next;
-  T value;
-  
-  SNode()
-    : next(nullptr), value()
-  { } 
-  
-  SNode(SNode* nxt)
-    : next(nxt), value()
-  { }
-
-  SNode(T const& val, SNode* nxt=nullptr)
-    : next(nxt), value(val)
-  { }
-
-  SNode(T&& val, SNode* nxt=nullptr)
-    : next(nxt), value(std::move(val))
-  { }
-};
-
-template<typename T>
-class SlistConstIterator;
-
-template<typename T>
-class SlistIterator {
-  friend class SlistConstIterator<T>;
-
-  using Self = SlistIterator;
- public:
-  using Node = SNode<T>;
-  using value_type = T;
-  using reference = T&;
-  using const_reference = T const&;
-  using pointer = T*;
-  using const_pointer = T const*;
-  using difference_type = std::ptrdiff_t;
-  using iterator_category = std::forward_iterator_tag;
-
-  SlistIterator() = default;
-  explicit SlistIterator(Node* node) : node_(node) {
-  }
-
-  ~SlistIterator() noexcept = default;
-  
-  Self& operator++() {
-    node_ = node_->next;
-    return *this;
-  }
-
-  Self operator++(int) {
-    auto ret = node_;
-    node_ = node_->next;
-    return Self(ret);
-  }
-  
-  const_reference operator*() const noexcept {
-    return node_->value;
-  } 
-
-  reference operator*() noexcept {
-    return node_->value;
-  }
-  
-  friend bool operator==(SlistIterator x, SlistIterator y) noexcept { return x.node_ == y.node_; }
-  friend bool operator!=(SlistIterator x, SlistIterator y) noexcept { return !(x == y); }
- private:
-  Node* node_;
-};
-
-template<typename T>
-class SlistConstIterator {
-  using Self = SlistConstIterator;
- public:
-  using Node = SNode<T>;
-  using value_type = T;
-  using reference = T&;
-  using const_reference = T const&;
-  using pointer = T*;
-  using const_pointer = T const*;
-  using difference_type = std::ptrdiff_t;
-  using iterator_category = std::forward_iterator_tag;
-
-  SlistConstIterator() = default;
-  explicit SlistConstIterator(Node const* node) : node_(node) {
-  }
-
-  explicit SlistConstIterator(Node* node) : node_(node) {
-  }
-  
-  // Don't declare as SlistIterator<T> const&
-  // since it is just a pointer wrapper 
-  SlistConstIterator(SlistIterator<T> iter) : node_(iter.node_) {
-  } 
-
-  ~SlistConstIterator() noexcept = default;
-
-  Self& operator++() {
-    node_ = node_->next;
-    return *this;
-  }
-
-  Self operator++(int) {
-    auto ret = node_;
-    node_ = node_->next;
-    return Self(ret);
-  }
-  
-  const_reference operator*() const noexcept {
-    return node_->value;
-  } 
-
-  reference operator*() noexcept {
-    return node_->value;
-  }
-  
-  friend bool operator==(SlistConstIterator x, SlistConstIterator y) noexcept { return x.node_ == y.node_; }
-  friend bool operator!=(SlistConstIterator x, SlistConstIterator y) noexcept { return !(x == y); }
- private:
-  Node const* node_;
-};
-
 template<typename T, typename Alloc>
 using NodeAlloctor = typename Alloc::template rebind<SNode<T>>::other;
 
+/**
+ * \brief Single-linked-list but there is no sentinel to decrease memory usage
+ *
+ */
 template<typename T, typename Alloc=LibcAllocatorWithRealloc<T>>
 class Slist : protected NodeAlloctor<T, Alloc> {
   using NodeAllocTraits = std::allocator_traits<NodeAlloctor<T, Alloc>>;
@@ -150,9 +32,18 @@ class Slist : protected NodeAlloctor<T, Alloc> {
   using const_pointer = T const*;
   using iterator = SlistIterator<T>;
   using const_iterator = SlistConstIterator<T>;
+  static constexpr bool can_reallocate = true;
 
-  Slist() 
+  Slist() noexcept
     : header_(nullptr) {
+  }
+  
+  explicit Slist(std::initializer_list<value_type> il) 
+    : Slist() {
+
+    for (auto const& e : il) {
+      EmplaceFront(e);
+    }
   }
 
   ~Slist() noexcept {
@@ -166,6 +57,16 @@ class Slist : protected NodeAlloctor<T, Alloc> {
     header_ = nullptr; 
   }
   
+  Slist(Slist&& other) noexcept
+    : header_(other.header_) {
+      other.header_ = nullptr; 
+  }  
+  
+  Slist& operator=(Slist&& other) noexcept {
+    this->swap(other);
+    return *this;
+  }
+
   iterator begin() noexcept { return iterator(header_); }
   const_iterator begin() const noexcept { return const_iterator(header_); } 
   iterator end() noexcept { return iterator(nullptr); }
@@ -198,7 +99,7 @@ class Slist : protected NodeAlloctor<T, Alloc> {
 
   template<typename... Args> 
   void EmplaceFront(Args&&... args) {
-    auto node = CreateNode(std::forward<Args>(args)...);
+    auto node = CreateNode(std::forward<Args>(args)..., nullptr);
     EmplaceFrontNode(node);
   }
   
