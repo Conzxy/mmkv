@@ -4,6 +4,8 @@
 #include <initializer_list>
 #include <iterator>
 #include <memory>
+#include <new>
+#include <type_traits>
 #include <utility>
 #include <assert.h>
 
@@ -15,6 +17,13 @@
 namespace mmkv {
 namespace algo {
 
+//************************************************************
+// 对于以下类型进行allocate
+// 1) trivial type
+// 2) non-trivial class type but with nothrow default constructor
+//    (since reallocate() cannot ensure exception-safe)
+//    and static class variable "reallocator = true"
+//************************************************************
 template<typename T, typename=void>
 struct has_nontype_member_can_reallocate_with_true : std::false_type {};
 
@@ -22,7 +31,12 @@ template<typename T>
 struct has_nontype_member_can_reallocate_with_true<T, zstl::void_t<decltype(&T::can_reallocate)>> : zstl::bool_constant<T::can_reallocate> {};
 
 template<typename T>
-struct can_reallocate : zstl::disjunction<std::is_trivial<T>, has_nontype_member_can_reallocate_with_true<T>> {};
+struct can_reallocate : 
+  zstl::disjunction<
+    std::is_trivial<T>,
+    zstl::conjunction<
+      has_nontype_member_can_reallocate_with_true<T>,
+      std::is_nothrow_default_constructible<T>>> {};
 
 // template<typename T, typename HasReallocate=std::true_type>
 // struct can_reallocate : std::is_trivial<T> {};
@@ -87,9 +101,25 @@ class ReservedArray : protected Alloc {
     if (data_ == NULL) {
       throw std::bad_alloc{}; 
     }
-
-    zstl::UninitializedDefaultConstruct(data_, end_);
+    
+    try {
+      zstl::UninitializedDefaultConstruct(data_, end_);
+    } catch (...) {
+      data_ = end_ = nullptr;
+      throw;
+    }
   } 
+  
+  ReservedArray(ReservedArray&& other) noexcept 
+    : data_(other.data_)
+    , end_(other.end_) {
+    other.data_ = other.end_ = nullptr;
+  }
+
+  ReservedArray& operator=(ReservedArray&& other) noexcept {
+    this->swap(other);
+    return *this;
+  }
 
   ~ReservedArray() noexcept {
     size_type const size = end_ - data_;
@@ -146,11 +176,19 @@ class ReservedArray : protected Alloc {
   void Reallocate(size_type n) {
       // Failed to call the reallocate(),
       // the old memory block is not freed
+      const auto old_size = size();
       auto tmp = this->reallocate(data_, n);
 
-      if (tmp != NULL) {
-        return;
+      if (tmp == NULL) {
+        throw std::bad_alloc{};
       }
+      
+      // 为了支持包含can_reallocate = true的non-trivial类类型也能进行reallocate
+      // 对扩展的内存区域进行默认初始化 
+      
+      // reallocate无法保证异常安全
+      // 因为data_的内存区域可能已被释放 
+      zstl::UninitializedDefaultConstruct(tmp+old_size, tmp+n);
 
       data_ = tmp;
       end_ = data_ + n;
@@ -162,7 +200,7 @@ class ReservedArray : protected Alloc {
       // set data_ and end_ at last
       auto new_data = AllocTraits::allocate(*this, n);
       if (new_data == NULL) {
-        return;
+        throw std::bad_alloc{};
       } 
   
       auto new_end = new_data;
@@ -185,7 +223,14 @@ class ReservedArray : protected Alloc {
     auto tmp = this->reallocate(data_, n);
 
     if (tmp == NULL) {
-      return;
+      throw std::bad_alloc{};
+    }
+    
+    const auto old_size = size();
+
+    // destroy一般来说是no throw的
+    for (size_type i = n; i < old_size; ++i) {
+      AllocTraits::destroy(*this, data_+i);
     }
 
     data_ = tmp;
@@ -196,7 +241,7 @@ class ReservedArray : protected Alloc {
   void Shrink_impl(size_type n) {
     auto new_data = AllocTraits::allocate(*this, n);
     if (new_data == NULL) {
-      return;
+      throw std::bad_alloc{};
     } 
 
     auto new_end = new_data;
