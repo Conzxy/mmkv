@@ -1,4 +1,5 @@
 #include "mmkv/algo/reserved_array.h"
+#include "mmkv/algo/slist.h"
 
 #include <gtest/gtest.h>
 
@@ -41,7 +42,7 @@ TEST(reserved_array, construct) {
 }
 
 struct A {
-  A() {}
+  A() noexcept {}
   A(A&&) noexcept {
     puts("A move ctor");
   }
@@ -76,6 +77,7 @@ TEST(reserved_array, reallocate) {
   static_assert(can_reallocate<A>::value, "");
   static_assert(!can_reallocate<B>::value, "");
   static_assert(can_reallocate<int>::value, "");
+  static_assert(can_reallocate<Slist<int>>::value, "");
   
   puts("===== reserved_array reallocate test =====");
 

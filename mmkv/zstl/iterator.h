@@ -13,12 +13,22 @@ namespace zstl {
 template<typename I> \
 using name = typename std::iterator_traits<I>::type;
 
+//************************************************************
+// template type alias for iterator accessing 
+// the nested type trait
+//************************************************************
 ITER_TYPE_EXTRACTOR(iter_value_t, value_type)
 ITER_TYPE_EXTRACTOR(iter_reference_t, reference)
+ITER_TYPE_EXTRACTOR(iter_pointer_t, pointer)
+ITER_TYPE_EXTRACTOR(iter_difference_type_t, difference_type)
+ITER_TYPE_EXTRACTOR(iter_iterator_category_t, iterator_category)
 
 // STL虽然提供了move_if_noexcept，但没提供uninitialized_move_if_noexcept()也没有提供make_move_iterator_if_noexcept
 // 当T为throw move & copyable constructible时返回左值引用（即拷贝语义）
 // 否则，返回右值引用
+//
+// 针对UninitializedMoveIfNoexcept()，需求是constructible，故没有判断assignment
+//
 template<typename T>
 struct MoveIfNoexcept : 
   zstl::negation<
