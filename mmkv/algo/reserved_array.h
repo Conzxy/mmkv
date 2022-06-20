@@ -1,11 +1,7 @@
 #ifndef _MMKV_ALGO_RESERVED_ARRAY_H_
 #define _MMKV_ALGO_RESERVED_ARRAY_H_
 
-#include <initializer_list>
-#include <iterator>
 #include <memory>
-#include <new>
-#include <type_traits>
 #include <utility>
 #include <assert.h>
 
@@ -18,11 +14,11 @@ namespace mmkv {
 namespace algo {
 
 //************************************************************
-// 对于以下类型进行allocate
+// 对于以下类型进行reallocate
 // 1) trivial type
 // 2) non-trivial class type but with nothrow default constructor
 //    (since reallocate() cannot ensure exception-safe)
-//    and static class variable "reallocator = true"
+//    and static class variable "can_reallocate = true"
 //************************************************************
 template<typename T, typename=void>
 struct has_nontype_member_can_reallocate_with_true : std::false_type {};
@@ -86,6 +82,8 @@ class ReservedArray : protected Alloc {
   using pointer = T*;
   using const_pointer = T const*;
   using size_type = size_t;
+  using iterator = pointer;
+  using const_iterator = const_pointer;
 
   ReservedArray()
     : data_(nullptr)
@@ -159,13 +157,16 @@ class ReservedArray : protected Alloc {
     return data_[i];
   }
   
-  pointer begin() noexcept { return data_; }  
-  const_pointer begin() const noexcept { return data_; }
-  pointer end() noexcept { return end_; }
-  const_pointer end() const noexcept { return end_; }
-  const_pointer cbegin() const noexcept { return data_; }
-  const_pointer cend() const noexcept { return end_; }
+  iterator begin() noexcept { return data_; }  
+  iterator end() noexcept { return end_; }
+  const_iterator begin() const noexcept { return data_; }
+  const_iterator end() const noexcept { return end_; }
+  const_iterator cbegin() const noexcept { return data_; }
+  const_iterator cend() const noexcept { return end_; }
   
+  pointer data() noexcept { return data_; }
+  const_pointer data() const noexcept { return data_; } 
+
   void swap(ReservedArray& other) noexcept {
     std::swap(data_, other.data_);
     std::swap(end_, other.end_);

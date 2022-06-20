@@ -86,6 +86,14 @@ class Slist : protected NodeAlloctor<T, Alloc> {
     assert(header_);
     return header_->value;
   }
+  
+  Node* FrontNode() noexcept {
+    return header_;
+  }
+
+  Node const* FrontNode() const noexcept {
+    return header_;
+  }
 
   // For debugging
   size_type GetSize() const noexcept {

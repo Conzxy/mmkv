@@ -12,6 +12,7 @@
 
 #include "mmkv/algo/reserved_array.h"
 #include "mmkv/algo/slist.h"
+#include "hash_table_iterator.h"
 
 namespace mmkv {
 namespace algo {
@@ -51,6 +52,11 @@ public:
   using hash_function = HF;
   using equal_key = EK;
   using allocator_type = Alloc;
+  using iterator = HashTableIterator<K, T, HF, GK, EK, Alloc>;
+  using const_iterator = HashTableConstIterator<K, T, HF, GK, EK, Alloc>;
+
+  friend class HashTableIterator<K, T, HF, GK, EK, Alloc>;
+  friend class HashTableConstIterator<K, T, HF, GK, EK, Alloc>;
 
   HashTable();
   ~HashTable() noexcept;
@@ -84,11 +90,36 @@ public:
   bool empty() const noexcept {
     return size() == 0;
   }
+  
+  iterator begin() noexcept {
+    return iterator(this);
+  }
+  
+  const_iterator begin() const noexcept {
+    return const_iterator(this);
+  }
+
+  iterator end() noexcept {
+    return iterator(this, 1, table2().size());
+  }
+  
+  const_iterator end() const noexcept {
+    return const_iterator(this, 1, table2().size());
+  }
+  
+  const_iterator cbegin() const noexcept {
+    return begin();
+  }
+
+  const_iterator cend() const noexcept {
+    return end();
+  }
 
   // For debugging
   void DebugPrint();
  private:
   using Bucket = Slist<value_type, Alloc>;
+  using Slot = typename Bucket::Node;
 
   struct Table {
     ReservedArray<Bucket> table;

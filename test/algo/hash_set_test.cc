@@ -1,3 +1,4 @@
+#include "mmkv/algo/reserved_array.h"
 #include <algorithm>
 #include <cstdio>
 #define _DEBUG_HASH_TABLE_
@@ -59,4 +60,40 @@ TEST_F(HashSetTest, erase) {
   }
   
   ASSERT_TRUE(hset.empty());
+}
+
+TEST_F(HashSetTest, iterator) {
+  hset.DebugPrint();
+
+  auto beg = hset.begin();
+
+  printf("===== begin() test ======\n");
+  printf("%d\n", *beg);
+  printf("change begin to 1\n");
+  *beg = 1;
+
+  printf("===== pre increment =====\n");
+  ++beg;
+  EXPECT_NE(beg, hset.end());
+  printf("%d\n", *beg);
+
+  auto old_value = *beg;
+  printf("===== post increment =====\n");
+  auto old_beg = beg++;
+  EXPECT_NE(beg, hset.end());
+  ASSERT_EQ(*old_beg, old_value);
+  printf("%d\n", *beg);
+
+  printf("===== range for test =====\n"); 
+  int count = 0;
+  for (auto x : hset) {
+    count++;
+    ::printf("%d ", x);
+    ::fflush(::stdout);
+  }
+
+  ::puts("");
+
+  EXPECT_EQ(count, 100) << "range for test failed";
+
 }
