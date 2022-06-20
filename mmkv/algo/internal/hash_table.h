@@ -19,6 +19,19 @@ namespace algo {
 template<typename T, typename Alloc>
 using BucketAllocator = typename Alloc::template rebind<Slist<T, Alloc>>::other;
 
+/**
+ * \brief Fast look-up table
+ *
+ * 因为有rehash的需求，采用separate list法。
+ * 相比一般的separate list而言：
+ * 1） 查询之后将该数据项(data entry)放至开头，即所谓的MTF(move to front)手法。
+ *     对于热点数据，被多次查询有一定的性能改善（特别是对于槽较多的桶而言）；
+ *     对于冷数据，并不会带来大的性能损失。
+ * 2） 由于该哈希表用于提供远程缓存服务，故采用递进式(incremental)rehash可以避免
+ *     多个客户端长时间等待，减少响应时间
+ *
+ * 暂时不提供Shrink
+ */
 template<typename K, typename T, typename HF, typename GK, typename EK, typename Alloc>
 class HashTable : protected BucketAllocator<T, Alloc> {
   using BucketAllocTraits = std::allocator_traits<BucketAllocator<T, Alloc>>;
@@ -42,6 +55,8 @@ public:
   HashTable();
   ~HashTable() noexcept;
   
+  // 不提供Emplace()
+  // 因为如果有重复键new后还得delete 
   value_type* Insert(T const& elem) {
     return Insert_impl(elem);
   }

@@ -3,12 +3,18 @@
 
 #include "hash_table.h"
 #include "hash_util.h"
-#include "mmkv/algo/key_value.h"
-#include "mmkv/algo/libc_allocator_with_realloc.h"
+#include "key_value.h"
+#include "libc_allocator_with_realloc.h"
 
 namespace mmkv {
 namespace algo {
 
+/**
+ * \brief kv hashtable
+ *
+ * This a wrapper based on HashTable<>
+ * support operator[]
+ */
 template<typename K, typename V, typename HF=Hash<K>, typename EK=EqualKey<K>, typename Alloc=LibcAllocatorWithRealloc<KeyValue<K, V>>>
 class Dictionary {
   using Rep = HashTable<K, KeyValue<K, V>, HF, GetKey<KeyValue<K, V>>, EK, LibcAllocatorWithRealloc<KeyValue<K, V>>>;
