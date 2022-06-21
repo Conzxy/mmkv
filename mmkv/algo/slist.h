@@ -261,7 +261,7 @@ class Slist : protected NodeAlloctor<T, Alloc> {
 namespace std {
 
 template<typename T>
-constexpr void swap(mmkv::algo::Slist<T>& x, mmkv::algo::Slist<T>& y) noexcept(noexcept(x.swap(y))) {
+inline void swap(mmkv::algo::Slist<T>& x, mmkv::algo::Slist<T>& y) noexcept(noexcept(x.swap(y))) {
   x.swap(y);
 }
 

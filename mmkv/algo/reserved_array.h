@@ -274,7 +274,7 @@ class ReservedArray : protected Alloc {
 namespace std {
 
 template<typename T>
-constexpr void swap(mmkv::algo::ReservedArray<T>& x, mmkv::algo::ReservedArray<T>& y) noexcept(noexcept(x.swap(y))) {
+inline void swap(mmkv::algo::ReservedArray<T>& x, mmkv::algo::ReservedArray<T>& y) noexcept(noexcept(x.swap(y))) {
   x.swap(y);
 }
 
