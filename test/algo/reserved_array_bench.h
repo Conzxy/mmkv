@@ -33,7 +33,7 @@ static void BM_Vector(State& state, T const& value) {
 
 template<typename T>
 static void BM_ReservedArray(State& state, T const& value) {
-  ReservedArray<T> arr(4);
+  ReservedArray<T> arr(8);
   
   const size_t threshold = state.range(0);
 

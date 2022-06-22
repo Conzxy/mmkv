@@ -1,3 +1,4 @@
+#define _DEBUG_RESERVED_ARRAY_
 #include "mmkv/algo/reserved_array.h"
 
 #include <assert.h>
@@ -13,6 +14,6 @@ int main() {
   });
 
   for (size_t i = 0; i < arr.GetSize(); ++i) {
-    assert(arr[i] == i);
+    assert((size_t)arr[i] == i);
   }
 }

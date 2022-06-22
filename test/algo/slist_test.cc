@@ -68,3 +68,67 @@ TEST(slist, Extract) {
   EXPECT_EQ(*(iter++), "B");
   EXPECT_EQ(iter, sl.end());
 }
+
+class SlistTest : public testing::Test {
+ protected:
+  void SetUp() override {
+    for (int i = 99; i >= 0; --i) {
+      sl_.EmplaceFront(i);
+    }
+  
+    int i = 0;
+    for (auto x : sl_) {
+      ASSERT_EQ(x, i++) << "SetUp";
+    }
+  }
+
+ Slist<int> sl_;
+};
+
+TEST_F(SlistTest, copy_ctor) {
+  Slist<int> sl = sl_;
+  
+  int i = 0;
+  for (auto x : sl) {
+    EXPECT_EQ(x, i++);
+  } 
+}
+
+TEST_F(SlistTest, copy_assignment) {
+  Slist<int> sl({ 1, 2 });
+  
+  sl = sl_;
+
+  int elem = 0;
+
+  for (auto x : sl) {
+    EXPECT_EQ(elem++, x) << "less";
+  }
+  elem = 0;
+
+  Slist<int> sl2;
+  
+  for (int i = 0; i < 100; ++i) {
+    sl2.EmplaceFront(i);
+  }
+  
+  sl2 = sl_;
+  
+  for (auto x : sl2) {
+    EXPECT_EQ(x, elem++) << "equal";
+  }
+  elem = 0;
+
+  Slist<int> sl3;
+
+  for (int i = 0; i < 120; ++i) {
+    sl3.EmplaceFront(i);
+  }
+
+  sl3 = sl_;
+
+  for (auto x : sl3) {
+    EXPECT_EQ(x, elem++) << "greater";
+  }
+  elem = 0;
+}
