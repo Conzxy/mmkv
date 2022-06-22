@@ -213,7 +213,7 @@ class ReservedArray : protected Alloc {
       // the old memory block is not freed
       DLOG("size(before realloc): %zu\n", size());
       DLOG("%p\n", this);
-      auto tmp = this->reallocate(data_, n);
+      auto tmp = this->reallocate(data_, size(), n);
 
       if (tmp == NULL) {
         throw std::bad_alloc{};
@@ -261,7 +261,7 @@ class ReservedArray : protected Alloc {
     DLOG("destroy: [%zu, %zu)\n", n, size());
     zstl::DestroyRange(data_+n, end_);
 
-    auto tmp = this->reallocate(data_, n);
+    auto tmp = this->reallocate(data_, size(), n);
 
     if (tmp == NULL) {
       throw std::bad_alloc{};
@@ -315,7 +315,7 @@ class ReservedArray : protected Alloc {
 
   template<typename U, typename=zstl::enable_if_t<cond<U>::value>>
   void CopyAssignmentForSizeNotEqual(ReservedArray const& other) {
-    auto tmp = this->reallocate(data_, other.size());
+    auto tmp = this->reallocate(data_, size(), other.size());
 
     if (tmp == NULL) {
       throw std::bad_alloc{};

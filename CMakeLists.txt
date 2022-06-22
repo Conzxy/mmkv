@@ -82,4 +82,5 @@ endmacro ()
 message(STATUS "BUILD_ALL_TESTS = ${BUILD_ALL_TESTS}")
 message(STATUS "BUILD_ALL_EXAMPLES = ${BUILD_ALL_EXAMPLES}")
 
+add_subdirectory(mmkv)
 add_subdirectory(test)

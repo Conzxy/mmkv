@@ -2,6 +2,7 @@
 #define _MMKV_ALGO_LIBC_ALLOCATOR_WITH_REALLOC_H_
 
 #include <algorithm>
+#include <atomic>
 #include <cstddef>
 #include <cstdlib>
 #include <stdlib.h>
@@ -9,8 +10,10 @@
 #include <utility>
 
 #include "mmkv/zstl/type_traits.h"
+#include "mmkv/util/memory_util.h"
 
 namespace mmkv {
+
 namespace algo {
 
 /**
@@ -49,17 +52,17 @@ class LibcAllocatorWithRealloc {
   const_pointer address(const_reference x) noexcept { return &x; }
   
   T* allocate(size_type n) noexcept {
-    return reinterpret_cast<T*>(::malloc(n*sizeof(T))); 
+    return reinterpret_cast<T*>(util::Malloc(n*sizeof(T))); 
   }
   
-  T* reallocate(pointer p, size_type n) noexcept {
-    return reinterpret_cast<T*>(::realloc(p, n*sizeof(T))); 
+  T* reallocate(pointer p, size_t old_n, size_type n) noexcept {
+    return reinterpret_cast<T*>(util::Realloc(p, old_n*sizeof(T), n*sizeof(T))); 
   } 
 
   void deallocate(pointer p, size_type n) noexcept {
     (void)n;
     // If p is NULL, free() do nothing
-    ::free(p);
+    util::Free(p, n*sizeof(T));
   } 
   
   template<typename... Args>

@@ -48,5 +48,5 @@ macro (GenTest SRC)
   endforeach (mmkv_test_source ${MMKV_TEST_SOURCES})
 endmacro()
 
-GenTest(MMKV_TEST_SOURCES gtest gtest_main)
-GenTest(MMKV_BENCH_SOURCES benchmark benchmark_main)
+GenTest(MMKV_TEST_SOURCES gtest gtest_main mmkv)
+GenTest(MMKV_BENCH_SOURCES benchmark benchmark_main mmkv)
