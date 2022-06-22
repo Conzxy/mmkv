@@ -4,6 +4,7 @@
 #include <initializer_list>
 #include <stddef.h>
 #include <memory>
+#include <assert.h>
 
 #include "libc_allocator_with_realloc.h"
 #include "internal/slist_iterator.h"
@@ -53,10 +54,69 @@ class Slist : protected NodeAlloctor<T, Alloc> {
       NodeAllocTraits::deallocate(*this, header_, sizeof(Node));
       header_ = old_next;
     }
-
-    header_ = nullptr; 
   }
   
+  Slist(Slist const& other) 
+    : header_(nullptr)
+  {
+    if (other.empty()) {
+      return;
+    }
+
+    EmplaceFront(other.Front());
+    
+    auto header = header_;
+    auto header2 = other.header_->next;
+    
+    for (; header2 != nullptr; 
+         header2 = header2->next, header = header->next) {
+      InsertAfterNode(header, header2->value);
+    } 
+  }
+
+  Slist& operator=(Slist const& other) {
+    if (this == &other) {
+      return *this;
+    }
+
+    if (empty()) {
+      Slist(other).swap(*this);
+    }
+
+    auto header = header_;
+    auto header2 = other.header_;
+
+    for (;;) {
+      header->value = header2->value;
+
+      if (header->next == nullptr) {
+        header2 = header2->next;
+        break;
+      }
+  
+      header2 = header2->next;
+      if (header2 == nullptr) {
+        break;
+      }
+
+      header = header->next;
+    }
+    
+    if (header->next == nullptr) {
+      for (; header2 != nullptr; header2 = header2->next) {
+        InsertAfterNode(header, header2->value);
+        header = header->next;
+      }  
+    } else {
+      while (header->next != nullptr) {
+        EraseAfterNode(header);
+      }
+
+    }
+
+    return *this;
+  }
+
   Slist(Slist&& other) noexcept
     : header_(other.header_) {
       other.header_ = nullptr; 
@@ -87,6 +147,14 @@ class Slist : protected NodeAlloctor<T, Alloc> {
     return header_->value;
   }
   
+  void InsertAfter(const_iterator pos, value_type const& val) {
+    InsertAfterNode(pos.node_, val);
+  } 
+
+  void InsertAfter(const_iterator pos, value_type&& val) {
+    InsertAfterNode(pos.node_, std::move(val));
+  }
+
   Node* FrontNode() noexcept {
     return header_;
   }
@@ -201,8 +269,27 @@ class Slist : protected NodeAlloctor<T, Alloc> {
   void swap(Slist& other) noexcept {
     std::swap(header_, other.header_);
   }
+  
+  void EraseAfter(const_iterator pos) {
+    EraseAfterNode(pos.node_);
+  }
 
  private:
+  void EraseAfterNode(Node* pos) {
+    assert(pos != nullptr);
+
+    auto node = pos->next;
+    pos->next = pos->next->next;
+    DropNode(node);
+  }
+
+  template<typename U>
+  void InsertAfterNode(Node* pos, U&& val) {
+    auto node = CreateNode(std::forward<U>(val));
+    node->next = pos->next;
+    pos->next = node;
+  }
+
   template<typename UnaryPred>
   Node* SearchNodeIf(UnaryPred pred) const {
     for (auto header = header_;
