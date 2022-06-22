@@ -1,19 +1,28 @@
+#include "mmkv/util/memory_stat.h"
 #define _DEBUG_RESERVED_ARRAY_
 #include "mmkv/algo/reserved_array.h"
 
 #include <assert.h>
 
 using namespace mmkv::algo;
+using namespace mmkv::util;
 
 int main() {
   ReservedArray<int> arr(10);
-  int i = 0;
+  MemoryFootPrint();
+  
+  arr.Grow(100);
+  MemoryFootPrint();
 
-  std::generate(arr.begin(), arr.end(), [i]() mutable {
-      return i++;
-  });
+  arr.Shrink(10);
+  MemoryFootPrint();
 
-  for (size_t i = 0; i < arr.GetSize(); ++i) {
-    assert((size_t)arr[i] == i);
+  {
+    std::unique_ptr<ReservedArray<int>> p(new ReservedArray<int>(100));
+    p->Grow(200);
   }
+
+  MemoryFootPrint();
+  
+
 }

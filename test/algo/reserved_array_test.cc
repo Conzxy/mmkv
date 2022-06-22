@@ -1,3 +1,4 @@
+#include "mmkv/util/memory_stat.h"
 #define _DEBUG_RESERVED_ARRAY_
 #include "mmkv/algo/reserved_array.h"
 #include "mmkv/algo/slist.h"
@@ -226,4 +227,8 @@ TEST(slist, grow_shrink) {
   }
 
   arr.Shrink(2);
+}
+
+TEST_F(ReservedArrayTest, memory_footprint) {
+  mmkv::util::MemoryFootPrint();
 }

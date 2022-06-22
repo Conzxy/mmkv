@@ -1,4 +1,5 @@
 #include "mmkv/algo/slist.h"
+#include "mmkv/util/memory_stat.h"
 
 #include <gtest/gtest.h>
 #include <string>
@@ -131,4 +132,8 @@ TEST_F(SlistTest, copy_assignment) {
     EXPECT_EQ(x, elem++) << "greater";
   }
   elem = 0;
+}
+
+TEST_F(SlistTest, memory_footprint) {
+  mmkv::util::MemoryFootPrint();
 }
