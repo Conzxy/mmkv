@@ -23,6 +23,7 @@ set(CXX_FLAGS
  -Werror
  # make non-trivial(but like "trivial") class can reallocate
  -Wno-class-memaccess
+ -Wno-implicit-fallthrough
  #-Wconversion
  #-Wshadow
  -Wwrite-strings # in fact, this is default specified
