@@ -51,7 +51,7 @@ class Slist : protected NodeAlloctor<T, Alloc> {
     for (; header_; ) {
       auto old_next = header_->next;
       NodeAllocTraits::destroy(*this, header_);
-      NodeAllocTraits::deallocate(*this, header_, sizeof(Node));
+      NodeAllocTraits::deallocate(*this, header_, 1);
       header_ = old_next;
     }
   }
@@ -326,7 +326,7 @@ class Slist : protected NodeAlloctor<T, Alloc> {
   }
 
   void FreeNode(Node* node) {
-    NodeAllocTraits::deallocate(*this, node, sizeof(Node));
+    NodeAllocTraits::deallocate(*this, node, 1);
   }
 
   void DestroyNode(Node* node) {
