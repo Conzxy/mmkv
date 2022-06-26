@@ -15,6 +15,7 @@ namespace protocol {
 class MmbpCodec {
   DISABLE_EVIL_COPYABLE(MmbpCodec)
 
+ public:
   enum ErrorCode : uint8_t {
     E_NOERROR = 0,
     E_INVALID_SIZE_HEADER,
@@ -22,6 +23,7 @@ class MmbpCodec {
     E_INVALID_MESSAGE,
     E_NO_COMPLETE_MESSAGE, // This is not a error, just indicator
   };
+ private:
 
   using MessageCallback = std::function<void(TcpConnectionPtr const&, std::unique_ptr<MmbpMessage>, TimeStamp)>;
   using ErrorCallback = std::function<void(TcpConnectionPtr const&, ErrorCode)>;
@@ -52,13 +54,14 @@ class MmbpCodec {
 
   ErrorCode Parse(Buffer& buffer, MmbpMessage*& message);
   void SerializeTo(MmbpMessage const* message, OutputBuffer& buffer);
+
+  static char const* GetErrorString(ErrorCode code) noexcept;
+
  private:
   void OnMessage(TcpConnectionPtr const& conn, Buffer& buffer, TimeStamp recv_time);
 
   static bool VerifyCheckSum(Buffer& buffer, SizeHeaderType size_header);
   static void ErrorHandle(TcpConnectionPtr const& conn, ErrorCode code);
-
-  static char const* GetErrorString(ErrorCode code) noexcept;
 
   // Member data:
   MmbpMessage* prototype_;

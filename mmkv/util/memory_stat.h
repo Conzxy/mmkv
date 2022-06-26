@@ -17,8 +17,6 @@ typedef struct _MemoryStat {
 
 extern MemoryStat g_memstat;
 
-void MemoryFootPrint() noexcept;
-
 } // util
 } // mmkv
 

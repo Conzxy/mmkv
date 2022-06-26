@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 #include "mmkv/algo/reserved_array.h"
+#include "mmkv/algo/string.h"
 
 #include "kanon/buffer/chunk_list.h"
 #include "kanon/buffer/buffer.h"

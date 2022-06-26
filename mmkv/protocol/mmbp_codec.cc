@@ -140,7 +140,7 @@ char const* MmbpCodec::GetErrorString(ErrorCode code) noexcept {
 }
 
 void MmbpCodec::ErrorHandle(TcpConnectionPtr const& conn, ErrorCode error_code) {
-  std::string error_msg = GetErrorString(error_code);
+  String error_msg = GetErrorString(error_code);
   LOG_DEBUG << "Error message: " << error_msg;
   
   MmbpResponse error_response;

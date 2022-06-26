@@ -34,12 +34,12 @@ class MmbpRequest : public MmbpMessage {
     command_ = (uint16_t)cmd;
   } 
 
-  void SetKey(std::string const& k) {
+  void SetKey(String const& k) {
     SetBit(has_bits_[0], 0);
     key_ = k;
   }
 
-  void SetValue(std::string const& val) {
+  void SetValue(String const& val) {
     SetBit(has_bits_[0], 1);
     value_ = val;
   }
@@ -53,14 +53,22 @@ class MmbpRequest : public MmbpMessage {
     return command_;
   }
   
-  std::string const& GetKey() const noexcept {
+  String& GetKey() noexcept {
     return key_;
   }
 
-  std::string const& GetValue() const noexcept {
+  String& GetValue() noexcept {
     return value_;
   }
   
+  String const& GetKey() const noexcept {
+    return key_;
+  }
+
+  String const& GetValue() const noexcept {
+    return value_;
+  }
+
   uint64_t GetExpireTime() const noexcept {
     return expire_time_;
   }
@@ -87,8 +95,8 @@ class MmbpRequest : public MmbpMessage {
 
   uint8_t has_bits_[1];
 
-  std::string key_; // optional
-  std::string value_; // optional
+  String key_; // optional
+  String value_; // optional
   uint64_t expire_time_; // optional
 };
 

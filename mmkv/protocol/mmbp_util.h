@@ -1,16 +1,20 @@
 #ifndef _MMKV_PROTOCOL_MMBP_UTIL_H_
 #define _MMKV_PROTOCOL_MMBP_UTIL_H_
 
+#include "mmkv/algo/string.h"
+
 #include "kanon/buffer/chunk_list.h"
 #include "kanon/buffer/buffer.h"
 
 namespace mmkv {
 namespace protocol {
 
+using algo::String;
+
 using kanon::ChunkList;
 using kanon::Buffer;
 
-inline void SetField(std::string& str, Buffer& buffer) {
+inline void SetField(String& str, Buffer& buffer) {
   assert(str.size() == 0);
   auto len = buffer.Read32();
   str.reserve(len);
@@ -50,9 +54,9 @@ inline void SerializeField(uint16_t i, ChunkList& buffer) {
   buffer.Append16(i);
 }
 
-inline void SerializeField(std::string const& str, ChunkList& buffer) {
+inline void SerializeField(String const& str, ChunkList& buffer) {
   buffer.Append32(str.size());
-  buffer.Append(str);
+  buffer.Append(str.data(), str.size());
 }
 
 inline void SetBit(uint8_t& bits, int idx) noexcept {

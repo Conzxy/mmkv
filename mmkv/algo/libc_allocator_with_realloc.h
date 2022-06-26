@@ -5,6 +5,7 @@
 #include <atomic>
 #include <cstddef>
 #include <cstdlib>
+
 #include <stdlib.h>
 #include <type_traits>
 #include <utility>
@@ -104,6 +105,17 @@ class LibcAllocatorWithRealloc<void> {
     using other = LibcAllocatorWithRealloc<U>;
   };
 };
+
+template<typename T>
+inline bool operator==(LibcAllocatorWithRealloc<T> x, LibcAllocatorWithRealloc<T> y) {
+  (void)x;(void)y;
+  return true;
+}
+
+template<typename T>
+inline bool operator!=(LibcAllocatorWithRealloc<T> x, LibcAllocatorWithRealloc<T> y) {
+  return !(x == y);
+}
 
 } // namespace algo
 } // namespace mmkv

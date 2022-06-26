@@ -22,20 +22,25 @@ class MmbpResponse : public MmbpMessage {
   // Accept lvalue and rvalue
   // Although this will increase a move operation
   // Move a string is cheap I think
-  void SetError(StatusCode code, std::string msg) {
+  void SetError(StatusCode code, String msg) {
     status_code_ = code;
     content_ = std::move(msg);
   }
-
+  
   void SetError(StatusCode code) {
     SetError(code, GetStatusMessage(code));
+  }
+  
+  void SetOk(String msg) {
+    SetStatusCode(S_OK);
+    content_ = std::move(msg);
   }
 
   void SetStatusCode(StatusCode code) {
     status_code_ = code;
   }
 
-  void SetContent(std::string const& content) {
+  void SetContent(String const& content) {
     content_ = content;
   }  
 
@@ -43,7 +48,7 @@ class MmbpResponse : public MmbpMessage {
     return (StatusCode)status_code_;
   }
 
-  std::string const& GetContent() const noexcept {
+  String const& GetContent() const noexcept {
     return content_;
   }
 
@@ -55,7 +60,7 @@ class MmbpResponse : public MmbpMessage {
   static MmbpResponse prototype_;
 
   uint8_t status_code_; // required
-  std::string content_; // required
+  String content_; // required
 };
 
 } // protocol

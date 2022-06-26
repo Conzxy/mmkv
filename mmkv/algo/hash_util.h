@@ -2,7 +2,7 @@
 #define _MMKV_ALGO_HASH_UTIL_H
 
 #include <stdint.h>
-#include <string>
+#include "string.h"
 
 #include "xxhash.h"
 #include "key_value.h"
@@ -14,8 +14,8 @@ template<typename T>
 struct Hash;
 
 template<>
-struct Hash<std::string> {
-  uint64_t operator()(std::string const& x) const noexcept {
+struct Hash<String> {
+  uint64_t operator()(String const& x) const noexcept {
     return XXH64(x.c_str(), x.size(), 0);
   }
 };
