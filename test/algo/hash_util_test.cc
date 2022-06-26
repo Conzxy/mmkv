@@ -10,12 +10,12 @@ using namespace std;
 using namespace mmkv::algo;
 
 int main() {
-  std::string str("Conzxy ABCDDEFG");
+  String str("Conzxy ABCDDEFG");
 
-  printf("hash_val(%s) = %" PRIu64 "\n", str.c_str(), Hash<std::string>{}(str));
+  printf("hash_val(%s) = %" PRIu64 "\n", str.c_str(), Hash<String>{}(str));
 
   str = "MMKV Conzxy";
-  printf("hash_val(%s) = %" PRIu64 "\n", str.c_str(), Hash<std::string>{}(str));
+  printf("hash_val(%s) = %" PRIu64 "\n", str.c_str(), Hash<String>{}(str));
 
   vector<string> buffers{ "A", "B", "C", "D", "E" };
   XXH32_state_t* const state = XXH32_createState();

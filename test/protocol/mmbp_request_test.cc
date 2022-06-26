@@ -9,8 +9,8 @@
 using namespace mmkv::protocol;
 
 TEST(mmbp_request, serialize) {
-  std::string key = "Conzxy";
-  std::string value = "MMKV";
+  String key = "Conzxy";
+  String value = "MMKV";
 
   std::unique_ptr<MmbpRequest> mmbp_message(new MmbpRequest());
   mmbp_message->SetKey(key);
@@ -51,8 +51,8 @@ TEST(mmbp_request, serialize) {
 }
 
 TEST(mmbp_request, parse) {
-  std::string key = "Conzxy";
-  std::string value = "MMKV";
+  String key = "Conzxy";
+  String value = "MMKV";
 
   std::unique_ptr<MmbpRequest> mmbp_message(new MmbpRequest());
   mmbp_message->SetKey(key);

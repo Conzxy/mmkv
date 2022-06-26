@@ -13,11 +13,20 @@ class MmkvSession;
 
 class MmkvServer {
   DISABLE_EVIL_COPYABLE(MmkvServer)
-  friend class Session;
+  friend class MmkvSession;
   
  public:
   explicit MmkvServer(EventLoop* loop, InetAddr const& addr=InetAddr("127.0.0.1:9998"));
-    
+  ~MmkvServer() noexcept;
+
+  void Listen() {
+    server_.StartRun();
+  }
+
+  void SetLoopNum(int num) {
+    server_.SetLoopNum(num);
+  }
+
  private:
   TcpServer server_;
 

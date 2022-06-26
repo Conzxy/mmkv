@@ -2,6 +2,7 @@
 #define _MMKV_PROTOCOL_COMMAND_H_
 
 #include <stdint.h>
+#include <string>
 
 namespace mmkv {
 namespace protocol {
@@ -12,8 +13,12 @@ enum Command : uint16_t {
   STR_GET,
   STR_SET,
   MEM_STAT,
-  SET_EXPIRE,
+  EXPIRE_AT,
+  EXPIRE_AFTER,
+  COMMAND_NUM,
 };
+
+extern std::string command_strings[];
 
 } // protocol
 } // mmkv
