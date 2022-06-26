@@ -121,8 +121,9 @@ HASH_TABLE_CLASS::Find(K const& key) {
   // 采用最robust的方法（simple is best)
   Bucket* bucket = nullptr;
   typename Bucket::Node* slot = nullptr;
-
-  for (int i = 0; i < 2; ++i) {
+  
+  // 当table为空时，BucetIndex是非法的
+  for (int i = 0; i < 2 && !table(i).empty(); ++i) {
     bucket = &table(i)[BucketIndex(i, key)];
     slot = bucket->ExtractNodeIf([this, &key](value_type const& value) { return ek_(gk_(value), key); });
 
@@ -146,7 +147,7 @@ HASH_TABLE_CLASS::Erase(K const& key) {
   Bucket* bucket = nullptr;
   size_type count = 0;
 
-  for (int i = 0; i < 2; ++i) {
+  for (int i = 0; i < 2 && !table(i).empty(); ++i) {
     bucket = &table(i)[BucketIndex(i, key)];
     count = bucket->EraseIf([this, &key](value_type const& val) {
         return ek_(gk_(val), key);
