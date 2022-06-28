@@ -18,12 +18,16 @@ struct StringViewHash {
 
 extern std::string HELP_INFORMATION;
 extern std::string command_hints[];
+
+// command_strings都是在data segment上的变量
+// 故key为StringView也无妨
 extern std::unordered_map<kanon::StringView, mmkv::protocol::Command, StringViewHash> command_map;
 
 #define APPLICATION_INFORMATION \
   "Mmkv is an In-Memory Key-value remote database(or cache)\n" \
-  "Copyright(c) 2022.6 Conzxy\n" \
+  "Apache LICENSE Copyright(c) 2022.6 Conzxy\n" \
   "Supported data structure(temporary): \n" \
+  "Github homepage: https://github.com/Conzxy/mmkv\n" \
   "[string]\n" \
   "[hash set](later)\n" \
   "[sequential list](later)\n" \
