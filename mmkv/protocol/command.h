@@ -8,6 +8,7 @@ namespace mmkv {
 namespace protocol {
 
 enum Command : uint16_t {
+  // string operation
   STR_ADD = 0,
   STR_DEL,
   STR_GET,
@@ -15,6 +16,16 @@ enum Command : uint16_t {
   MEM_STAT,
   EXPIRE_AT,
   EXPIRE_AFTER,
+  // list operation
+  LADD,
+  LAPPEND,
+  LPREPEND,
+  LGETSIZE,
+  LGETALL,
+  LGETRANGE,
+  LPOPFRONT,
+  LPOPBACK,
+  LDEL,
   COMMAND_NUM,
 };
 

@@ -3,6 +3,7 @@
 
 #include "mmkv/protocol/mmbp_codec.h"
 #include "mmkv/protocol/mmbp_response.h"
+#include "response_printer.h"
 
 #include <kanon/net/user_client.h>
 #include <kanon/thread/condition.h>
@@ -20,7 +21,12 @@ class MmkvClient {
   ~MmkvClient() noexcept;
 
   void Start();
-  void ConsoleIoProcess();
+  
+  /**
+   * \return
+   *   true -- 需要等待
+   */
+  bool ConsoleIoProcess();
   void IoWait() {
     io_cond_.Wait();
   }
@@ -29,6 +35,7 @@ class MmkvClient {
   TcpClient client_;
   protocol::MmbpCodec codec_;
 
+  ResponsePrinter response_printer_;
   kanon::Condition io_cond_;
   kanon::MutexLock mutex_;
 };

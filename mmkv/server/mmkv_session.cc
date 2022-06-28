@@ -7,12 +7,13 @@
 #include "mmkv/protocol/mmbp_response.h"
 #include "mmkv/protocol/status_code.h"
 #include "mmkv/util/macro.h"
-#include "mmkv_server.h"
 #include "mmkv/util/memory_footprint.h"
+#include "mmkv_server.h"
 
 #include <kanon/net/callback.h>
 #include <kanon/log/logger.h>
 #include <kanon/util/ptr.h>
+#include <pthread.h>
 
 using namespace kanon;
 using namespace mmkv::protocol;
@@ -47,16 +48,19 @@ void MmkvSession::OnMmbpRequest(TcpConnectionPtr const& conn, std::unique_ptr<Mm
 
   auto request = kanon::down_pointer_cast<MmbpRequest>(message);
   MmbpResponse response; 
+  
+  LOG_DEBUG << "Response Init: ";
+  response.DebugPrint();
 
-  LOG_COMMAND(request->GetCommnd());
-  switch (request->GetCommnd()) {
-
+  LOG_COMMAND(request->GetCommand());
+  switch (request->GetCommand()) {
     case MEM_STAT: {
       MMKV_ASSERT(!request->HasKey(), "MEM_STAT no key");
       MMKV_ASSERT(!request->HasValue(), "MEM_STAT no value");
       MMKV_ASSERT(!request->HasExpireTime(), "MEM_STAT no expire_time");
-    
-      response.SetOk(util::GetMemoryStat());    
+      
+      response.SetOk();
+      response.SetValue(util::GetMemoryStat());    
     }
       break;
 
@@ -69,9 +73,9 @@ void MmkvSession::OnMmbpRequest(TcpConnectionPtr const& conn, std::unique_ptr<Mm
 
       const auto res = DB.InsertStr(std::move(request->GetKey()), std::move(request->GetValue()));
       if (res != 0) {
-        response.SetOk("Success!");
+        response.SetOk();
       } else {
-        response.SetError(S_EXISTS);
+        response.SetStatusCode(S_EXISTS);
       }
     }
       break;
@@ -81,9 +85,10 @@ void MmkvSession::OnMmbpRequest(TcpConnectionPtr const& conn, std::unique_ptr<Mm
 
       auto res = DB.GetStr(request->GetKey());
       if (res) {
-        response.SetOk(res->value);
+        response.SetOk();
+        response.SetValue(res->value);
       } else {
-        response.SetError(S_NONEXISTS);
+        response.SetStatusCode(S_NONEXISTS);
       }
     }
       break;
@@ -94,9 +99,9 @@ void MmkvSession::OnMmbpRequest(TcpConnectionPtr const& conn, std::unique_ptr<Mm
       auto res = DB.EraseStr(request->GetKey());
 
       if (res != 0) {
-        response.SetOk("Success!");
+        response.SetOk();
       } else {
-        response.SetError(S_NONEXISTS);
+        response.SetStatusCode(S_NONEXISTS);
       }
     }
       break;
@@ -112,16 +117,15 @@ void MmkvSession::OnMmbpRequest(TcpConnectionPtr const& conn, std::unique_ptr<Mm
       
       if (res) {
         res->value = std::move(request->GetValue());
-        response.SetOk("Success!");
+        response.SetOk();
       } else {
-        response.SetError(S_NONEXISTS);
+        response.SetStatusCode(S_NONEXISTS);
       }
     }
       break;
+
   }
-
-  codec_.Send(conn, &response);
   
-  LOG_DEBUG << "response content: " << response.GetContent();
+  response.DebugPrint();  
+  codec_.Send(conn, &response);
 }
-

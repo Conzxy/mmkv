@@ -1,23 +1,24 @@
-#ifndef _MMKV_PROTOCOL_TRASLATOR_H_
-#define _MMKV_PROTOCOL_TRASLATOR_H_
+#ifndef _MMKV_CLIENT_TRASLATOR_H_
+#define _MMKV_CLIENT_TRASLATOR_H_
 
-#include "mmbp_request.h"
+#include "mmkv/protocol/mmbp_request.h"
 #include "mmkv/protocol/mmbp.h"
 
-#include <stdint.h>
-#include <vector>
 #include <kanon/string/string_view.h>
 
 namespace mmkv {
 namespace protocol {
 
 class Translator {
+ public:
   enum ErrorCode : uint8_t {
     E_OK = 0,
     E_INVALID_COMMAND,
+    E_SYNTAX_ERROR,
+    E_EXIT,
+    E_NO_COMMAND,
   };
 
- public:
   Translator() = default;
   ~Translator() = default;
   
@@ -29,4 +30,4 @@ class Translator {
 } // protocol
 } // mmkv
 
-#endif // _MMKV_PROTOCOL_TRASLATOR_H_
+#endif // _MMKV_CLIENT_TRASLATOR_H_

@@ -26,8 +26,9 @@ int main(int argc, char* argv[]) {
   
   client.Start();
   
+  bool need_wait = true; 
   while (1) {
-    client.IoWait();
-    client.ConsoleIoProcess();
+    if (need_wait) client.IoWait();
+    need_wait = client.ConsoleIoProcess();
   }
 }

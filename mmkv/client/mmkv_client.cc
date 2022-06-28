@@ -1,15 +1,19 @@
 #include "mmkv_client.h"
 
+#include <iostream>
+
+#include "mmkv/protocol/command.h"
 #include "mmkv/protocol/mmbp_request.h"
 #include "mmkv/protocol/mmbp_response.h"
-#include "mmkv/protocol/translator.h"
 #include "mmkv/util/macro.h"
 
+#include "response_printer.h"
+#include "translator.h"
 #include "information.h"
 
-#include <iostream>
 #include <kanon/net/callback.h>
 #include <kanon/util/ptr.h>
+
 
 using namespace mmkv::protocol;
 using namespace mmkv::client;
@@ -50,7 +54,8 @@ MmkvClient::MmkvClient(EventLoop* loop, InetAddr const& server_addr)
     MMKV_UNUSED(conn);
     auto response = kanon::down_pointer_cast<MmbpResponse>(msg);
 
-    std::cout << response->GetContent() << "\n";
+    // std::cout << response->GetContent() << "\n";
+    response_printer_.Printf(response.get());
 
     // ConsoleIoProcess();
     io_cond_.Notify();
@@ -61,53 +66,54 @@ MmkvClient::~MmkvClient() noexcept {
 
 }
 
-void MmkvClient::ConsoleIoProcess() {
-  vector<String> args;
-  args.resize(4);
-  std::string arg;
-  
-  std::cout << "Mmkv " << client_.GetServerAddr().ToIpPort() << " >> ";
-  std::cin >> args[0];
+bool MmkvClient::ConsoleIoProcess() {
+  std::string statement; 
 
-  auto const& cmd = args[0];
-  
+  std::cout << "Mmkv " << client_.GetServerAddr().ToIpPort() << "> ";
+  getline(std::cin, statement);
   MmbpRequest request;
+  
+  Translator translator;
+  auto error_code = translator.Parse(&request, statement); 
+  
+  switch (error_code) {
+    case Translator::E_INVALID_COMMAND: {
+      // 如果用户多次输入错误，可能导致递归炸栈，因此这里避免递归调用
+      // ConsoleIoProcess();
+      return false;
+    }
+      break;
+    
+    case Translator::E_EXIT: {
+      is_exit = true;
+      client_.Disconnect();
+    }
+      break;
 
-  if (cmd == "stradd") {
-    std::cin >> args[1] >> args[2];
-    request.SetCommand(STR_ADD);
-    request.SetKey(args[1]);
-    request.SetValue(args[2]);
-  } else if (cmd == "strget") {
-    std::cin >> args[1];
-    request.SetCommand(STR_GET);
-    request.SetKey(args[1]);
-  } else if (cmd == "strset") {
-    std::cin >> args[1] >> args[2];
-    request.SetCommand(STR_SET);
-    request.SetKey(args[1]);
-    request.SetValue(args[2]);
-  } else if (cmd == "strdel") {
-    std::cin >> args[1];
-    request.SetCommand(STR_DEL);
-    request.SetKey(args[1]);
-  } else if (cmd == "memory_stat") {
-    request.SetCommand(MEM_STAT);
-  } else if (cmd == "exit") {
-    is_exit = true;
-    client_.Disconnect();
-  } else if (cmd == "help") {
-    std::cout << HELP_INFORMATION << std::endl;
-    ConsoleIoProcess();
-    return;
-  } else {
-    std::cout << "ERROR: invalid command: " << cmd << "\n";
-    std::cout << HELP_INFORMATION << std::endl;
-    ConsoleIoProcess();
-    return;
+    case Translator::E_SYNTAX_ERROR: {
+      std::cout << "Syntax error: " << command_hints[request.GetCommand()] << std::endl;
+      // ConsoleIoProcess();
+      return false;
+    }
+      break;
+    
+    case Translator::E_NO_COMMAND: {
+      std::cout << "Syntax error: no command\n";
+      std::cout << HELP_INFORMATION;
+      return false;
+    }
+      break;
+
+    case Translator::E_OK: {
+      codec_.Send(client_.GetConnection(), &request);
+    }
+      break;
+
+    default:
+      ;
   }
   
-  codec_.Send(client_.GetConnection(), &request);
+  return true;
 }
 
 void MmkvClient::Start() {

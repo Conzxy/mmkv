@@ -4,16 +4,23 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "mmkv/algo/key_value.h"
 #include "mmkv/algo/reserved_array.h"
 #include "mmkv/algo/string.h"
 
 #include "kanon/buffer/chunk_list.h"
 #include "kanon/buffer/buffer.h"
 
-#include "mmbp_util.h"
-
 namespace mmkv {
 namespace protocol {
+
+using algo::ReservedArray;
+using algo::KeyValue;
+using algo::String;
+
+using StrKeyValue = KeyValue<String, String>;
+using StrKvs = ReservedArray<StrKeyValue>;
+using StrValues = ReservedArray<String>;
 
 // Memory Key-Value binary protocol
 class MmbpMessage {

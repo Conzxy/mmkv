@@ -7,7 +7,17 @@ std::string mmkv::protocol::command_strings[] = {
   "strdel",
   "strget",
   "strset",
-  "memory_stat",
+  "memorystat",
   "expire_at",
   "expire_after",
+  "ladd",
+  "lappend",
+  "lprepend",
+  "lgetsize",
+  "lgetall",
+  "lgetrange",
+  "lpopfront",
+  "lpopback",
+  "ldel",
 };
+

@@ -11,7 +11,6 @@ int main() {
   String str2;
   str2.resize(100);
   
-  std::string str3 = str;  
   std::cout << str;
   mmkv::util::MemoryFootPrint();
 }
