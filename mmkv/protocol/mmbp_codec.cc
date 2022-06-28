@@ -89,7 +89,7 @@ void MmbpCodec::SerializeTo(MmbpMessage const* message, OutputBuffer& buffer) {
   
   auto state = XXH32_createState();
   
-  auto ok = XXH32_reset(state, 0) != XXH_ERROR;
+  auto ok = XXH32_reset(state, 0) != XXH_ERROR;(void)ok;
   assert(ok && "XXH32_reset() error");
   
   for (auto const& chunk : buffer) {

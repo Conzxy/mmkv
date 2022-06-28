@@ -21,8 +21,13 @@ git clone https://github.com/Conzxy/mmkv
 cd mmkv/bin
 export MMKV_BUILD_PATH=... # build目录的路径
 # 或在~/.bash_profile中加上该句
-./build.sh mmkv_client
-./build.sh mmkv_server
+chmod u+x release_build.sh
+./release_build.sh mmkv_client
+./release_build.sh mmkv_server
+# Debug mode by following:
+# chmod u+x build.sh
+# ./build.sh mmkv_client
+# ./build.sh mmkv_server
 ```
 
 ## Run
