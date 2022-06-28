@@ -14,7 +14,8 @@ mmkv是内存型键值数据库（或缓存），支持多种数据结构，包�
 ## Build
 项目依赖于[kanon](https://github.com/Conzxy/kanon)和[xxHash](https://github.com/Cyan4973/xxHash)。<br>
 前者是我个人开发的网络库，后者是项目使用的哈希算法。<br>
-安装参考各自的`github`页面中的`README.md`。
+安装参考各自的`github`页面中的`README.md`。<br>
+
 ```shell
 git clone https://github.com/Conzxy/mmkv
 cd mmkv/bin
@@ -26,7 +27,11 @@ export MMKV_BUILD_PATH=... # build目录的路径
 
 ## Run
 运行结果可以参考该GIF。<br>
-如果`bin/mmkv_client`输出了日志信息，可以通过设置环境变量关闭`KANON_DEBUG=0`。
+
+### FAQ
+* 如果`bin/mmkv_client`输出了日志信息，可以通过设置环境变量关闭`KANON_DEBUG=0`。
+* 最终运行时若提示`xxHash`的动态库找不到，你可能需要输入`ldconfig`更新动态库缓存，以找到刚安装的`xxHash`(see [戳](https://stackoverflow.com/questions/480764/linux-error-while-loading-shared-libraries-cannot-open-shared-object-file-no-s))
+
 ![1.gif](https://s2.loli.net/2022/06/28/cB51DGmWg4APifl.gif)
 ## TODO
 * AVL tree
