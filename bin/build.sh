@@ -7,7 +7,7 @@ fi
 
 target_name="$1"
 
-cd ~/mmkv/build
+cd $MMKV_BUILD_PATH
 cmake .. -DCMAKE_BUILD_TYPE=Debug
 
 if [ $# -gt 1 ] && [ "$2" == "-v" ];
