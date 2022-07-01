@@ -49,5 +49,11 @@ macro (GenTest SRC)
   endforeach (mmkv_test_source ${MMKV_TEST_SOURCES})
 endmacro()
 
-GenTest(MMKV_TEST_SOURCES gtest gtest_main mmkv kanon_net kanon_base)
-GenTest(MMKV_BENCH_SOURCES benchmark benchmark_main mmkv kanon_net kanon_base)
+if (${CMAKE_BUILD_TYPE} STREQUAL "Release")
+  set(MMKV_LIB mmkv)
+else ()
+  set(MMKV_LIB mmkv_debug)
+endif()
+
+GenTest(MMKV_TEST_SOURCES gtest gtest_main ${MMKV_LIB} kanon_net kanon_base)
+GenTest(MMKV_BENCH_SOURCES benchmark benchmark_main ${MMKV_LIB} kanon_net kanon_base)
