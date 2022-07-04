@@ -38,12 +38,11 @@ chmod u+x release_build.sh
 * 最终运行时若提示`xxHash`的动态库找不到，你可能需要输入`ldconfig`更新动态库缓存，以找到刚安装的`xxHash`(see [戳](https://stackoverflow.com/questions/480764/linux-error-while-loading-shared-libraries-cannot-open-shared-object-file-no-s))
 
 ![1.gif](https://s2.loli.net/2022/06/28/cB51DGmWg4APifl.gif)
+
 ## TODO
-* AVL tree
-* List支持
 * Hash set支持
 * Sorted set支持
 * Map支持
+* 持久化复原(Recovery)
 * 分布式支持
 * Raft容错支持
-
