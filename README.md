@@ -1,13 +1,11 @@
 # Mmkv(In-Memory Key-Value database/cache)
 ## Introducation
 mmkv是内存型键值数据库（或缓存），支持多种数据结构，包括
-* 字符串（String）
-* 列表（List）
-* 无序集合（Hash set）
-* 有序集合（Sorted set）
-* 映射（Map）
-
-不过现在只支持字符串。
+* 字符串（String）(√)
+* 列表（List）(√)
+* 无序集合（Hash set）(×)
+* 有序集合（Sorted set）(×)
+* 映射（Map）(×)
 
 存储键值对用的关键数据结构基本都是自造的轮子，这是由于STL是基于general-purpose设计的，而我们要的是specialized的数据结构，比如渐进式再哈希(`Incremental rehash`)的哈希表，无哨兵的单链表等(see `mmkv/algo`)，并且经量保证接口简洁易用。
 
