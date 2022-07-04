@@ -273,36 +273,13 @@ class Slist : protected NodeAlloctor<T, Alloc> {
   void EraseAfter(const_iterator pos) {
     EraseAfterNode(pos.node_);
   }
-
- private:
-  void EraseAfterNode(Node* pos) {
-    assert(pos != nullptr);
-
-    auto node = pos->next;
-    pos->next = pos->next->next;
-    DropNode(node);
-  }
-
-  template<typename U>
-  void InsertAfterNode(Node* pos, U&& val) {
-    auto node = CreateNode(std::forward<U>(val));
-    node->next = pos->next;
-    pos->next = node;
-  }
-
-  template<typename UnaryPred>
-  Node* SearchNodeIf(UnaryPred pred) const {
-    for (auto header = header_;
-         header;
-         header = header->next) {
-      if (pred(header->value)) {
-        return header;
-      }
-    }
-
-    return nullptr;
-  }
-
+  
+  /* 
+   * Hack method
+   * 允许用户进行一定的定制化
+   * 比如销毁对象需要一些别的手法而不是通过Destory()
+   * 但是释放对象还是要调用FreeNode()
+   */
   Node* AllocateNode() {
     return NodeAllocTraits::allocate(*this, 1);
   }
@@ -338,6 +315,34 @@ class Slist : protected NodeAlloctor<T, Alloc> {
     FreeNode(node);
   }
 
+ private:
+  void EraseAfterNode(Node* pos) {
+    assert(pos != nullptr);
+
+    auto node = pos->next;
+    pos->next = pos->next->next;
+    DropNode(node);
+  }
+
+  template<typename U>
+  void InsertAfterNode(Node* pos, U&& val) {
+    auto node = CreateNode(std::forward<U>(val));
+    node->next = pos->next;
+    pos->next = node;
+  }
+
+  template<typename UnaryPred>
+  Node* SearchNodeIf(UnaryPred pred) const {
+    for (auto header = header_;
+         header;
+         header = header->next) {
+      if (pred(header->value)) {
+        return header;
+      }
+    }
+
+    return nullptr;
+  }
 
   Node* header_;
 };

@@ -30,6 +30,7 @@ class Dictionary {
   using equal_key = typename Rep::equal_key;
   using allocator_type = typename Rep::allocator_type;
   using size_type = typename Rep::size_type;
+  using Node = typename Rep::Node;
   
   Dictionary() = default;
   ~Dictionary() = default;
@@ -57,6 +58,10 @@ class Dictionary {
   
   size_type Erase(K const& key) {
     return rep_.Erase(key);
+  }
+  
+  Node* Extract(K const& key) noexcept {
+    return rep_.Extract(key);
   }
 
   size_type size() const noexcept {

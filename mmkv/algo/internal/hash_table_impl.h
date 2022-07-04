@@ -1,9 +1,7 @@
 #include "hash_table.h"
 
-
 #include <assert.h>
 #include <memory>
-#include <unistd.h>
 
 #define HASH_TABLE_TEMPLATE \
   template<typename K, typename T, typename HF, typename GK, typename EK, typename A>
@@ -11,6 +9,7 @@
 #define HASH_TABLE_CLASS \
   HashTable<K, T, HF, GK, EK, A>
 
+#define HASH_MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define TABLE1 tables_[0]
 #define TABLE2 tables_[1]
 
@@ -140,27 +139,38 @@ HASH_TABLE_CLASS::Find(K const& key) {
 }
 
 HASH_TABLE_TEMPLATE
-typename HASH_TABLE_CLASS::size_type 
+inline typename HASH_TABLE_CLASS::size_type 
 HASH_TABLE_CLASS::Erase(K const& key) {
+  auto node = Extract(key);
+  if (!node) {
+    return 0;
+  }
+
+  DropNode(node);
+  return 1;
+}
+
+HASH_TABLE_TEMPLATE
+typename HASH_TABLE_CLASS::Node* HASH_TABLE_CLASS::Extract(K const& key) noexcept {
   IncremetalRehash();
   
   Bucket* bucket = nullptr;
-  size_type count = 0;
+  Node* node = nullptr;
 
   for (int i = 0; i < 2 && !table(i).empty(); ++i) {
     bucket = &table(i)[BucketIndex(i, key)];
-    count = bucket->EraseIf([this, &key](value_type const& val) {
+    node = bucket->ExtractNodeIf([this, &key](value_type const& val) {
         return ek_(gk_(val), key);
       });
 
-    if (count > 0) { 
+    if (node) { 
       table1().used--;
       break; 
     }
   }
   
 
-  return count; 
+  return node; 
 }
 
 HASH_TABLE_TEMPLATE
@@ -242,6 +252,9 @@ void HASH_TABLE_CLASS::DebugPrint() {
   printf("sizemask(table1) = %zu\nsizemask(table2) = %zu\n", table1().size_mask, table2().size_mask);
   printf("rehash_move_bucket_index = %zu\n", rehash_move_bucket_index_);
   printf("====== View of hash table =====\n");
+
+  int longthest_list_size = 0;
+
   for (int i = 0; i < 2; ++i) {
     auto size = table(i).size();
     Bucket* bucket = nullptr;
@@ -251,18 +264,24 @@ void HASH_TABLE_CLASS::DebugPrint() {
       printf("[%zu]: ", j);
       bucket = &table(i)[j];
       assert(bucket);
-
+      
+      int list_size = 0;
       if (!bucket->empty()) {
         for (auto const& e : *bucket) {
           std::cout << e << " -> ";
+          list_size++;
         }
       }
+
+      longthest_list_size = HASH_MAX(list_size, longthest_list_size);
 
       printf("(nil)\n");
     }
 
     printf("$$$$$ table%d $$$$$\n\n", i+1);
   }
+
+  printf("The longest list size = %d\n", longthest_list_size);
 #endif
 }
 

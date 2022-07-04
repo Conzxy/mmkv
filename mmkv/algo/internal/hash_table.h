@@ -34,14 +34,17 @@ using BucketAllocator = typename Alloc::template rebind<Slist<T, Alloc>>::other;
  * 暂时不提供Shrink
  */
 template<typename K, typename T, typename HF, typename GK, typename EK, typename Alloc>
-class HashTable : protected BucketAllocator<T, Alloc> {
+class HashTable : protected BucketAllocator<T, Alloc>
+                , protected NodeAlloctor<T, Alloc> {
   using BucketAllocTraits = std::allocator_traits<BucketAllocator<T, Alloc>>;
 
+  using Bucket = Slist<T, Alloc>;
+  using Slot = typename Bucket::Node;
   using EqualKey = EK;
   using GetKey = GK;
   using HashFunc = HF;
   using AllocTraits = std::allocator_traits<Alloc>;
-public:
+ public:
   using key_type = K;
   using value_type = T;
   using reference = T&;
@@ -54,10 +57,14 @@ public:
   using allocator_type = Alloc;
   using iterator = HashTableIterator<K, T, HF, GK, EK, Alloc>;
   using const_iterator = HashTableConstIterator<K, T, HF, GK, EK, Alloc>;
+  using Node = typename Bucket::Node;
 
+ private:
+  using NodeAllocTraits = std::allocator_traits<Node>;
   friend class HashTableIterator<K, T, HF, GK, EK, Alloc>;
   friend class HashTableConstIterator<K, T, HF, GK, EK, Alloc>;
-
+  
+ public:
   HashTable();
   ~HashTable() noexcept;
   
@@ -78,7 +85,8 @@ public:
   }
   
   size_type Erase(K const& key);
-  
+  Node* Extract(K const& key) noexcept;  
+
   size_type size() const noexcept {
     return table1().used;
   }
@@ -114,12 +122,15 @@ public:
   const_iterator cend() const noexcept {
     return end();
   }
+  
+  void FreeNode(Node* node) {
+    NodeAllocTraits::deallocate(*this, node, 1);
+  }
 
   // For debugging
   void DebugPrint();
+
  private:
-  using Bucket = Slist<value_type, Alloc>;
-  using Slot = typename Bucket::Node;
 
   struct Table {
     ReservedArray<Bucket> table;
