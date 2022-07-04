@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <vector>
 
 #include "mmkv/algo/key_value.h"
 #include "mmkv/algo/reserved_array.h"
@@ -14,13 +15,13 @@
 namespace mmkv {
 namespace protocol {
 
-using algo::ReservedArray;
 using algo::KeyValue;
 using algo::String;
 
 using StrKeyValue = KeyValue<String, String>;
-using StrKvs = ReservedArray<StrKeyValue>;
-using StrValues = ReservedArray<String>;
+// 需要预分配且capacity != size ==> 采用std::vector
+using StrKvs = std::vector<StrKeyValue>;
+using StrValues = std::vector<String>;
 
 // Memory Key-Value binary protocol
 class MmbpMessage {
@@ -30,6 +31,9 @@ class MmbpMessage {
 
   virtual void SerializeTo(ChunkList& buffer) const = 0;
   virtual void ParseFrom(Buffer& buffer) = 0;
+  // FIXME
+  // virtual void SerializeToStream(ChunkList& buffer) const = 0;
+  // virtual void ParseFromStream(Buffer& buffer) = 0;
   virtual MmbpMessage *New() const = 0;
 
 };
