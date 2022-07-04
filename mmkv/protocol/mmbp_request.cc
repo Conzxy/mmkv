@@ -1,6 +1,7 @@
 #include "mmbp_request.h"
 #include "mmkv/protocol/command.h"
 #include "mmkv/protocol/mmbp_util.h"
+#include <gtest/internal/gtest-port.h>
 
 using namespace mmkv::protocol;
 using namespace kanon;
@@ -16,44 +17,54 @@ MmbpRequest::~MmbpRequest() noexcept {
 }
 
 void MmbpRequest::SerializeTo(ChunkList& buffer) const {
-  SerializeField(command_, buffer);
+  SerializeField(command, buffer);
   SerializeField(has_bits_[0], buffer);
   
   if (HasKey()) {
-    SerializeField(key_, buffer, true);
+    SerializeField(key, buffer, true);
   }
 
   if (HasValue()) {
-    SerializeField(value_, buffer);
+    SerializeField(value, buffer);
   } else if (HasValues()) {
-    SerializeField(values_, buffer);
+    SerializeField(values, buffer);
   } else if (HasKvs()) {
-    SerializeField(kvs_, buffer);
+    SerializeField(kvs, buffer);
+  } else if (HasCount()) {
+    SerializeField(count, buffer);
+  } else if (HasRange()) {
+    SerializeField(range.left, buffer);
+    SerializeField(range.right, buffer);
   }
 
   if (HasExpireTime()) {
-    SerializeField(expire_time_, buffer);
+    SerializeField(expire_time, buffer);
   }
   
 }
 
 void MmbpRequest::ParseFrom(Buffer& buffer) {
-  SetField(command_, buffer);  
+  SetField(command, buffer);  
   SetField(has_bits_[0], buffer); 
 
   if (HasKey()) {
-    SetField(key_, buffer, true);
+    SetField(key, buffer, true);
   }
 
   if (HasValue()) {
-    SetField(value_, buffer);
+    SetField(value, buffer);
   } else if (HasValues()) {
-    SetField(values_, buffer);
+    SetField(values, buffer);
   } else if (HasKvs()) {
-    SetField(kvs_, buffer);
+    SetField(kvs, buffer);
+  } else if (HasCount()) {
+    SetField(count, buffer);
+  } else if (HasRange()) {
+    SetField(range.left, buffer);
+    SetField(range.right, buffer);
   }
 
   if (HasExpireTime()) {
-    SetField(expire_time_, buffer);
+    SetField(expire_time, buffer);
   }
 }

@@ -20,8 +20,16 @@ extern MmbpRequest prototype;
 
 }
 
+// 协议字段设置为public
+// 避免丑陋的getter/setter
+// e.g. 由于可能需要移动字段，因此需要提供writable getter
 class MmbpRequest : public MmbpMessage {
  public:
+  struct Range {
+    uint32_t left;
+    uint32_t right;
+  };
+
   MmbpRequest();
   ~MmbpRequest() noexcept override;
 
@@ -32,84 +40,34 @@ class MmbpRequest : public MmbpMessage {
     return new MmbpRequest();
   }
   
-  void SetCommand(Command cmd) noexcept {
-    command_ = (uint16_t)cmd;
-  } 
-
-  void SetKey(String k) {
+  void SetKey() noexcept {
     SetBit(has_bits_[0], 0);
-    key_ = std::move(k);
   }
 
-  void SetValue(String val) {
+  void SetValue() noexcept {
     SetBit(has_bits_[0], 1);
-    value_ = std::move(val);
   }
 
-  void SetExpireTime(uint64_t ex) {
+  void SetExpireTime() noexcept {
     SetBit(has_bits_[0], 2);
-    expire_time_ = ex;
   }
 
-  void SetValues(StrValues values) {
+  void SetValues() noexcept {
     SetBit(has_bits_[0], 3);
-    values_ = std::move(values);
   }
 
-  void SetKvs(StrKvs kvs) {
+  void SetKvs() noexcept {
     SetBit(has_bits_[0], 4);
-    kvs_ = std::move(kvs);
   }
   
-  uint16_t GetCommand() const noexcept {
-    return command_;
+  void SetCount() noexcept {
+    SetBit(has_bits_[0], 5);
   }
   
-  String& GetKey() noexcept {
-    assert(HasKey());
-    return key_;
+  void SetRange() noexcept {
+    SetBit(has_bits_[0], 6);
   }
 
-  String const& GetKey() const noexcept {
-    assert(HasKey());
-    return key_;
-  }
-
-  String& GetValue() noexcept {
-    assert(HasValue());
-    return value_;
-  }
-
-  String const& GetValue() const noexcept {
-    assert(HasValue());
-    return value_;
-  }
-
-  StrKvs& GetKvs() noexcept {
-    assert(HasKvs());
-    return kvs_;
-  }
-  
-  StrKvs const& GetKvs() const noexcept {
-    assert(HasKvs());
-    return kvs_;
-  }
-
-  StrValues const& GetValues() const noexcept {
-    assert(HasValues());
-    return values_;
-  }
-
-  StrValues& GetValues() noexcept {
-    assert(HasValues());
-    return values_;
-  }
-
-  uint64_t GetExpireTime() const noexcept {
-    assert(HasExpireTime());
-    return expire_time_;
-  }
-  
   bool HasKey() const noexcept {
     return TestBit(has_bits_[0], 0);
   }
@@ -129,27 +87,43 @@ class MmbpRequest : public MmbpMessage {
   bool HasKvs() const noexcept {
     return TestBit(has_bits_[0], 4);
   }
+  
+  bool HasCount() const noexcept {
+    return TestBit(has_bits_[0], 5);
+  }
 
+  bool HasRange() const noexcept {
+    return TestBit(has_bits_[0], 6);
+  }
+  
+  bool HasNone() const noexcept {
+    return has_bits_[0] == 0;
+  }
 
   static MmbpRequest* GetPrototype() {
     return &detail::prototype;
   }
-
+  
  private:  
-  uint16_t command_; // required
-
   uint8_t has_bits_[1];
 
-  String key_; // optional
+ public: 
+  uint16_t command; // required
+  String key; // optional
   
-  // Value part
   // optional 
   // algo::ReservedArray<String> keys_; // for mget, etc.
-  StrKvs kvs_; // for madd, etc.
-  StrValues values_; // for lappend, lprepend, sadd, mget(reuse), etc.
-  String value_; // for stradd, strset, etc.
+  StrKvs kvs; // for madd, etc.
+  StrValues values; // for lappend, lprepend, sadd, mget(reuse), etc.
+  String value; // for stradd, strset, etc.
     
-  uint64_t expire_time_; // optional
+  uint64_t expire_time; // optional
+
+  union {
+    uint32_t count;
+    Range range;
+  };
+
 };
 
 } // protocol

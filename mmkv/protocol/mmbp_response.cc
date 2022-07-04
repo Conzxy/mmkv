@@ -10,7 +10,7 @@ using namespace kanon;
 MmbpResponse MmbpResponse::prototype_;
 
 MmbpResponse::MmbpResponse() 
-  : status_code_(-1) {
+  : status_code(-1) {
   ::memset(has_bits_, 0, sizeof has_bits_);
 }
 
@@ -19,38 +19,38 @@ MmbpResponse::~MmbpResponse() noexcept {
 }
 
 void MmbpResponse::SerializeTo(ChunkList& buffer) const {
-  SerializeField(status_code_, buffer);
+  SerializeField(status_code, buffer);
   SerializeField(has_bits_[0], buffer);
 
   if (HasValue()) {
-    SerializeField(value_, buffer);
+    SerializeField(value, buffer);
   } else if (HasValues()) {
-    SerializeField(values_, buffer);
+    SerializeField(values, buffer);
   } else if (HasKvs()) {
-    SerializeField(kvs_, buffer);
+    SerializeField(kvs, buffer);
   } else if (HasCount()) {
-    SerializeField(count_, buffer);
+    SerializeField(count, buffer);
   }
 }
 
 void MmbpResponse::ParseFrom(Buffer& buffer) {
-  SetField(status_code_, buffer);
+  SetField(status_code, buffer);
   SetField(has_bits_[0], buffer);
 
   if (HasValue()) {
-    SetField(value_, buffer);
+    SetField(value, buffer);
   } else if (HasValues()) {
-    SetField(values_, buffer);
+    SetField(values, buffer);
   } else if (HasKvs()) {
-    SetField(kvs_, buffer);
+    SetField(kvs, buffer);
   } else if (HasCount()) {
-    SetField(count_, buffer);
+    SetField(count, buffer);
   }
 }
 
 void MmbpResponse::DebugPrint() const noexcept {
-  LOG_DEBUG << "StatusCode: " << GetStatusCode();
-  LOG_DEBUG << "StatusCodeMessage: " << GetStatusMessage(GetStatusCode());
+  LOG_DEBUG << "StatusCode: " << status_code;
+  LOG_DEBUG << "StatusCodeMessage: " << GetStatusMessage((StatusCode)status_code);
 
   LOG_DEBUG << "HasValue: " << HasValue();
   LOG_DEBUG << "HasValues: " << HasValues();

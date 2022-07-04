@@ -25,7 +25,7 @@ inline void SetField(String& str, Buffer& buffer, bool is_16=false) {
 
 inline void SetField(StrValues& values, Buffer& buffer) {
   auto count = buffer.Read32();
-  values.Grow(count); 
+  values.resize(count); 
   
   size_t value_size = 0;
    
@@ -38,7 +38,7 @@ inline void SetField(StrValues& values, Buffer& buffer) {
 
 inline void SetField(StrKvs& kvs, Buffer& buffer) {
   auto count = buffer.Read32();
-  kvs.Grow(count);
+  kvs.resize(count);
 
   size_t key_size = 0;
   size_t value_size = 0;

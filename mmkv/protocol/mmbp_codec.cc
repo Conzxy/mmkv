@@ -144,7 +144,7 @@ void MmbpCodec::ErrorHandle(TcpConnectionPtr const& conn, ErrorCode error_code) 
   LOG_DEBUG << "Error message: " << error_msg;
   
   MmbpResponse error_response;
-  error_response.SetStatusCode(S_INVALID_MESSAGE);
+  error_response.status_code = S_INVALID_MESSAGE;
 
   OutputBuffer buffer;
   error_response.SerializeTo(buffer);

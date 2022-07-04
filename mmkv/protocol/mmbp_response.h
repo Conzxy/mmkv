@@ -23,61 +23,23 @@ class MmbpResponse : public MmbpMessage {
   }
   
   void SetOk() {
-    SetStatusCode(S_OK);
+    status_code = S_OK;
   }
 
-  void SetStatusCode(StatusCode code) {
-    status_code_ = code;
-  }
-
-  // Accept lvalue and rvalue
-  // Although this will increase a move operation
-  // Move a string is cheap I think
-  void SetValue(String value) {
+  void SetValue() {
     SetBit(has_bits_[0], 0);
-    value_ = std::move(value);
   } 
   
-  void SetValues(StrValues values) {
+  void SetValues() {
     SetBit(has_bits_[0], 1);
-    values_ = std::move(values);
   }
   
-  void SetKvs(StrKvs kvs) {
+  void SetKvs() {
     SetBit(has_bits_[0], 2);
-    kvs_ = std::move(kvs);
   }
   
-  void SetCount(uint32_t count) {
+  void SetCount() {
     SetBit(has_bits_[0], 3);
-    count_ = count;
-  }
-
-  StatusCode GetStatusCode() const noexcept {
-    return (StatusCode)status_code_;
-  }
-  
-  // FIXME
-  // For api,
-  // overload non-const member function
-  String const& GetValue() const noexcept {
-    assert(HasValue());
-    return value_;
-  }
-
-  StrValues const& GetValues() const noexcept {
-    assert(HasValues());
-    return values_;
-  }
-
-  StrKvs const& GetKvs() const noexcept {
-    assert(HasKvs());
-    return kvs_;
-  }
-  
-  uint32_t GetCount() const noexcept {
-    assert(HasCount());
-    return count_;
   }
 
   bool HasValue() const noexcept {
@@ -98,23 +60,23 @@ class MmbpResponse : public MmbpMessage {
 
   void DebugPrint() const noexcept;
 
-  static MmbpResponse* GetPrototype() {
+  static MmbpResponse* GetPrototype() noexcept {
     return &prototype_;
   }
-
+    
  private:
   static MmbpResponse prototype_;
 
-  uint8_t status_code_; // required
-    
   uint8_t has_bits_[1];
-
+  
+ public:
+  uint8_t status_code; // required
   // value or content
   // required
-  uint32_t count_;
-  String value_;
-  StrValues values_;
-  StrKvs kvs_;
+  uint32_t count;
+  String value;
+  StrValues values;
+  StrKvs kvs;
 };
 
 } // protocol
