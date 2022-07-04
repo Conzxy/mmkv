@@ -14,13 +14,16 @@ file(GLOB_RECURSE MMKV_CLIENT_SRC
   client/*.cc
 )
 
-set(LIB_LIST mmkv kanon_net kanon_base xxhash)
-
 if (${CMAKE_BUILD_TYPE} STREQUAL "Release")
   GenLib(mmkv ${MMKV_SRC})
+  set(MMKV_LIB mmkv)
 else ()
   GenLib(mmkv_debug ${MMKV_SRC})
+  set(MMKV_LIB mmkv_debug)
 endif()
+
+set(LIB_LIST ${MMKV_LIB} kanon_net kanon_base xxhash)
+
 
 macro (GenApplication app_name src_list lib_list)
   set(SRC_LIST ${${src_list}})

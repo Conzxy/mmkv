@@ -26,6 +26,7 @@ set(CXX_FLAGS
  -Wno-implicit-fallthrough
  #-Wconversion
  #-Wshadow
+ -Wno-maybe-uninitialized
  -Wwrite-strings # in fact, this is default specified
  #cxx standard 
  -std=c++14

@@ -48,7 +48,7 @@ II UninitializedDefaultConstruct(II first, II last) {
   return last;
 }
 
-template<typename II, typename=zstl::enable_if_t<!std::is_trivial<iter_value_t<II>>::value>>
+template<typename II, typename=zstl::enable_if_t<!std::is_trivially_destructible<iter_value_t<II>>::value>>
 void DestroyRange(II first, II last) {
   using ValueType = iter_value_t<II>;
   for (; first != last; ++first) {
@@ -56,10 +56,20 @@ void DestroyRange(II first, II last) {
   }
 }
 
-template<typename II, zstl::enable_if_t<std::is_trivial<iter_value_t<II>>::value, int> =0>
-void DestroyRange(II first, II last) {
+template<typename II, zstl::enable_if_t<std::is_trivially_destructible<iter_value_t<II>>::value, int> =0>
+void DestroyRange(II first, II last) noexcept {
   (void)first;
   (void)last;
+}
+
+template<typename T, zstl::enable_if_t<std::is_trivially_destructible<T>::value, int> =0>
+void Destroy(T* obj) noexcept {
+  (void)obj;   
+}
+
+template<typename T, zstl::enable_if_t<!std::is_trivially_destructible<T>::value, char> =0>
+void Destroy(T* obj) {
+  obj->~T();
 }
 
 } // zstl

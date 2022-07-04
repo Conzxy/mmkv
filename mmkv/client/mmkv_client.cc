@@ -69,7 +69,7 @@ MmkvClient::~MmkvClient() noexcept {
 bool MmkvClient::ConsoleIoProcess() {
   std::string statement; 
 
-  std::cout << "Mmkv " << client_.GetServerAddr().ToIpPort() << "> ";
+  std::cout << "mmkv " << client_.GetServerAddr().ToIpPort() << "> ";
   getline(std::cin, statement);
   MmbpRequest request;
   
@@ -91,7 +91,7 @@ bool MmkvClient::ConsoleIoProcess() {
       break;
 
     case Translator::E_SYNTAX_ERROR: {
-      std::cout << "Syntax error: " << command_hints[request.GetCommand()] << std::endl;
+      std::cout << "Syntax error: " << command_hints[request.command] << std::endl;
       // ConsoleIoProcess();
       return false;
     }

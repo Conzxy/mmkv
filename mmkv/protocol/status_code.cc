@@ -13,7 +13,9 @@ char const* mmkv::protocol::GetStatusMessage(mmkv::protocol::StatusCode code) no
     return "ERROR: Key doesn't exists";
   case S_INVALID_MESSAGE:
     return "ERROR: Invalid message";
+  case S_INVALID_RANGE:
+    return "ERROR: Invalid range";
   }
-
+  
   return "ERROR: Unknown error";
 }

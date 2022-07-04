@@ -102,7 +102,7 @@ TEST(hash_set, find2) {
   HashSet<int> hset;
 
   auto res = hset.Find(1);(void)res;
-  auto res2 = hset. Erase(1);(void)res2;
+  auto res2 = hset.Erase(1);(void)res2;
 
   assert(res2 == 0);
   assert(!res);
