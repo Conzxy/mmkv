@@ -99,6 +99,8 @@ class MmbpRequest : public MmbpMessage {
   bool HasNone() const noexcept {
     return has_bits_[0] == 0;
   }
+  
+  void DebugPrint() const noexcept;
 
   static MmbpRequest* GetPrototype() {
     return &detail::prototype;

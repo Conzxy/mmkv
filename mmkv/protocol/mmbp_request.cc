@@ -1,7 +1,8 @@
 #include "mmbp_request.h"
 #include "mmkv/protocol/command.h"
 #include "mmkv/protocol/mmbp_util.h"
-#include <gtest/internal/gtest-port.h>
+
+#include <kanon/log/logger.h>
 
 using namespace mmkv::protocol;
 using namespace kanon;
@@ -66,5 +67,32 @@ void MmbpRequest::ParseFrom(Buffer& buffer) {
 
   if (HasExpireTime()) {
     SetField(expire_time, buffer);
+  }
+}
+
+void MmbpRequest::DebugPrint() const noexcept {
+  LOG_DEBUG << "Command: " << command_strings[command];
+  if (HasKey()) {
+    LOG_DEBUG << "Key: " << key;
+  }
+
+  if (HasValue()) {
+    LOG_DEBUG << "Value: " << value;
+  } else if (HasValues()) {
+    LOG_DEBUG << "Value: ";
+    for (auto const& value : values)
+      LOG_DEBUG << value;
+  } else if (HasKvs()) {
+    LOG_DEBUG << "KeyValues: ";
+    for (auto const& kv : kvs)
+      LOG_DEBUG << "<" << kv.key << ", " << kv.value << ">";
+  } else if (HasRange()) {
+    LOG_DEBUG << "Range: [" << range.left << "," << range.right << ")";
+  } else if (HasCount()) {
+    LOG_DEBUG << "Count: " << count;
+  }
+
+  if (HasExpireTime()) {
+    LOG_DEBUG << "ExpireTime: " << expire_time;
   }
 }
