@@ -191,8 +191,22 @@ class Blist : protected blist::BNodeAllocator<T, Alloc> {
     }
 
     header_ = nullptr;
+    count_ = 0;
   }
   
+  Blist(Blist&& other) noexcept 
+    : header_(other.header_)
+    , count_(other.count_) 
+  {
+    other.header_ = nullptr;
+    other.count_ = 0;
+  }
+
+  Blist& operator=(Blist&& other) noexcept {
+    other.swap(*this);
+    return *this;
+  }
+
   bool empty() const noexcept {
     return header_ == nullptr;
   } 
@@ -205,6 +219,11 @@ class Blist : protected blist::BNodeAllocator<T, Alloc> {
     return (size_type)-1;
   }
   
+  void swap(Blist& o) noexcept {
+    std::swap(o.header_, header_);
+    std::swap(o.count_, count_);
+  }
+
   iterator begin() noexcept { return header_; }
   const_iterator begin() const noexcept { return header_; }
   iterator before_end() noexcept { return header_->prev; }
