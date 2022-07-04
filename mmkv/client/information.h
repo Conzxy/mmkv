@@ -29,9 +29,10 @@ extern std::unordered_map<kanon::StringView, mmkv::protocol::Command, StringView
   "Supported data structure(temporary): \n" \
   "Github homepage: https://github.com/Conzxy/mmkv\n" \
   "[string]\n" \
+  "[list]\n" \
   "[hash set](later)\n" \
-  "[sequential list](later)\n" \
-  "[sorted set](later)"
+  "[sorted set](later)\n" \
+  "[map](later)\n"
 
 
 #endif // _MMKV_CLIENT_INFORMATION_H_

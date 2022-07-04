@@ -19,11 +19,26 @@ static inline int GenCommandHint() {
     switch (i) {
       case STR_ADD:
       case STR_SET:
-        command_hints[i] += " [key] [value]";
+        command_hints[i] += " key value";
         break;
       case STR_GET:
       case STR_DEL:
-        command_hints[i] += " [key]";
+      case LGETALL:
+      case LGETSIZE:
+      case LDEL:
+        command_hints[i] += " key";
+        break;
+      case LADD:
+      case LAPPEND:
+      case LPREPEND:
+        command_hints[i] += " key values...";
+        break;
+      case LPOPBACK:
+      case LPOPFRONT:
+        command_hints[i] += " key count";
+        break;
+      case LGETRANGE:
+        command_hints[i] += " key left right";
         break;
       default:
         break;
@@ -39,7 +54,7 @@ static int GenHelp() {
   HELP_INFORMATION += "Help: \n";
   
   HELP_INFORMATION += "help\n";
-  HELP_INFORMATION += "exit\n";
+  HELP_INFORMATION += "exit/quit\n";
 
   for (auto const& hint : command_hints) {
     HELP_INFORMATION += hint;

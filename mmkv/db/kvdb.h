@@ -3,55 +3,50 @@
 
 #include "mmkv/algo/libc_allocator_with_realloc.h"
 #include "mmkv/algo/string.h"
-
 #include "mmkv/algo/dictionary.h"
 #include "mmkv/algo/key_value.h"
 #include "mmkv/protocol/mmbp.h"
+#include "mmkv/protocol/status_code.h"
+#include "mmkv_data.h"
+#include "type.h"
 
-#include <kanon/algo/forward_list.h>
+#include <kanon/util/noncopyable.h>
 
 namespace mmkv {
 namespace db {
 
-using algo::String;
 using algo::Dictionary;
+using algo::KeyValue;
 using protocol::StrValues;
+using protocol::StatusCode;
+
+#define DB_MIN(x, y) (((x) < (y)) ? (x) : (y))
 
 class MmkvDb {
-  using StrDict = Dictionary<String, String>;
-  using StrKvType = StrDict::value_type;
-  
-  using List = zstl::ForwardList<String, algo::LibcAllocatorWithRealloc<String>>;  
-  using ListDict = algo::Dictionary<String, List>;
+  using Dict = Dictionary<String, MmkvData>;
 
+  DISABLE_EVIL_COPYABLE(MmkvDb);
  public:
   MmkvDb();
   ~MmkvDb() noexcept;
   
-  int InsertStr(String k, String v) {
-    return dict_.InsertKv(std::move(k), std::move(v)) ? 1 : 0;
-  }
+  int InsertStr(String k, String v);
+  int EraseStr(String const& k);
+  String* GetStr(String const& k) noexcept;
+
+  bool ListAdd(String k, StrValues& elems); 
+  bool ListAppend(String const& k, StrValues& elems);
+  bool ListPrepend(String const& k, StrValues& elems); 
+  size_t ListGetSize(String const& k); 
+  bool ListGetAll(String const& k, StrValues& values); 
+  StatusCode ListGetRange(String const& k, StrValues& values,  size_t l, size_t r); 
+  bool ListPopFront(String const& k, uint32_t count); 
+  bool ListPopBack(String const& k, uint32_t count); 
+  bool ListDel(String const& k); 
   
-  int EraseStr(String const& k) {
-    return dict_.Erase(k);
-  }
-  
-  StrKvType* GetStr(String const& k) noexcept {
-    return dict_.Find(k);
-  }
-  
-  // bool ListAdd(String k, StrValues& elems);  
-  // bool ListAppend(String const& k, StrValues& elems);
-  // bool ListPrepend(String const& k, StrValues& elmes);
-  // size_t ListGetSize(String const& k);
-  // StrValues ListGetAll(String const& k);
-  // StrValues ListGetRange(String const& k, size_t l, size_t r);
-  // bool ListPopFront(String const& k);
-  // bool ListPopBack(String const& k);
-  // bool ListDel(String const& k);
+  bool Delete(String const& k);
  private:
-  StrDict dict_;
-  ListDict list_dict_;
+  Dict dict_;
 
 };
 
