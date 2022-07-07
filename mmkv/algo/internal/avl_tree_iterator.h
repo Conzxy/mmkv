@@ -13,8 +13,11 @@ template<typename T>
 class AvlTreeConstIterator {
  protected:
   using Node = avl::AvlNode<T>;
+  using BaseNode = avl::AvlBaseNode;
   using Self = AvlTreeConstIterator;
-
+  
+  template<typename K, typename V, typename Compare, typename Alloc>
+  friend class AvlTree;
  public:
   using value_type = T;
   using reference = T const&;
@@ -29,11 +32,11 @@ class AvlTreeConstIterator {
   {
   }
   
-  AvlTreeConstIterator(Node const* node) noexcept
+  AvlTreeConstIterator(BaseNode const* node) noexcept
     : node_((Node*)node)
   {
   }
-  
+
   ~AvlTreeConstIterator() = default;
   
   Self& operator++() noexcept {
@@ -49,19 +52,23 @@ class AvlTreeConstIterator {
   Self operator++(int) noexcept {
     Self ret(node_);
     Increment();
-    return *this;
+    return ret;
   }
 
   Self operator--(int) noexcept {
     Self ret(node_);
     Decrement();
-    return *this;
+    return ret;
   }
   
   T const& operator*() const noexcept {
     return node_->value;
   }
   
+  T const* operator->() const noexcept {
+    return &node_->value;
+  }
+
   friend bool operator==(Self x, Self y) noexcept {
     return x.node_ == y.node_;
   }
@@ -89,6 +96,8 @@ class AvlTreeIterator final : public AvlTreeConstIterator<T> {
   using Self = AvlTreeIterator;
   using Base::node_;
   
+  template<typename K, typename V, typename Compare, typename Alloc>
+  friend class AvlTree;
  public:
   using reference = T&;
   using pointer = T*;
@@ -98,11 +107,11 @@ class AvlTreeIterator final : public AvlTreeConstIterator<T> {
   {
   }
 
-  AvlTreeIterator(Node* node) noexcept
+  AvlTreeIterator(typename Base::BaseNode* node) noexcept
     : Base(node)
   {
   }
-  
+
   ~AvlTreeIterator() = default;
   
   Self& operator++() noexcept {
@@ -118,13 +127,13 @@ class AvlTreeIterator final : public AvlTreeConstIterator<T> {
   Self operator++(int) noexcept {
     Self ret(node_);
     Base::Increment();
-    return *this;
+    return ret;
   }
 
   Self operator--(int) noexcept {
     Self ret(node_);
     Base::Decrement();
-    return *this;
+    return ret;
   }
   
   T& operator*() noexcept {
@@ -133,6 +142,14 @@ class AvlTreeIterator final : public AvlTreeConstIterator<T> {
 
   T const& operator*() const noexcept {
     return node_->value;
+  }
+
+  T* operator->() noexcept {
+    return &node_->value;
+  }
+
+  T const* operator->() const noexcept {
+    return &node_->value;
   }
 };
 
