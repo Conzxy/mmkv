@@ -31,7 +31,8 @@ class Dictionary {
   using allocator_type = typename Rep::allocator_type;
   using size_type = typename Rep::size_type;
   using Node = typename Rep::Node;
-  
+  using Slot = Node;
+
   Dictionary() = default;
   ~Dictionary() = default;
   
@@ -47,7 +48,12 @@ class Dictionary {
   value_type* InsertKv(U1&& key, U2&& value) {
     return rep_.Insert(value_type{ std::forward<U1>(key), std::forward<U2>(value) });
   }
-  
+
+  template<typename U1, typename U2>
+  bool InsertKvWithDuplicate(U1&& key, U2&& value, value_type*& duplicate) {
+    return rep_.InsertWithDuplicate(value_type{ std::forward<U1>(key), std::forward<U2>(value) }, duplicate);
+  }
+
   value_type* Find(key_type const& key) {
     return rep_.Find(key);
   }
@@ -55,13 +61,21 @@ class Dictionary {
   value_type const* Find(key_type const& key) const {
     return rep_.Find(key);
   }
-  
+
+  Slot** FindSlot(key_type const& key) { return rep_.FindSlot(key); }  
+
   size_type Erase(K const& key) {
     return rep_.Erase(key);
   }
   
   Node* Extract(K const& key) noexcept {
     return rep_.Extract(key);
+  }
+
+  void EraseAfterFindSlot(Slot*& slot) { return rep_.EraseAfterFindSlot(slot); }
+
+  void FreeNode(Node* node) {
+    rep_.FreeNode(node);
   }
 
   size_type size() const noexcept {

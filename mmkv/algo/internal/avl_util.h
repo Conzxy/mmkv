@@ -11,11 +11,11 @@ namespace mmkv {
 namespace algo {
 
 /*
- * 仅用于AvlTree::Push()
+ * 仅用于AvlTree插入API
  */
-inline void _LinkTrack(AvlBaseNode** track, AvlBaseNode* node, AvlBaseNode* parent) noexcept {
-  track[0] = node;
-  track[0]->parent = parent;
+inline void _LinkSlot(AvlBaseNode** slot, AvlBaseNode* node, AvlBaseNode* parent) noexcept {
+  slot[0] = node;
+  slot[0]->parent = parent;
 }
 
 /*
