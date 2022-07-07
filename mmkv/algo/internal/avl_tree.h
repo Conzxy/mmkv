@@ -2,8 +2,8 @@
 /* Date: 2022/6/29                                                     */
 /***********************************************************************/
 
-#ifndef _MMKV_ALGO_AVL_TREE_H_
-#define _MMKV_ALGO_AVL_TREE_H_
+#ifndef _MMKV_ALGO_INTERNAL_AVL_TREE_H_
+#define _MMKV_ALGO_INTERNAL_AVL_TREE_H_
 
 #ifdef _AVL_TREE_DEBUG_
 #include <iostream>
@@ -27,6 +27,7 @@ using AvlNodeAllocator = typename Alloc::template rebind<AvlNode<T>>::other;
 
 #define TO_COMPARE (*((Compare*)this))
 #define TO_NODE(basenode) ((Node*)(basenode))
+#define NODE2VALUE(node) (((Node*)(node))->value)
 
 template<typename K, typename V, typename Compare, typename Alloc=LibcAllocatorWithRealloc<V>>
 class AvlTree : protected avl::AvlNodeAllocator<V, Alloc> 
@@ -49,21 +50,42 @@ class AvlTree : protected avl::AvlNodeAllocator<V, Alloc>
 
   ~AvlTree() noexcept;
   
-  bool Insert(value_type const& value) {
-    return _Insert(value);
+  AvlTree(AvlTree&& o) noexcept 
+    : root_(o.root_)
+    , count_(o.count_) {
+    o.root_ = nullptr;
+    o.count_ = 0;
+  }
+  
+  AvlTree& operator=(AvlTree&& o) noexcept {
+    o.swap(*this);
+    return *this;
+  }
+  
+  void swap(AvlTree& o) noexcept {
+    std::swap(o.root_, root_);
+    std::swap(o.count_, count_);
   }
 
-  bool Insert(value_type&& value) {
-    return _Insert(std::move(value));
-  }
+  bool Insert(value_type const& value) { return _Insert(value); }
+  bool Insert(value_type&& value) { return _Insert(std::move(value)); }
+
+  void InsertEq(value_type const& value) { _InsertEq(value); }
+  void InsertEq(value_type&& value) { _InsertEq(std::move(value)); }
 
   bool Push(Node* node) noexcept;
-  
+  void PushEq(Node* node) noexcept;
+
+  template<typename ValuePred> 
+  bool Erase(K const& key, ValuePred pred);
   bool Erase(K const& key);
-
+  bool Erase(const_iterator pos);
   Node* Extract(K const& key) noexcept; 
+  
+  // O(n)
+  template<typename ValueCb>
+  void DoInAll(ValueCb cb);
 
-  // GetAllValues() noexcept;
   Node* FindNode(K const& key) noexcept(noexcept(TO_COMPARE(key, key))) {
     BaseNode* node = root_;
     int res;
@@ -87,10 +109,63 @@ class AvlTree : protected avl::AvlNodeAllocator<V, Alloc>
     return ret ? &ret->value : (V*)nullptr;
   }
   
+  iterator LowerBound(K const& key) {
+    BaseNode* node = root_;
+    BaseNode* track = nullptr;
+
+    while (node) {
+      if (TO_COMPARE(get_key(NODE2VALUE(node)), key) >= 0) {
+        track = node;
+        node = node->left; 
+      } else {
+        node = node->right;
+      }
+    }
+
+    return track;
+  }
+  
+  const_iterator LowerBound(K const& key) const {
+    return ((AvlTree*)this)->LowerBound(key);
+  }
+
+  iterator UpperBound(K const& key) {
+    BaseNode* node = root_;
+    BaseNode* track = nullptr;
+
+    while (node) {
+      if (TO_COMPARE(get_key(NODE2VALUE(node)), key) > 0) {
+        track = node;
+        node = node->left;
+      } else {
+        node = node->right;
+      }
+    }
+
+    return track;
+  }
+
+  const_iterator UpperBound(K const& key) const {
+    return ((AvlTree*)this)->UpperBound(key);
+  }
+
   void Clear();
 
   size_t size() const noexcept { return count_; }
   bool empty() const noexcept { return count_ == 0; }
+
+  iterator begin() noexcept { return (Node*)_GetFirstNode(root_); }
+  const_iterator begin() const noexcept { return (Node*)_GetFirstNode(root_); }
+  iterator end() noexcept { return nullptr; }
+  const_iterator end() const noexcept { return nullptr; }
+
+  const_iterator cbegin() const noexcept { return begin(); }
+  const_iterator cend() const noexcept { return end(); }
+  
+  iterator before_end() noexcept { return (Node*)_GetLastNode(root_); }
+  const_iterator before_end() const noexcept { return (Node*)_GetLastNode(root_); }
+  const_iterator cbefore_end() const noexcept { return (Node*)_GetLastNode(root_); }
+
 
 #ifdef _AVL_TREE_DEBUG_
   int CalculateHeight(BaseNode const* node) const noexcept {
@@ -108,15 +183,15 @@ class AvlTree : protected avl::AvlNodeAllocator<V, Alloc>
 
     for (; node; node = TO_NODE(_GetNextNode(node))) {
       if (node->left) {
-        if (TO_COMPARE(TO_NODE(node->left)->value, node->value) >= 0) {
-          std::cout << "violate(left < mid): " << TO_NODE(node->left)->value << " >= " << node->value << "\n";
+        if (TO_COMPARE(get_key(TO_NODE(node->left)->value), get_key(node->value)) >= 0) {
+          std::cout << "violate(left < mid): " << get_key(TO_NODE(node->left)->value) << " >= " << get_key(node->value) << "\n";
           ret = false;
         }
       }
 
       if (node->right) {
-        if (TO_COMPARE(TO_NODE(node->right)->value, node->value) <= 0) {
-          std::cout << "violate(right > mid): " << TO_NODE(node->right)->value << " <= " << node->value << "\n";
+        if (TO_COMPARE(get_key(TO_NODE(node->right)->value), get_key(node->value)) <= 0) {
+          std::cout << "violate(right > mid): " << get_key(TO_NODE(node->right)->value) << " <= " << get_key(node->value) << "\n";
           ret = false;
         }
       }
@@ -165,7 +240,7 @@ class AvlTree : protected avl::AvlNodeAllocator<V, Alloc>
 		    PrintRoot(TO_NODE(root->left), os);
         PrintSubTree(TO_NODE(root->left), os, prefix + "    "); 
     }
-}
+  }
  public:
   void Print(std::ostream& os) const {
     if(!root_) return ;
@@ -175,21 +250,19 @@ class AvlTree : protected avl::AvlNodeAllocator<V, Alloc>
   }
 #endif
   
-  iterator begin() noexcept { return (Node*)_GetFirstNode(root_); }
-  const_iterator begin() const noexcept { return (Node*)_GetFirstNode(root_); }
-  iterator end() noexcept { return nullptr; }
-  const_iterator end() const noexcept { return nullptr; }
-
-  const_iterator cbegin() const noexcept { return begin(); }
-  const_iterator cend() const noexcept { return end(); }
-  
-  iterator before_end() noexcept { return (Node*)_GetLastNode(root_); }
-  const_iterator before_end() const noexcept { return (Node*)_GetLastNode(root_); }
-  const_iterator cbefore_end() const noexcept { return (Node*)_GetLastNode(root_); }
 
  private:
   template<typename T>
   bool _Insert(T&& value);
+
+  template<typename T>
+  void _InsertEq(T&& value);
+
+  void EraseRoutine(Node* node) {
+    _Erase(node, &root_);
+    DropNode(node);
+    --count_;
+  }
 
   template<typename... Args>
   Node* CreateNode(Args&&... args) {
@@ -215,4 +288,4 @@ class AvlTree : protected avl::AvlNodeAllocator<V, Alloc>
 } // algo
 } // mmkv
 
-#endif // _MMKV_ALGO_AVL_TREE_H_
+#endif // _MMKV_ALGO_INTERNAL_AVL_TREE_H_

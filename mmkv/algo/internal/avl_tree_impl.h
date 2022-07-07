@@ -4,6 +4,8 @@
 #include "avl_tree.h"
 #include "avl_util.h"
 
+#include <vector>
+
 namespace mmkv {
 namespace algo {
 
@@ -31,27 +33,96 @@ bool AVL_CLASS::Push(Node* node) noexcept {
     root_ = node;
   } else {
     BaseNode* parent = nullptr; 
-    // track最终会指向空槽（slot）
+    // slot最终会指向空槽（slot）
     // 采用二级指针，避免了定义表示插入哪边的元数据
-    BaseNode** track = &root_;
+    BaseNode** slot = &root_;
     
     int res; 
     
-    while (track[0]) {
-      res = TO_COMPARE(get_key(((Node*)track[0])->value), get_key(node->value));
-      parent = track[0];
+    while (slot[0]) {
+      res = TO_COMPARE(get_key(NODE2VALUE(slot[0])), get_key(node->value));
+      parent = slot[0];
 
       if (res > 0) {
-        track = &(track[0]->left);
+        slot = &(slot[0]->left);
       } else if (res < 0) {
-        track = &(track[0]->right);
+        slot = &(slot[0]->right);
       } else {
         return false;
       }
     }
     
     // 由于这两个语句与value无关，我把它分出去了
-    _LinkTrack(track, node, parent); 
+    _LinkSlot(slot, node, parent); 
+    _InsertFixup(parent, &root_);
+  }
+
+  ++count_;
+  return true;
+}
+
+AVL_TEMPLATE
+inline void AVL_CLASS::PushEq(Node* node) noexcept {
+  if (!root_) {
+    root_ = node;
+    ++count_;
+    return;
+  }
+
+  BaseNode* parent = nullptr; 
+  BaseNode** slot = &root_;
+  
+  int res; 
+  
+  while (slot[0]) {
+    res = TO_COMPARE(get_key(NODE2VALUE(slot[0])), get_key(node->value));
+    parent = slot[0];
+
+    if (res > 0) {
+      slot = &(slot[0]->left);
+    } else if (res < 0) {
+      slot = &(slot[0]->right);
+    } else {
+      if (LEFT_HEIGHT(slot[0]) < RIGHT_HEIGHT(slot[0])) {
+        slot = &(slot[0]->left);
+      } else {
+        slot = &(slot[0]->right);
+      }
+    }
+  }
+  
+  _LinkSlot(slot, node, parent); 
+  _InsertFixup(parent, &root_);
+  ++count_; 
+}
+
+AVL_TEMPLATE
+template<typename T>
+inline bool AVL_CLASS::_Insert(T&& value) {
+  if (!root_) {
+    root_ = VALUE_TO_NODE;
+  } else {
+    BaseNode* parent = nullptr; 
+    // slot最终会指向空槽（slot）
+    // 采用二级指针，避免了定义表示插入哪边的元数据
+    BaseNode** slot = &root_;
+    
+    int res; 
+    
+    while (slot[0]) {
+      res = TO_COMPARE(get_key(((Node*)slot[0])->value), get_key(value));
+      parent = slot[0];
+
+      if (res > 0) {
+        slot = &(slot[0]->left);
+      } else if (res < 0) {
+        slot = &(slot[0]->right);
+      } else {
+        return false;
+      }
+    }
+    
+    _LinkSlot(slot, VALUE_TO_NODE, parent); 
     _InsertFixup(parent, &root_);
   }
 
@@ -61,8 +132,8 @@ bool AVL_CLASS::Push(Node* node) noexcept {
 
 AVL_TEMPLATE
 template<typename T>
-bool AVL_CLASS::_Insert(T&& value) {
-  return Push(VALUE_TO_NODE);
+inline void AVL_CLASS::_InsertEq(T&& value) {
+  PushEq(VALUE_TO_NODE);
 }
 
 AVL_TEMPLATE
@@ -87,11 +158,34 @@ bool AVL_CLASS::Erase(K const& key) {
     return false;
   }
   
-  _Erase(node, &root_);
-  DropNode(node);
-  --count_;
-
+  EraseRoutine(node); 
   return true;
+}
+
+AVL_TEMPLATE
+bool AVL_CLASS::Erase(const_iterator pos) {
+  if (pos.node_ == nullptr) return false;
+  EraseRoutine(pos.node_);
+  return true;
+}
+
+AVL_TEMPLATE
+template<typename Pred>
+bool AVL_CLASS::Erase(K const& key, Pred pred) {
+  auto node = FindNode(key);
+  if (!node) return false;
+
+  for (;;) {
+    if (pred(node->value)) {
+      EraseRoutine(node);
+      return true;
+    }
+
+    node = (Node*)_GetNextNode(node);
+    if (TO_COMPARE(get_key(node->value), key)) break;
+  }
+
+  return false;
 }
 
 AVL_TEMPLATE
@@ -122,6 +216,25 @@ void AVL_CLASS::Clear() {
   }
 
   count_ = 0;
+}
+
+AVL_TEMPLATE
+template<typename Cb>
+void AVL_CLASS::DoInAll(Cb cb) {
+  std::vector<BaseNode*> nodes;
+  auto root = root_;
+
+  while (root || !nodes.empty()) {
+    while (root) {
+      nodes.push_back(root);
+      root = root->left;
+    }
+
+    root = nodes.back(); nodes.pop_back();    
+    cb(NODE2VALUE(root));
+    
+    root = (Node*)root->right;
+  }
 }
 
 } // algo
