@@ -10,15 +10,24 @@ using namespace kanon;
 std::string command_hints[COMMAND_NUM];
 std::string HELP_INFORMATION;
 std::unordered_map<StringView, Command, StringViewHash> command_map;
+std::unordered_map<StringView, CommandFormat, StringViewHash> command_formats;
 
-static inline int GenCommandHint() {
+static inline int GenCommandMetadata() {
   for (size_t i = 0; i < COMMAND_NUM; ++i) {
     command_hints[i].clear();
     command_hints[i] += command_strings[i];
 
+    command_formats["exit"] = F_EXIT;
+    command_formats["quit"] = F_EXIT;
+    command_formats["help"] = F_HELP;
+
     switch (i) {
+      case MEM_STAT:
+        command_formats[command_strings[i]] = F_NONE;
+        break;
       case STR_ADD:
       case STR_SET:
+        command_formats[command_strings[i]] = F_VALUE;
         command_hints[i] += " key value";
         break;
       case STR_GET:
@@ -26,20 +35,56 @@ static inline int GenCommandHint() {
       case LGETALL:
       case LGETSIZE:
       case LDEL:
+      case VSIZE:
+      case VALL:
+      case DEL:
+      case TYPE:
+        command_formats[command_strings[i]] = F_ONLY_KEY;
         command_hints[i] += " key";
         break;
       case LADD:
       case LAPPEND:
       case LPREPEND:
+        command_formats[command_strings[i]] = F_VALUES;
         command_hints[i] += " key values...";
         break;
       case LPOPBACK:
       case LPOPFRONT:
+        command_formats[command_strings[i]] = F_COUNT;
         command_hints[i] += " key count";
         break;
       case LGETRANGE:
-        command_hints[i] += " key left right";
+        command_formats[command_strings[i]] = F_RANGE;
+        command_hints[i] += " key index_range(integer)";
         break;
+      case VADD:
+        command_formats[command_strings[i]] = F_VSET_MEMBERS;
+        command_hints[i] += " key <weight, member>...";
+        break;
+      case VDELM:
+      case VWEIGHT:
+      case VORDER:
+      case VRORDER:
+        command_formats[command_strings[i]] = F_VALUE;
+        command_hints[i] += " key member";
+        break;
+      case VDELMRANGE:
+      case VRANGE:
+      case VRRANGE:
+        command_formats[command_strings[i]] = F_RANGE;
+        command_hints[i] += " key order_range(integer)";
+        break;
+      case VDELMRANGEBYWEIGHT:
+      case VRANGEBYWEIGHT:
+      case VRRANGEBYWEIGHT:
+      case VSIZEBYWEIGHT:
+        command_formats[command_strings[i]] = F_DRANGE;
+        command_hints[i] += " key weight_range(double)";
+        break;
+      case RENAME:
+        command_formats[command_strings[i]] = F_VALUE;
+        command_hints[i] += " key old_name new_name";
+
       default:
         break;
     }
@@ -48,7 +93,7 @@ static inline int GenCommandHint() {
   return 0;
 }
 
-static int dummy = GenCommandHint();
+static int dummy = GenCommandMetadata();
 
 static int GenHelp() {
   HELP_INFORMATION += "Help: \n";

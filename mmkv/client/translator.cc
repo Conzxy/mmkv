@@ -54,10 +54,25 @@ using namespace std;
 
 #define SET_INTEGER(var, msg) do { \
   SYNTAX_ERROR_ROUTINE; \
-  auto integer = TO_MMKV_STRING(*token_iter); \
+  char buf[64]; \
+  auto token = *token_iter; \
+  ::memcpy(buf, token.data(), token.size()); \
+  buf[token.size()] = 0; \
   char* end; \
-  var = ::strtol(integer.c_str(), &end, 10); \
-  if (integer.c_str() == end) { \
+  (var) = ::strtol(buf, &end, 10); \
+  if ((var) == 0 && buf == end) { \
+    std::cout << (msg) << "\n"; \
+    return E_SYNTAX_ERROR; \
+  } } while (0)
+
+#define SET_DOUBLE(var, msg) do { \
+  char buf[128]; \
+  auto token = *token_iter; \
+  ::memcpy(buf, (token).data(), (token).size()); \
+  buf[(token).size()] = 0; \
+  char* end; \
+  (var) = ::strtod(buf, &end); \
+  if ((var) == 0 && end == buf) { \
     std::cout << (msg) << "\n"; \
     return E_SYNTAX_ERROR; \
   } } while (0)
@@ -71,53 +86,96 @@ Translator::ErrorCode Translator::Parse(MmbpRequest* request, StringView stateme
     return E_NO_COMMAND;
   }
   
-  auto cmd = *token_iter; 
-  request->command = command_map[cmd];
+  auto cmd = *token_iter;
+  auto success = command_map.find(cmd);
+  auto format_iter = command_formats.find(cmd);
 
-  if (cmd == command_strings[STR_ADD] ||
-      cmd == command_strings[STR_SET]) {
-    SET_KEY;
-    SET_VALUE;
-    SYNTAX_ERROR_ROUTINE_END;
-  } else if (cmd == command_strings[STR_GET] ||
-             cmd == command_strings[STR_DEL] ||
-             cmd == command_strings[LGETSIZE] ||
-             cmd == command_strings[LGETALL] || 
-             cmd == command_strings[LDEL]) {
-    SET_KEY;
-    SYNTAX_ERROR_ROUTINE_END;
-  } else if (cmd == command_strings[MEM_STAT]) {
-    SYNTAX_ERROR_ROUTINE_END;
-  } else if (cmd == "help") {
-    std::cout << HELP_INFORMATION;
-    return E_INVALID_COMMAND;
-  } else if (cmd == "exit" || cmd == "quit") {
-    return E_EXIT;
-  } else if (cmd == command_strings[LADD] ||
-             cmd == command_strings[LAPPEND] ||
-             cmd == command_strings[LPREPEND]) {
-    SET_KEY;
-    SET_VALUES;
-  } else if (cmd == command_strings[LGETRANGE]) {
-    SET_KEY;
-    uint32_t range[2];
-    SET_INTEGER(range[0], "ERROR: left bound of range is invalid");
-    SET_INTEGER(range[1], "ERROR: right bound of range is invalid"); 
-    request->SetRange();
-    request->range = MmbpRequest::Range{range[0], range[1]};
-
-  } else if (cmd == command_strings[LPOPFRONT] ||
-             cmd == command_strings[LPOPBACK]) {
-    SET_KEY;
-    uint32_t count;
-    SET_INTEGER(count, "ERROR: count is invalid");
-    request->SetCount();
-    request->count = count;
+  if (success != command_map.end()) {
+    request->command = success->second;
   } else {
-    std::cout << "ERROR: invalid command: " << cmd.ToString() << "\n";
-    std::cout << HELP_INFORMATION;
-    return E_INVALID_COMMAND;
+    if (format_iter == command_formats.end()) {
+      std::cout << "ERROR: invalid command: " << cmd.ToString() << "\n";
+      std::cout << HELP_INFORMATION;
+      return E_INVALID_COMMAND;
+    }
   }
 
+  switch (format_iter->second) {
+    case F_NONE:
+      break;
+    case F_VALUE: {
+      SET_KEY;
+      SET_VALUE;
+      SYNTAX_ERROR_ROUTINE_END;
+    }
+      break;
+    case F_ONLY_KEY: {
+      SET_KEY;
+      SYNTAX_ERROR_ROUTINE_END;
+    }
+      break;
+    case F_VALUES: {
+      SET_KEY;
+      SET_VALUES;
+    }
+      break;
+    case F_RANGE: {
+      SET_KEY;
+      uint32_t range[2];
+      SET_INTEGER(range[0], "ERROR: left bound of range is invalid");
+      SET_INTEGER(range[1], "ERROR: right bound of range is invalid"); 
+      request->SetRange();
+      request->range = Range{range[0], range[1]};
+      SYNTAX_ERROR_ROUTINE_END;
+    }
+      break;
+    case F_COUNT: {
+      SET_KEY;
+      // FIXME uint64_t
+      uint32_t count;
+      SET_INTEGER(count, "ERROR: count is invalid");
+      request->SetCount();
+      request->count = count;
+      SYNTAX_ERROR_ROUTINE_END;
+    }
+      break;
+    case F_VSET_MEMBERS: {
+      SET_KEY;
+      auto& vms = request->vmembers;
+
+      while (++token_iter != tokenizer.end()) {
+        double weight;
+        SET_DOUBLE(weight, "ERROR: invalid weight");
+        SYNTAX_ERROR_ROUTINE;
+        auto member = TO_MMKV_STRING(*token_iter);
+        vms.push_back({weight, std::move(member)});
+      }
+      request->SetVmembers();
+    }
+      break;
+    case F_DRANGE: {
+      SET_KEY;
+
+      double drange[2];
+      SYNTAX_ERROR_ROUTINE;
+      SET_DOUBLE(drange[0], "ERROR: left weight of range is invalid");
+      SYNTAX_ERROR_ROUTINE;
+      SET_DOUBLE(drange[1], "ERROR: right weight of range is invalid");
+      SYNTAX_ERROR_ROUTINE_END;
+      request->SetWeightRange(drange[0], drange[1]);
+    }
+      break;
+    case F_HELP: {
+      std::cout << HELP_INFORMATION;
+      return E_INVALID_COMMAND;
+    }
+      break;
+    case F_EXIT:
+      return E_EXIT;
+    default:
+      assert(false && "This must be a valid command");
+  } 
+
+  request->DebugPrint(); 
   return E_OK; 
 }

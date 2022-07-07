@@ -55,7 +55,7 @@ MmkvClient::MmkvClient(EventLoop* loop, InetAddr const& server_addr)
     auto response = kanon::down_pointer_cast<MmbpResponse>(msg);
 
     // std::cout << response->GetContent() << "\n";
-    response_printer_.Printf(response.get());
+    response_printer_.Printf(current_cmd_, response.get());
 
     // ConsoleIoProcess();
     io_cond_.Notify();
@@ -75,7 +75,8 @@ bool MmkvClient::ConsoleIoProcess() {
   
   Translator translator;
   auto error_code = translator.Parse(&request, statement); 
-  
+  current_cmd_ = (Command)request.command;
+
   switch (error_code) {
     case Translator::E_INVALID_COMMAND: {
       // 如果用户多次输入错误，可能导致递归炸栈，因此这里避免递归调用

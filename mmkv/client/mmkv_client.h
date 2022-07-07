@@ -38,6 +38,8 @@ class MmkvClient {
   ResponsePrinter response_printer_;
   kanon::Condition io_cond_;
   kanon::MutexLock mutex_;
+
+  protocol::Command current_cmd_;
 };
 
 } // client

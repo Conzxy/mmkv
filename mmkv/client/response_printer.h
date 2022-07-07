@@ -2,6 +2,7 @@
 #define _MMKV_CLIENT_RESPONSE_PRINTER_H_
 
 #include "mmkv/protocol/mmbp_response.h"
+#include "mmkv/protocol/command.h"
 
 #include <kanon/util/noncopyable.h>
 
@@ -14,7 +15,7 @@ class ResponsePrinter {
  public:
   ResponsePrinter() = default;
 
-  void Printf(protocol::MmbpResponse* response);
+  void Printf(protocol::Command cmd, protocol::MmbpResponse* response);
  private:
 
 };

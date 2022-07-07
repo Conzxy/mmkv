@@ -16,22 +16,36 @@ struct StringViewHash {
   }
 };
 
+enum CommandFormat : uint8_t {
+  F_ONLY_KEY = 0, // command key
+  F_VALUE,        // command key value
+  F_VALUES,       // command key values...
+  F_COUNT,        // command key count
+  F_RANGE,        // command key range(integer)
+  F_DRANGE,       // command key range(double)
+  F_VSET_MEMBERS, // vadd <weight, member>...
+  F_HELP,         // help
+  F_EXIT,         // exit/quit
+  F_NONE,         // command
+};
+
 extern std::string HELP_INFORMATION;
 extern std::string command_hints[];
+extern std::unordered_map<kanon::StringView, CommandFormat, StringViewHash> command_formats;
 
 // command_strings都是在data segment上的变量
 // 故key为StringView也无妨
 extern std::unordered_map<kanon::StringView, mmkv::protocol::Command, StringViewHash> command_map;
 
 #define APPLICATION_INFORMATION \
-  "Mmkv is an In-Memory Key-value remote database(or cache)\n" \
   "Apache LICENSE Copyright(c) 2022.6 Conzxy\n" \
+  "Mmkv is an In-Memory Key-value remote database(or cache)\n" \
   "Supported data structure(temporary): \n" \
   "Github homepage: https://github.com/Conzxy/mmkv\n" \
   "[string]\n" \
   "[list]\n" \
+  "[sorted set]\n" \
   "[hash set](later)\n" \
-  "[sorted set](later)\n" \
   "[map](later)\n"
 
 
