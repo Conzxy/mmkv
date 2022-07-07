@@ -6,6 +6,7 @@
 
 #include "kanon/buffer/chunk_list.h"
 #include "kanon/buffer/buffer.h"
+#include "mmkv/util/conv.h"
 
 namespace mmkv {
 namespace protocol {
@@ -21,6 +22,20 @@ inline void SetField(String& str, Buffer& buffer, bool is_16=false) {
   str.reserve(len);
   str.append(buffer.GetReadBegin(), len);
   buffer.AdvanceRead(len);
+}
+
+inline void SetField(WeightValues& values, Buffer& buffer) {
+  auto count = buffer.Read32();
+  values.resize(count);
+
+  size_t value_size = 0;
+
+  for (size_t i = 0; i < count; ++i) {
+    values[i].key = util::int2double(buffer.Read64());
+    value_size = buffer.Read32();
+    values[i].value.append(buffer.GetReadBegin(), value_size);
+    buffer.AdvanceRead(value_size);
+  }
 }
 
 inline void SetField(StrValues& values, Buffer& buffer) {
@@ -69,6 +84,10 @@ inline void SetField(uint64_t& i, Buffer& buffer) {
   i = buffer.Read64();
 }
 
+inline void SetField(int64_t& i, Buffer& buffer) {
+  i = (int64_t)buffer.Read64();
+}
+
 inline void SerializeField(String const& str, ChunkList& buffer, bool is_16=false) {
   is_16 ? buffer.Append16(str.size()) : buffer.Append32(str.size());
   buffer.Append(str.data(), str.size());
@@ -89,6 +108,16 @@ inline void SerializeField(StrKvs const& values, ChunkList& buffer) {
   for (size_t i = 0; i < values.size(); ++i) {
     buffer.Append16(values[i].key.size());
     buffer.Append(values[i].key.data(), values[i].key.size());
+    buffer.Append32(values[i].value.size());
+    buffer.Append(values[i].value.data(), values[i].value.size());
+  }
+}
+
+inline void SerializeField(WeightValues const& values, ChunkList& buffer) {
+  buffer.Append32(values.size());
+
+  for (size_t i = 0; i < values.size(); ++i) {
+    buffer.Append64(util::double2u64(values[i].key));
     buffer.Append32(values[i].value.size());
     buffer.Append(values[i].value.data(), values[i].value.size());
   }

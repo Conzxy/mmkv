@@ -30,6 +30,8 @@ void MmbpResponse::SerializeTo(ChunkList& buffer) const {
     SerializeField(kvs, buffer);
   } else if (HasCount()) {
     SerializeField(count, buffer);
+  } else if (HasVmembers()) {
+    SerializeField(vmembers, buffer);
   }
 }
 
@@ -45,6 +47,8 @@ void MmbpResponse::ParseFrom(Buffer& buffer) {
     SetField(kvs, buffer);
   } else if (HasCount()) {
     SetField(count, buffer);
+  } else if (HasVmembers()) {
+    SetField(vmembers, buffer);
   }
 }
 
@@ -56,4 +60,5 @@ void MmbpResponse::DebugPrint() const noexcept {
   LOG_DEBUG << "HasValues: " << HasValues();
   LOG_DEBUG << "HasKvs: " << HasValue();
   LOG_DEBUG << "HasCount: " << HasCount();
+  LOG_DEBUG << "HasVmember: " << HasVmembers();
 }

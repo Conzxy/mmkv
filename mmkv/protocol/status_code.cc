@@ -15,6 +15,10 @@ char const* mmkv::protocol::GetStatusMessage(mmkv::protocol::StatusCode code) no
     return "ERROR: Invalid message";
   case S_INVALID_RANGE:
     return "ERROR: Invalid range";
+  case S_VMEMBER_NONEXISTS:
+    return "ERROR: Member doesn't exists in vset";
+  case S_EXISITS_DIFF_TYPE:
+    return "ERROR: Key exists but with different type" ;
   }
   
   return "ERROR: Unknown error";

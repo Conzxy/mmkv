@@ -5,9 +5,8 @@
 #include "mmbp_util.h"
 #include "command.h"
 
+#include "mmkv/util/macro.h"
 #include "mmkv/algo/key_value.h"
-#include "mmkv/algo/reserved_array.h"
-#include "mmkv/algo/slist.h"
 
 namespace mmkv {
 namespace protocol {
@@ -24,11 +23,8 @@ extern MmbpRequest prototype;
 // 避免丑陋的getter/setter
 // e.g. 由于可能需要移动字段，因此需要提供writable getter
 class MmbpRequest : public MmbpMessage {
+
  public:
-  struct Range {
-    uint32_t left;
-    uint32_t right;
-  };
 
   MmbpRequest();
   ~MmbpRequest() noexcept override;
@@ -68,6 +64,20 @@ class MmbpRequest : public MmbpMessage {
     SetBit(has_bits_[0], 6);
   }
 
+  void SetVmembers() noexcept {
+    SetBit(has_bits_[0], 7);
+  }
+  
+  void SetWeightRange(double l, double r) noexcept {
+    SetRange();
+    range.left = MMKV_DOUBLE2INT(l);
+    range.right = MMKV_DOUBLE2INT(r);
+  }
+
+  DRange GetWeightRange() noexcept {
+    return { MMKV_INT2DOUBLE(range.left), MMKV_INT2DOUBLE(range.right) };
+  }
+
   bool HasKey() const noexcept {
     return TestBit(has_bits_[0], 0);
   }
@@ -96,6 +106,10 @@ class MmbpRequest : public MmbpMessage {
     return TestBit(has_bits_[0], 6);
   }
   
+  bool HasVmembers() const noexcept {
+    return TestBit(has_bits_[0], 7);
+  }
+
   bool HasNone() const noexcept {
     return has_bits_[0] == 0;
   }
@@ -118,7 +132,8 @@ class MmbpRequest : public MmbpMessage {
   StrKvs kvs; // for madd, etc.
   StrValues values; // for lappend, lprepend, sadd, mget(reuse), etc.
   String value; // for stradd, strset, etc.
-    
+  WeightValues vmembers;  
+
   uint64_t expire_time; // optional
 
   union {

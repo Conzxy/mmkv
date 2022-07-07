@@ -26,6 +26,26 @@ enum Command : uint16_t {
   LPOPFRONT,
   LPOPBACK,
   LDEL,
+  // sorted set operation
+  VADD,
+  VDELM,
+  VDELMRANGE,
+  VDELMRANGEBYWEIGHT,
+  VSIZE,
+  VSIZEBYWEIGHT,
+  VWEIGHT,
+  VORDER,
+  VRORDER,
+  VRANGE,
+  VALL,
+  VRANGEBYWEIGHT,
+  VRRANGE,
+  VRRANGEBYWEIGHT,
+
+  // common
+  DEL,
+  RENAME,
+  TYPE,
   COMMAND_NUM,
 };
 

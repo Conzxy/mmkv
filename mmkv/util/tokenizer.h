@@ -40,7 +40,7 @@ class TokenizerIterator {
   Rep operator*() noexcept {
     return value();
   }
-  
+
   Rep value() noexcept {
     return text_.substr_range(start_, end_);
   }  

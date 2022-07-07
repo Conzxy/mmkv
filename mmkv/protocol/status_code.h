@@ -12,6 +12,8 @@ enum StatusCode : uint8_t {
   S_NONEXISTS,
   S_INVALID_MESSAGE,
   S_INVALID_RANGE,
+  S_VMEMBER_NONEXISTS,
+  S_EXISITS_DIFF_TYPE,
 };
 
 char const* GetStatusMessage(StatusCode code) noexcept;

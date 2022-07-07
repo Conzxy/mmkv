@@ -2,6 +2,7 @@
 #include "mmkv/protocol/command.h"
 #include "mmkv/protocol/mmbp_util.h"
 
+#include <cstdint>
 #include <kanon/log/logger.h>
 
 using namespace mmkv::protocol;
@@ -34,8 +35,10 @@ void MmbpRequest::SerializeTo(ChunkList& buffer) const {
   } else if (HasCount()) {
     SerializeField(count, buffer);
   } else if (HasRange()) {
-    SerializeField(range.left, buffer);
-    SerializeField(range.right, buffer);
+    SerializeField((uint64_t)range.left, buffer);
+    SerializeField((uint64_t)range.right, buffer);
+  } else if (HasVmembers()) {
+    SerializeField(vmembers, buffer);
   }
 
   if (HasExpireTime()) {
@@ -63,6 +66,8 @@ void MmbpRequest::ParseFrom(Buffer& buffer) {
   } else if (HasRange()) {
     SetField(range.left, buffer);
     SetField(range.right, buffer);
+  } else if (HasVmembers()) {
+    SetField(vmembers, buffer);
   }
 
   if (HasExpireTime()) {
@@ -88,8 +93,13 @@ void MmbpRequest::DebugPrint() const noexcept {
       LOG_DEBUG << "<" << kv.key << ", " << kv.value << ">";
   } else if (HasRange()) {
     LOG_DEBUG << "Range: [" << range.left << "," << range.right << ")";
+    LOG_DEBUG << "DRange: [" << util::int2double(range.left) << ", " << util::int2double(range.right) << "]";
   } else if (HasCount()) {
     LOG_DEBUG << "Count: " << count;
+  } else if (HasVmembers()) {
+    LOG_DEBUG << "<Weight, Member>: ";
+    for (auto const& wm : vmembers)
+      LOG_DEBUG << "(" << wm.key << "," << wm.value << ")";
   }
 
   if (HasExpireTime()) {

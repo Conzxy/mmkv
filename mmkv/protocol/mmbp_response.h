@@ -42,6 +42,10 @@ class MmbpResponse : public MmbpMessage {
     SetBit(has_bits_[0], 3);
   }
 
+  void SetVmembers() {
+    SetBit(has_bits_[0], 4);
+  }
+
   bool HasValue() const noexcept {
     return TestBit(has_bits_[0], 0);
   }
@@ -56,6 +60,10 @@ class MmbpResponse : public MmbpMessage {
   
   bool HasCount() const noexcept {
     return TestBit(has_bits_[0], 3);
+  }
+
+  bool HasVmembers() const noexcept {
+    return TestBit(has_bits_[0], 4);
   }
 
   void DebugPrint() const noexcept;
@@ -73,10 +81,11 @@ class MmbpResponse : public MmbpMessage {
   uint8_t status_code; // required
   // value or content
   // required
-  uint32_t count;
+  uint64_t count;
   String value;
   StrValues values;
   StrKvs kvs;
+  WeightValues vmembers;
 };
 
 } // protocol
