@@ -4,10 +4,13 @@
 #include "mmkv/algo/libc_allocator_with_realloc.h"
 #include "mmkv/algo/string.h"
 #include "mmkv/algo/blist.h"
+#include "mmkv/protocol/mmbp.h"
+#include "data_type.h"
 
 namespace mmkv {
 namespace db {
 
+using protocol::Weight;
 using String = algo::String;
 using StrList = algo::Blist<String, algo::LibcAllocatorWithRealloc<String>>;
 

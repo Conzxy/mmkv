@@ -9,6 +9,7 @@
 #include "mmkv/protocol/status_code.h"
 #include "mmkv_data.h"
 #include "type.h"
+#include "mmkv/protocol/type.h"
 
 #include <kanon/util/noncopyable.h>
 
@@ -16,35 +17,58 @@ namespace mmkv {
 namespace db {
 
 using algo::Dictionary;
-using algo::KeyValue;
 using protocol::StrValues;
 using protocol::StatusCode;
+using protocol::WeightValues;
+using protocol::OrderRange;
+using protocol::WeightRange;
 
 #define DB_MIN(x, y) (((x) < (y)) ? (x) : (y))
 
 class MmkvDb {
   using Dict = Dictionary<String, MmkvData>;
 
-  DISABLE_EVIL_COPYABLE(MmkvDb);
+  DISABLE_EVIL_COPYABLE(MmkvDb)
  public:
   MmkvDb();
   ~MmkvDb() noexcept;
   
-  int InsertStr(String k, String v);
-  int EraseStr(String const& k);
-  String* GetStr(String const& k) noexcept;
-
-  bool ListAdd(String k, StrValues& elems); 
-  bool ListAppend(String const& k, StrValues& elems);
-  bool ListPrepend(String const& k, StrValues& elems); 
-  size_t ListGetSize(String const& k); 
-  bool ListGetAll(String const& k, StrValues& values); 
-  StatusCode ListGetRange(String const& k, StrValues& values,  size_t l, size_t r); 
-  bool ListPopFront(String const& k, uint32_t count); 
-  bool ListPopBack(String const& k, uint32_t count); 
-  bool ListDel(String const& k); 
-  
   bool Delete(String const& k);
+  bool Type(String const& key, DataType& type) noexcept;
+  StatusCode Rename(String const& old_name, String&& new_name);
+
+  StatusCode InsertStr(String k, String v);
+  StatusCode EraseStr(String const& k);
+  StatusCode GetStr(String const& k, String*& str) noexcept;
+
+  StatusCode ListAdd(String k, StrValues& elems); 
+  StatusCode ListAppend(String const& k, StrValues& elems);
+  StatusCode ListPrepend(String const& k, StrValues& elems); 
+  StatusCode ListGetSize(String const& k, size_t& size); 
+  StatusCode ListGetAll(String const& k, StrValues& values); 
+  StatusCode ListGetRange(String const& k, StrValues& values,  size_t l, size_t r); 
+  StatusCode ListPopFront(String const& k, uint32_t count); 
+  StatusCode ListPopBack(String const& k, uint32_t count); 
+  StatusCode ListDel(String const& k); 
+  
+  StatusCode VsetAdd(String&& key, WeightValues&& wms, size_t& count);
+
+  StatusCode VsetDel(String const& key, String const& member);
+  StatusCode VsetDelRange(String const& key, OrderRange range, size_t& count);
+  StatusCode VsetDelRangeByWeight(String const& key, WeightRange range, size_t& count);
+
+  StatusCode VsetSize(String const& key, size_t& count);
+  StatusCode VsetSizeByWeight(String const& key, WeightRange range, size_t& count);
+  StatusCode VsetWeight(String const& key, String const& member, Weight& w);
+  StatusCode VsetOrder(String const& key, String const& member, size_t& order);
+  StatusCode VsetROrder(String const& key, String const& member, size_t& order);
+  
+  StatusCode VsetAll(String const& key, WeightValues& wms);
+  StatusCode VsetRange(String const& key, OrderRange range, WeightValues& wms);
+  StatusCode VsetRangeByWeight(String const& key, WeightRange range, WeightValues& wms);
+  StatusCode VsetRRange(String const& key, OrderRange range, WeightValues& wms);
+  StatusCode VsetRRangeByWeight(String const& key, WeightRange range, WeightValues& wms);
+
  private:
   Dict dict_;
 
