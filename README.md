@@ -16,6 +16,7 @@
 | sorted set(vset) | mmkv::db::Vset | db/vset.h, algo/avl_tree.h, algo/internal/avl\*.h, algo/dictionary.h | 无header的Avl树，支持异质删除 |
 | hash set | mmkv::algo::HashSet | algo/hash_set.h, slist.h, reserved_array.h, hash\*.h, internal/hash\*.h | 采用separate list实现的哈希表（支持Incremental rehash） |
 | map | mmkv::algo::Dictionary | algo/dictionary.h | 同上，只不过元素类型为KeyValue |
+
 全局哈希表可能之后会将链表更换为`Self-balanced binary search tree`(e.g. avltree, rbtree)
 
 ## Command
