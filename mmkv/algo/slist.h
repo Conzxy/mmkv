@@ -273,7 +273,8 @@ class Slist : protected NodeAlloctor<T, Alloc> {
   void EraseAfter(const_iterator pos) {
     EraseAfterNode(pos.node_);
   }
-  
+
+  Node*& header() noexcept { return header_; }
   /* 
    * Hack method
    * 允许用户进行一定的定制化
