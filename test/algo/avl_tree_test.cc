@@ -1,3 +1,4 @@
+#include "mmkv/protocol/mmbp.h"
 #include <random>
 #include <string>
 #define _AVL_TREE_DEBUG_
@@ -64,4 +65,54 @@ TEST(avl_tree_test, sorted) {
 
 TEST(avl_tree_test, random) {
   AvlTest(1);
+}
+
+TEST(avl_tree_test, eq) {
+  AvlTreeMap<int, int, IntComparator> tree;
+  
+  std::default_random_engine dre;
+  std::uniform_int_distribution<int> uid(0, N);
+  
+  std::vector<int> nums(N);
+
+  for (auto& num : nums) {
+    num = uid(dre);
+  }
+  
+  //using ValueType = decltype(tree)::value_type; 
+
+  for (auto num : nums) {
+    tree.InsertEq({num, num});
+  }
+
+  for (auto kv : tree) {
+    std::cout << kv.key << ", " << kv.value << "\n";
+  }
+
+  auto first = tree.LowerBound(74);
+  auto second = tree.UpperBound(901);
+  
+  std::cout << "first = " << first->key << "\n";
+  std::cout << "second = " << second->key << "\n";
+  for (; first != second; ++first) {
+    std::cout << first->key << "\n";
+  }
+
+}
+
+class AvlTreeTest : public testing::Test {
+ protected:
+  void SetUp() noexcept override {
+    for (int i = 0; i < 100; ++i) {
+      set.Insert(i);
+    }
+  }
+
+  AvlTreeSet<int, IntComparator> set;
+};
+
+TEST_F(AvlTreeTest, doinall) {
+  set.DoInAll([](int x) {
+      std::cout << x << " ";
+  });
 }
