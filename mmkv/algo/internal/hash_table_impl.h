@@ -103,7 +103,7 @@ HASH_TABLE_CLASS::Insert_impl(U&& elem) {
     }
   }
   
-  bucket->EmplaceFront(elem);
+  bucket->EmplaceFront(std::forward<U>(elem));
 
   // FIXME 0?
   ++table1().used;
@@ -112,8 +112,78 @@ HASH_TABLE_CLASS::Insert_impl(U&& elem) {
 }
 
 HASH_TABLE_TEMPLATE
+template<typename U>
+bool HASH_TABLE_CLASS::InsertWithDuplicate_impl(U&& elem, value_type*& duplicate) {
+  Rehash();
+  IncremetalRehash();
+
+  // Not in rehashing: 
+  //   insert to table1
+  // In rehashing:
+  //   If rehash_move_bucket_index > bucket_index1 ==> table2
+  //   otherwise, if bucket_index > table1.size ==> table2
+  //              otherwise, tabel1
+  const auto bucket_index1 = BucketIndex1(gk_(elem));
+  Bucket* bucket = nullptr;
+
+#define CHECK_AND_SET_DUPLICATE do { \
+    auto iter = GetDuplicate(bucket, elem); \
+    if (iter != bucket->end()) { \
+      duplicate = &*iter; \
+      return false; \
+    } \
+    } while (0)
+
+  if (!InRehashing()) {
+    bucket = &table1()[bucket_index1];
+    CHECK_AND_SET_DUPLICATE;
+  } else {
+    auto bucket_index2 = BucketIndex2(gk_(elem));
+
+    // index < rehash_move_bucket_index_ in the table2
+    if (rehash_move_bucket_index_ > bucket_index1) {
+      bucket = &table2()[bucket_index2]; 
+      CHECK_AND_SET_DUPLICATE;
+    } else {
+#if 1
+      if (bucket_index2 >= table1().size()) {
+        bucket = &table1()[bucket_index1];
+        CHECK_AND_SET_DUPLICATE;
+
+        bucket = &table2()[bucket_index2];
+        CHECK_AND_SET_DUPLICATE;
+      } else {
+        bucket = &table1()[bucket_index1];
+        CHECK_AND_SET_DUPLICATE;
+      }
+#else
+        bucket = &table1()[bucket_index1];
+        if (CheckDuplicate(bucket, elem)) {
+          return false;
+        }
+#endif
+    }
+  }
+  
+  bucket->EmplaceFront(std::forward<U>(elem));
+  duplicate = std::addressof(bucket->Front());
+
+  // FIXME 0?
+  ++table1().used;
+
+  return true;
+}
+
+HASH_TABLE_TEMPLATE
 typename HASH_TABLE_CLASS::value_type* 
 HASH_TABLE_CLASS::Find(K const& key) {
+  auto slot = FindSlot(key);
+  return slot ? std::addressof((*slot)->value) : nullptr;
+}
+
+HASH_TABLE_TEMPLATE
+typename HASH_TABLE_CLASS::Slot**
+HASH_TABLE_CLASS::FindSlot(K const& key) {
   // No need to call Rehash()
   IncremetalRehash();
   
@@ -134,8 +204,15 @@ HASH_TABLE_CLASS::Find(K const& key) {
   }
 
   bucket->EmplaceFrontNode(slot);
+  assert(bucket->header() == slot);
+  return &bucket->header();
+}
 
-  return std::addressof(slot->value);
+HASH_TABLE_TEMPLATE
+void HASH_TABLE_CLASS::EraseAfterFindSlot(Slot*& slot) {
+  auto old = slot;
+  slot = slot->next;
+  FreeNode(old);
 }
 
 HASH_TABLE_TEMPLATE

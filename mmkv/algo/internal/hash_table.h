@@ -60,7 +60,7 @@ class HashTable : protected BucketAllocator<T, Alloc>
   using Node = typename Bucket::Node;
 
  private:
-  using NodeAllocTraits = std::allocator_traits<Node>;
+  using NodeAllocTraits = std::allocator_traits<NodeAlloctor<T, Alloc>>;
   friend class HashTableIterator<K, T, HF, GK, EK, Alloc>;
   friend class HashTableConstIterator<K, T, HF, GK, EK, Alloc>;
   
@@ -70,20 +70,16 @@ class HashTable : protected BucketAllocator<T, Alloc>
   
   // 不提供Emplace()
   // 因为如果有重复键new后还得delete 
-  value_type* Insert(T const& elem) {
-    return Insert_impl(elem);
-  }
+  value_type* Insert(T const& elem) { return Insert_impl(elem); }
+  value_type* Insert(T&& elem) { return Insert_impl(std::move(elem)); }
+  bool InsertWithDuplicate(T const& elem, value_type*& duplicate) { return InsertWithDuplicate_impl(elem, duplicate); }
+  bool InsertWithDuplicate(T&& elem, value_type*& duplicate) { return InsertWithDuplicate_impl(std::move(elem), duplicate); }
 
-  value_type* Insert(T&& elem) {
-    return Insert_impl(std::move(elem));
-  }
-  
   value_type* Find(K const& key);
+  value_type const* Find(K const& key) const { return const_cast<HashTable*>(this)->Find(key); }
+  Node** FindSlot(K const& key);
 
-  value_type const* Find(K const& key) const {
-    return const_cast<HashTable*>(this)->Find(key);
-  }
-  
+  void EraseAfterFindSlot(Slot*& slot);
   size_type Erase(K const& key);
   Node* Extract(K const& key) noexcept;  
 
@@ -174,7 +170,6 @@ class HashTable : protected BucketAllocator<T, Alloc>
   }
   
   bool CheckDuplicate(Bucket* bucket, value_type const& elem) {
-
     if (bucket->SearchIf([this, &elem](value_type const& val) {
           return ek_(gk_(elem), gk_(val));
           }) != bucket->end()) {
@@ -184,9 +179,18 @@ class HashTable : protected BucketAllocator<T, Alloc>
     return false;
   }
 
+  typename Bucket::iterator GetDuplicate(Bucket* bucket, value_type const& elem) {
+    return bucket->SearchIf([this, &elem](value_type const& val) {
+      return ek_(gk_(elem), gk_(val));
+    });
+  }
+
   template<typename U>
   value_type* Insert_impl(U&& elem);
   
+  template<typename U>
+  bool InsertWithDuplicate_impl(U&& elem, value_type*& duplicate);
+
   size_type BucketIndex1(key_type const& elem) const noexcept {
     return BucketIndex(0, elem);
   }
