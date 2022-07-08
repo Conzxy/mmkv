@@ -1,6 +1,6 @@
-#include "mmkv/algo/reserved_array.h"
 #include <algorithm>
 #include <cstdio>
+#define _DEBUG_RESERVED_ARRAY_
 #define _DEBUG_HASH_TABLE_
 
 #include "mmkv/algo/hash_set.h"
@@ -14,10 +14,32 @@ TEST(hash_set_test, ctor) {
   hset.DebugPrint();
 }
 
+struct B {
+  std::vector<int> x_;
+  size_t a_;
+  size_t b_;
+};
+
+struct A : protected LibcAllocatorWithRealloc<int> 
+         , protected LibcAllocatorWithRealloc<double> {
+  friend struct B;
+  B x_[2];
+  size_t x;
+  GetKey<int> k_;
+  Hash<int> h_;
+  EqualKey<int> eq_;
+};
+
+TEST(hash_set_test, a) {
+  A a;
+  printf("this = %p\n", &a);
+  printf("x_ = %p\n", a.x_);
+}
+
 TEST(hash_set_test, insert) {
   HashSet<int> hset;
   hset.DebugPrint();
-
+  
   for (int i = 0; i < 100; ++i) {
     printf("===== insert key = %d =====\n", i);
     auto k = hset.Insert(i);
