@@ -67,42 +67,79 @@ class AvlTree : protected avl::AvlNodeAllocator<V, Alloc>
     std::swap(o.count_, count_);
   }
 
+  /**
+   * \brief Insert unique entry
+   * \return 
+   *   true -- success
+   *   false -- failure
+   */
   bool Insert(value_type const& value) { return _Insert(value); }
   bool Insert(value_type&& value) { return _Insert(std::move(value)); }
 
+  /**
+   * \brief Insert entry(although key exists)
+   */
   void InsertEq(value_type const& value) { _InsertEq(value); }
   void InsertEq(value_type&& value) { _InsertEq(std::move(value)); }
 
+  /**
+   * \brief Push node returnd by extract()
+   * \return 
+   *   true -- success
+   *   false -- failure
+   */
   bool Push(Node* node) noexcept;
+
+  /**
+   * \brief Push node returnd by extract()[although key exists]
+   */
   void PushEq(Node* node) noexcept;
 
+  /**
+   * \brief Erase entry whose key equals to the \p key and value 
+   *        satisfies the given predicate
+   * 
+   * This is a heterogeneous erase method
+   * \return 
+   *   true -- success
+   *   false -- such entry does not exists
+   */
   template<typename ValuePred> 
   bool Erase(K const& key, ValuePred pred);
+
+  /**
+   * \brief Erase entry whose key equal to the \p key parameter
+   * 
+   * \return 
+   *   true -- success
+   *   false -- such entry does not exists
+   */
   bool Erase(K const& key);
+
   bool Erase(const_iterator pos);
+
+  /**
+   * \brief Extract the node from avl tree
+   * 
+   * This is a HACK method, allow user do something before 
+   * drop the node(DropNode())
+   * \warning 
+   *   Must call DropNode() immediately
+   */
   Node* Extract(K const& key) noexcept; 
-  
-  // O(n)
+  void DropNode(Node* node) {
+    NodeAllocTraits::destroy(*this, node);
+    NodeAllocTraits::deallocate(*this, node, 1);
+  } 
+
+  /**
+   * \brief call callback to all values in the tree
+   * 
+   * Compared to the iterate all values by iterator in O(nlgn), 
+   * this time complexity is O(n).
+   */
   template<typename ValueCb>
   void DoInAll(ValueCb cb);
-
-  Node* FindNode(K const& key) noexcept(noexcept(TO_COMPARE(key, key))) {
-    BaseNode* node = root_;
-    int res;
-
-    while (node) {
-      res = TO_COMPARE(get_key(TO_NODE(node)->value), key);
-
-      if (res > 0)
-        node = node->left;
-      else if (res < 0)
-        node = node->right;
-      else
-        return TO_NODE(node);
-    }
-
-    return nullptr;
-  } 
 
   V* Find(K const& key) noexcept(noexcept(FindNode(key))) {
     auto ret = FindNode(key);
@@ -125,9 +162,7 @@ class AvlTree : protected avl::AvlNodeAllocator<V, Alloc>
     return track;
   }
   
-  const_iterator LowerBound(K const& key) const {
-    return ((AvlTree*)this)->LowerBound(key);
-  }
+  const_iterator LowerBound(K const& key) const { return ((AvlTree*)this)->LowerBound(key); }
 
   iterator UpperBound(K const& key) {
     BaseNode* node = root_;
@@ -145,12 +180,9 @@ class AvlTree : protected avl::AvlNodeAllocator<V, Alloc>
     return track;
   }
 
-  const_iterator UpperBound(K const& key) const {
-    return ((AvlTree*)this)->UpperBound(key);
-  }
+  const_iterator UpperBound(K const& key) const { return ((AvlTree*)this)->UpperBound(key); }
 
   void Clear();
-
   size_t size() const noexcept { return count_; }
   bool empty() const noexcept { return count_ == 0; }
 
@@ -249,9 +281,27 @@ class AvlTree : protected avl::AvlNodeAllocator<V, Alloc>
     PrintSubTree(TO_NODE(root_), os);
   }
 #endif
-  
 
  private:
+
+  Node* FindNode(K const& key) noexcept(noexcept(TO_COMPARE(key, key))) {
+    BaseNode* node = root_;
+    int res;
+
+    while (node) {
+      res = TO_COMPARE(get_key(TO_NODE(node)->value), key);
+
+      if (res > 0)
+        node = node->left;
+      else if (res < 0)
+        node = node->right;
+      else
+        return TO_NODE(node);
+    }
+
+    return nullptr;
+  }
+
   template<typename T>
   bool _Insert(T&& value);
 
@@ -276,11 +326,6 @@ class AvlTree : protected avl::AvlNodeAllocator<V, Alloc>
     return node;
   }
   
-  void DropNode(Node* node) {
-    NodeAllocTraits::destroy(*this, node);
-    NodeAllocTraits::deallocate(*this, node, 1);
-  }
-   
   BaseNode* root_ = nullptr;
   size_t count_ = 0;
 };
