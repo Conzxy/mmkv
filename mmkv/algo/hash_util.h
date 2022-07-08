@@ -11,10 +11,12 @@ namespace mmkv {
 namespace algo {
 
 template<typename T>
-struct Hash;
+struct Hash {
+  static_assert(sizeof(T) < 0, "Non-supported type");
+};
 
-template<>
-struct Hash<String> {
+template<typename Alloc>
+struct Hash<std::basic_string<char, std::char_traits<char>, Alloc>> {
   uint64_t operator()(String const& x) const noexcept {
     return XXH64(x.c_str(), x.size(), 0);
   }
@@ -28,7 +30,19 @@ struct Hash<type> { \
   } \
 };
 
+BASIC_TYPE_SPECILIZATION(char)
+BASIC_TYPE_SPECILIZATION(unsigned char)
+BASIC_TYPE_SPECILIZATION(short)
+BASIC_TYPE_SPECILIZATION(unsigned short)
 BASIC_TYPE_SPECILIZATION(int)
+BASIC_TYPE_SPECILIZATION(unsigned int)
+BASIC_TYPE_SPECILIZATION(long)
+BASIC_TYPE_SPECILIZATION(unsigned long)
+BASIC_TYPE_SPECILIZATION(long long)
+BASIC_TYPE_SPECILIZATION(unsigned long long)
+BASIC_TYPE_SPECILIZATION(float)
+BASIC_TYPE_SPECILIZATION(double)
+BASIC_TYPE_SPECILIZATION(long double)
 
 // Get Key
 template<typename K>

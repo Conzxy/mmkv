@@ -1,5 +1,5 @@
 #ifndef _MMKV_ALGO_HASH_SET_H_
-#define _MMKV_ALGO_HASH_SET_H
+#define _MMKV_ALGO_HASH_SET_H_
 
 #include "hash_util.h"
 #include "hash_table.h"

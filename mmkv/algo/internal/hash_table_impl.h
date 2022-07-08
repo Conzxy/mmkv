@@ -17,27 +17,17 @@ namespace mmkv {
 namespace algo {
 
 HASH_TABLE_TEMPLATE
-HASH_TABLE_CLASS::Table::Table() 
-  try
-  : table(0)
-  , used(0)
-  , size_mask(table.size()-1) {
-
-} catch (...) {
-  throw;
-}
-
-HASH_TABLE_TEMPLATE
-HASH_TABLE_CLASS::Table::~Table() noexcept {
-}
-
-HASH_TABLE_TEMPLATE
 HASH_TABLE_CLASS::HashTable() 
-  : hash_()
-  , ek_()
-  , gk_()
 {
   table1().Grow(4);
+#ifdef _DEBUG_HASH_TABLE_
+  printf("this = %p\n", this);
+  printf("table = %p\n", &tables_[0].table);
+  printf("rehash_index = %p\n", &rehash_move_bucket_index_);
+  // printf("hash = %p\n", &hash_);
+  // printf("equal key = %p\n", &ek_);
+  // printf("get key = %p\n", &gk_);
+#endif
 }
 
 HASH_TABLE_TEMPLATE
@@ -48,67 +38,11 @@ HASH_TABLE_TEMPLATE
 template<typename U>
 typename HASH_TABLE_CLASS::value_type* 
 HASH_TABLE_CLASS::Insert_impl(U&& elem) {
-  Rehash();
-  IncremetalRehash();
-
-  // Not in rehashing: 
-  //   insert to table1
-  // In rehashing:
-  //   If rehash_move_bucket_index > bucket_index1 ==> table2
-  //   otherwise, if bucket_index > table1.size ==> table2
-  //              otherwise, tabel1
-  const auto bucket_index1 = BucketIndex1(gk_(elem));
-  Bucket* bucket = nullptr;
-
-  if (!InRehashing()) {
-    bucket = &table1()[bucket_index1];
-    if (CheckDuplicate(bucket, elem)) {
-      return nullptr;
-    }
-
-  } else {
-    auto bucket_index2 = BucketIndex2(gk_(elem));
-
-    // index < rehash_move_bucket_index_ in the table2
-    if (rehash_move_bucket_index_ > bucket_index1) {
-      bucket = &table2()[bucket_index2]; 
-      if (CheckDuplicate(bucket, elem)) {
-          return nullptr;
-      }
-    } else {
-#if 1
-      if (bucket_index2 >= table1().size()) {
-        bucket = &table1()[bucket_index1];
-        if (CheckDuplicate(bucket, elem)) {
-          return nullptr;
-        }
-
-        bucket = &table2()[bucket_index2];
-        if (CheckDuplicate(bucket, elem)) {
-          return nullptr;
-        }
-
-      } else {
-        bucket = &table1()[bucket_index1];
-        if (CheckDuplicate(bucket, elem)) {
-          return nullptr;
-        }
-      }
-#else
-        bucket = &table1()[bucket_index1];
-        if (CheckDuplicate(bucket, elem)) {
-          return false;
-        }
-#endif
-    }
+  value_type* duplicate = nullptr;
+  if (InsertWithDuplicate_impl(std::forward<U>(elem), duplicate)) {
+    return duplicate;
   }
-  
-  bucket->EmplaceFront(std::forward<U>(elem));
-
-  // FIXME 0?
-  ++table1().used;
-
-  return std::addressof(bucket->Front());
+  return nullptr;
 }
 
 HASH_TABLE_TEMPLATE
@@ -123,7 +57,8 @@ bool HASH_TABLE_CLASS::InsertWithDuplicate_impl(U&& elem, value_type*& duplicate
   //   If rehash_move_bucket_index > bucket_index1 ==> table2
   //   otherwise, if bucket_index > table1.size ==> table2
   //              otherwise, tabel1
-  const auto bucket_index1 = BucketIndex1(gk_(elem));
+  const auto hash_val = HASH_FUNC(GET_KEY(elem));
+  const auto bucket_index1 = bucket_index(0, hash_val);
   Bucket* bucket = nullptr;
 
 #define CHECK_AND_SET_DUPLICATE do { \
@@ -138,7 +73,7 @@ bool HASH_TABLE_CLASS::InsertWithDuplicate_impl(U&& elem, value_type*& duplicate
     bucket = &table1()[bucket_index1];
     CHECK_AND_SET_DUPLICATE;
   } else {
-    auto bucket_index2 = BucketIndex2(gk_(elem));
+    auto bucket_index2 = bucket_index(1, hash_val);
 
     // index < rehash_move_bucket_index_ in the table2
     if (rehash_move_bucket_index_ > bucket_index1) {
@@ -190,11 +125,14 @@ HASH_TABLE_CLASS::FindSlot(K const& key) {
   // 采用最robust的方法（simple is best)
   Bucket* bucket = nullptr;
   typename Bucket::Node* slot = nullptr;
-  
+
+  const int table_num = (InRehashing()) ? 2 : 1; 
+
   // 当table为空时，BucetIndex是非法的
-  for (int i = 0; i < 2 && !table(i).empty(); ++i) {
-    bucket = &table(i)[BucketIndex(i, key)];
-    slot = bucket->ExtractNodeIf([this, &key](value_type const& value) { return ek_(gk_(value), key); });
+  const auto hash_val = HASH_FUNC(key);
+  for (int i = 0; i < table_num; ++i) {
+    bucket = &table(i)[bucket_index(i, hash_val)];
+    slot = bucket->ExtractNodeIf([this, &key](value_type const& value) { return EQUAL_KEY(GET_KEY(value), key); });
 
     if (slot) { break; }
   }
@@ -212,7 +150,7 @@ HASH_TABLE_TEMPLATE
 void HASH_TABLE_CLASS::EraseAfterFindSlot(Slot*& slot) {
   auto old = slot;
   slot = slot->next;
-  FreeNode(old);
+  DropNode(old);
 }
 
 HASH_TABLE_TEMPLATE
@@ -229,15 +167,18 @@ HASH_TABLE_CLASS::Erase(K const& key) {
 
 HASH_TABLE_TEMPLATE
 typename HASH_TABLE_CLASS::Node* HASH_TABLE_CLASS::Extract(K const& key) noexcept {
+  // WARNING Don't support shrink temporarily
   IncremetalRehash();
   
   Bucket* bucket = nullptr;
   Node* node = nullptr;
 
-  for (int i = 0; i < 2 && !table(i).empty(); ++i) {
-    bucket = &table(i)[BucketIndex(i, key)];
+  const auto hash_val = HASH_FUNC(key);
+  const int table_num = (InRehashing()) ? 2 : 1;
+  for (int i = 0; i < table_num; ++i) {
+    bucket = &table(i)[bucket_index(i, hash_val)];
     node = bucket->ExtractNodeIf([this, &key](value_type const& val) {
-        return ek_(gk_(val), key);
+        return EQUAL_KEY(GET_KEY(val), key);
       });
 
     if (node) { 
@@ -246,7 +187,6 @@ typename HASH_TABLE_CLASS::Node* HASH_TABLE_CLASS::Extract(K const& key) noexcep
     }
   }
   
-
   return node; 
 }
 
@@ -271,7 +211,7 @@ void HASH_TABLE_CLASS::IncremetalRehash() {
   while (!bucket1.empty()) {
     // Calculate the new bucket index in the table2
     slot = bucket1.ExtractFront();
-    table2()[BucketIndex2(gk_(slot->value))].EmplaceFrontNode(slot);
+    table2()[BucketIndex2(GET_KEY(slot->value))].EmplaceFrontNode(slot);
 
     // bucket1.swap(bucket2);
   }
@@ -282,42 +222,9 @@ void HASH_TABLE_CLASS::IncremetalRehash() {
     rehash_move_bucket_index_ = (size_type)-1;
     if (!table2().empty()) {
       table1().swap(table2());
+      table2().Reset();
     }
   }
-}
-
-HASH_TABLE_TEMPLATE
-typename HASH_TABLE_CLASS::Bucket*
-HASH_TABLE_CLASS::GetExpectedBucket(key_type const& key) {
-  Bucket* bucket = nullptr; 
-
-  // If rehash_move_bucket_index=-1,
-  // insert into table1
-  // otherwise, insert into table1 or table2
-  if (!InRehashing()) {
-    bucket = &table1()[BucketIndex1(key)];
-  } else {
-    auto bucket_index = BucketIndex(0, key);
-
-    // index < rehash_move_bucket_index_ in the table2
-    if (rehash_move_bucket_index_ > bucket_index) {
-      bucket = &table2()[BucketIndex2(key)]; 
-    } else {
-#if 1
-      auto bucket_index2 = BucketIndex2(key);
-
-      if (bucket_index2 >= table1().size()) {
-        bucket = &table2()[bucket_index2];
-      } else {
-        bucket = &table1()[bucket_index];
-      }
-#else
-      bucket = &table1()[bucket_index];
-#endif
-    }
-  }
-  
-  return bucket;
 }
 
 HASH_TABLE_TEMPLATE

@@ -36,55 +36,27 @@ class Dictionary {
   Dictionary() = default;
   ~Dictionary() = default;
   
-  bool Insert(value_type const& elem) {
-    return rep_.Insert(elem);
-  }
-
-  value_type* Insert(value_type&& elem) {
-    return rep_.Insert(elem);
-  }
-  
+  value_type* Insert(value_type const& elem) { return rep_.Insert(elem); }
+  value_type* Insert(value_type&& elem) { return rep_.Insert(elem); }
   template<typename U1, typename U2> 
-  value_type* InsertKv(U1&& key, U2&& value) {
-    return rep_.Insert(value_type{ std::forward<U1>(key), std::forward<U2>(value) });
-  }
-
+  value_type* InsertKv(U1&& key, U2&& value) { return rep_.Insert(value_type{ std::forward<U1>(key), std::forward<U2>(value) }); }
   template<typename U1, typename U2>
-  bool InsertKvWithDuplicate(U1&& key, U2&& value, value_type*& duplicate) {
-    return rep_.InsertWithDuplicate(value_type{ std::forward<U1>(key), std::forward<U2>(value) }, duplicate);
-  }
+  bool InsertKvWithDuplicate(U1&& key, U2&& value, value_type*& duplicate) { return rep_.InsertWithDuplicate(value_type{ std::forward<U1>(key), std::forward<U2>(value) }, duplicate); }
 
-  value_type* Find(key_type const& key) {
-    return rep_.Find(key);
-  }
-
-  value_type const* Find(key_type const& key) const {
-    return rep_.Find(key);
-  }
-
+  value_type* Find(key_type const& key) { return rep_.Find(key); }
+  value_type const* Find(key_type const& key) const { return rep_.Find(key); }
   Slot** FindSlot(key_type const& key) { return rep_.FindSlot(key); }  
 
-  size_type Erase(K const& key) {
-    return rep_.Erase(key);
-  }
-  
-  Node* Extract(K const& key) noexcept {
-    return rep_.Extract(key);
-  }
+  size_type Erase(K const& key) { return rep_.Erase(key); }
+  Node* Extract(K const& key) noexcept { return rep_.Extract(key); }
 
   void EraseAfterFindSlot(Slot*& slot) { return rep_.EraseAfterFindSlot(slot); }
 
-  void FreeNode(Node* node) {
-    rep_.FreeNode(node);
-  }
+  void FreeNode(Node* node) { rep_.FreeNode(node); }
+  void DropNode(Node* node) { rep_.DropNode(node); }
 
-  size_type size() const noexcept {
-    return rep_.size();
-  }
-  
-  bool empty() const noexcept {
-    return rep_.empty();
-  }
+  size_type size() const noexcept { return rep_.size(); }
+  bool empty() const noexcept { return rep_.empty(); }
   
   value_type& operator[](key_type const& key) {
     auto slot = Find(key);
