@@ -29,7 +29,7 @@ inline void Free(void* p, size_t n) noexcept {
 inline void* Realloc(void* p, size_t old_size, size_t size) noexcept {
   auto ret = ::realloc(p, size);
 
-  if (ret) {
+  if (ret || size == 0) {
     g_memstat.reallocate_count++;
   
     // 即使size < old_size，由于溢出，结果依然正确

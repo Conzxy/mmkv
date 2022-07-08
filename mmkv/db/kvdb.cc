@@ -56,7 +56,7 @@ StatusCode MmkvDb::Rename(String const& old_name, String&& new_name) {
 
   auto kv = dict_.InsertKv(std::move(new_name), std::move(node->value.value));
   assert(kv);
-  dict_.FreeNode(node);
+  dict_.DropNode(node);
   return S_OK;
 }
 

@@ -159,8 +159,10 @@ class ReservedArray : protected Alloc {
   }
 
   ~ReservedArray() noexcept {
-    zstl::DestroyRange(data_, end_);
-    AllocTraits::deallocate(*this, data_, size());
+    if (end_ != data_) {
+      zstl::DestroyRange(data_, end_);
+      AllocTraits::deallocate(*this, data_, size());
+    }
   }
   
   void Grow(size_type n) {
@@ -260,16 +262,18 @@ class ReservedArray : protected Alloc {
     // destroy一般来说是no throw的
     DLOG("destroy: [%zu, %zu)\n", n, size());
     zstl::DestroyRange(data_+n, end_);
-
     auto tmp = this->reallocate(data_, size(), n);
 
-    if (tmp == NULL) {
+    if (tmp == NULL && n != 0) {
       throw std::bad_alloc{};
     }
-    
 
-    data_ = tmp;
-    end_ = data_ + n;
+    if (n == 0) {
+      data_ = end_ = nullptr;
+    } else {
+      data_ = tmp;
+      end_ = data_+n;
+    }
   }
 
   template<typename U, zstl::enable_if_t<!can_reallocate<U>::value, int> =0>
