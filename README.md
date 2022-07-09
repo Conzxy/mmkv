@@ -5,7 +5,7 @@
 * 列表（list）(√)
 * 有序集合（sorted set）(√)
 * 无序集合（hash set）(×)
-* 映射（map）(×)
+* 映射（map）(√)
 
 存储键值对用的关键数据结构基本都是自造的轮子，这是由于STL是基于general-purpose设计的，而我们要的是specialized的数据结构，比如渐进式再哈希(`Incremental rehash`)的哈希表，无哨兵的单链表等(see `mmkv/algo`)，并且经量保证接口简洁易用。
 
@@ -28,6 +28,7 @@
 | type key | 获取key的数据类型 |
 | rename key new_name | 更换key，其数据结构不变 |
 | del key | 删除key，无论其数据类型 |
+| keyall | 获取所有键 |
 | memorystat | 返回memoryfootprint信息，一般供CLI使用 |
 
 * CLI(Command line interface)
@@ -46,6 +47,8 @@
 | strget key | 获取key对应的value |
 | strset key value | 修改key对应的value |
 | strdel key | 删除key |
+| strappend key value | 添加value到key对应字符串尾后 |
+| strpopback key count | 删除key对应字符串尾部count个数字符 |
 
 * list
 
@@ -80,6 +83,40 @@
 | vrangebyweight key weight_range(double) | 获取在key对应有序集中权重范围内的成员和权重 |
 | vrrangebyweight key weight_range(double) | 获取在key对应有序集中权重范围内的成员和权重 （逆序） |
 
+* hash set
+
+| Command | Effect |
+| --- | --- |
+| sadd key members... | 添加members...到key对应的(无序)集合中，如果key不存在，则先创建 |
+| srem key member | 删除key对应集合中的member |
+| ssize key | 获取key对应集合的成员个数 |
+| sall key | 获取key对应集合的所有成员 |
+| sexists key member | 检验key对应的集合中是否存在成员member |
+| sand key1 key2 | 获取key1和key2对应集合的交集 |
+| sandto dst key1 key2 | 将key1和key2对应集合的交集存到dst集合中 |
+| sandsize key1 key2 | 获取key1和key2对应集合的交集的大小 |
+| sor key1 key2 | 获取key1和key2对应集合的并集 |
+| sorto dst key1 key2 | 将key1和key2对应集合的并集存到dst集合中 |
+| sorsize key1 key2 | 获取key1和key2对应集合的并集的大小 |
+| ssub key1 key2 | 获取key1和key2对应集合的差集 |
+| ssubto dst key1 key2 | 将key1和key2对应集合的差集存到dst集合中 |
+| ssubsize key1 key2 | 获取key1和key2对应集合的差集的大小 |
+
+* map
+
+| Command | Effect |
+| --- | --- |
+| madd key <field, value>... | 添加<field, value>...到key对应的映射中，如果key不存在，则先创建 |
+| mset key field value | 修改key对应映射中field的value，如果field不存在，则先创建 |
+| mdel key field | 删除key对应映射中field |
+| mget key field | 获取key对应映射中field的value |
+| mgets key fields... | 获取key对应映射中fields对应的所有value |
+| mall key | 获取key对应映射中的所有字段和值(<field, value>...) |
+| mfields key | 获取key对应映射中的所有字段 |
+| mvalues key | 获取key对应映射中的所有值 |
+| msize key | 获取key对应映射的大小（字段值对的个数） |
+| mexists key field | 检验key对应映射中是否存在field |
+
 ## Protocol
 虽说CLI是输入的文本行，但实际是通过[translator](https://github.com/Conzxy/mmkv/blob/main/mmkv/client/translator.h)将文本行转换为自定义的二进制协议。
 之所以采用二进制协议，有很多原因：
@@ -106,9 +143,9 @@
 
 目前，有四种值类型
 * `value`: 单value值，用于string命令和sorted set部分命令
-* `value[]`: value数组，用于list命令和hash set命令（预定）
+* `value[]`: value数组，用于list命令和hash set命令
 * `{ weight, member }[]`: { weight, member} 对数组，用于sorted set部分命令
-* `{ key, value }[]`: 键值对数组，用于map命令（预定）
+* `{ key, value }[]`: 键值对数组，用于map命令
 
 还有一些字段负责实现部分数据类型的部分命令：
 * `count`: 32位整型，用于list pop命令
@@ -118,15 +155,7 @@
 
 ![mmbp2.png](https://s2.loli.net/2022/07/07/Kg9cIR3xJ2sm4Xz.png)
 * `status_code`: 状态码，表示命令执行的结果。
-
-| StatusCode | Meaning | 
-| --- | --- |
-| S_OK(0) | 执行成功 |
-| S_NONEXISTS | 不存在该key |
-| S_EXISTS | 已存在该key |
-| S_INVALID_MESSAGE | 非法报文，不符合协议格式 |
-| S_INVALID_RANGE | 非法范围 |
-| S_VMEMBER_NONEXISTS | 该member不存在于有序集中 |
+具体参考protocol/command.h
 
 其他同request。
 
@@ -170,7 +199,6 @@ chmod u+x release_build.sh
 * 实现expire_time管理
 * 实现replacement管理
 * Hash set支持
-* Map支持
 * 持久化复原(Recovery)
 * 分布式支持
 * Raft容错支持
