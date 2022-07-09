@@ -35,6 +35,11 @@ void ResponsePrinter::Printf(Command cmd, MmbpResponse* response) {
         for (auto const& wm : wms) {
           std::cout << "[" << order++ << "]: " << wm.value << "(" << wm.key << ")\n";
         }
+      } else if (response->HasKvs()) { 
+        unsigned int i = 0;
+        for (auto const& kv : response->kvs) {
+          std::cout << "[" << i++ << "]: " << "(" << kv.key << ", " << kv.value << ")\n";
+        }
       } else {
         std::cout << "Success!" << std::endl;
       }

@@ -20,6 +20,7 @@ using algo::Dictionary;
 using protocol::StrValues;
 using protocol::StatusCode;
 using protocol::WeightValues;
+using protocol::StrKvs;
 using protocol::OrderRange;
 using protocol::WeightRange;
 
@@ -68,6 +69,17 @@ class MmkvDb {
   StatusCode VsetRangeByWeight(String const& key, WeightRange range, WeightValues& wms);
   StatusCode VsetRRange(String const& key, OrderRange range, WeightValues& wms);
   StatusCode VsetRRangeByWeight(String const& key, WeightRange range, WeightValues& wms);
+
+  StatusCode MapAdd(String&& key, StrKvs&& kvs, size_t& count);
+  StatusCode MapSet(String const& key, String&& field, String&& value);
+  StatusCode MapGet(String const& key, String const& field, String& value);
+  StatusCode MapGets(String const& key, StrValues const& fields, StrValues& values);
+  StatusCode MapDel(String const& key, String const& field);
+  StatusCode MapAll(String const& key, StrKvs& kvs);
+  StatusCode MapFields(String const& key, StrValues& fields);
+  StatusCode MapValues(String const& key, StrValues& values);
+  StatusCode MapSize(String const& key, size_t& count);
+  StatusCode MapExists(String const& key, String const& field);
 
  private:
   Dict dict_;

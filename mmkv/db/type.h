@@ -1,6 +1,8 @@
 #ifndef _MMKV_DB_TYPE_H_
 #define _MMKV_DB_TYPE_H_
 
+#include "mmkv/algo/dictionary.h"
+#include "mmkv/algo/internal/hash_table.h"
 #include "mmkv/algo/libc_allocator_with_realloc.h"
 #include "mmkv/algo/string.h"
 #include "mmkv/algo/blist.h"
@@ -13,6 +15,7 @@ namespace db {
 using protocol::Weight;
 using String = algo::String;
 using StrList = algo::Blist<String, algo::LibcAllocatorWithRealloc<String>>;
+using Map = algo::Dictionary<String, String>;
 
 } // db
 } // mmkv

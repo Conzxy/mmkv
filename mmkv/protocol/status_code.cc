@@ -19,6 +19,8 @@ char const* mmkv::protocol::GetStatusMessage(mmkv::protocol::StatusCode code) no
     return "ERROR: Member doesn't exists in vset";
   case S_EXISITS_DIFF_TYPE:
     return "ERROR: Key exists but with different type" ;
+  case S_FIELD_NONEXISTS:
+    return "ERROR: Field doesn't exists";
   }
   
   return "ERROR: Unknown error";

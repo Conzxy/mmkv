@@ -61,6 +61,11 @@ MmkvSession::~MmkvSession() noexcept {
   response.SetVmembers(); \
   response.vmembers = (_wms)
 
+#define SET_OK_KVS(_kvs) \
+  response.SetOk(); \
+  response.SetKvs(); \
+  response.kvs = (_kvs);
+
 #define SET_OK_COUNT(_count) \
   response.SetOk(); \
   response.SetCount(); \
@@ -129,13 +134,6 @@ void MmkvSession::OnMmbpRequest(TcpConnectionPtr const& conn, std::unique_ptr<Mm
       String* str = nullptr;
       auto code = DB.GetStr(request->key, str);
       SET_XX_ELSE_CODE(SET_OK_VALUE(*str))
-      // if (code == S_OK) {
-      //   response.SetOk();
-      //   response.SetValue();
-      //   response.value = *str;
-      // } else {
-      //   response.status_code = code;
-      // }
     }
       break;
     case STR_DEL: {
@@ -219,15 +217,6 @@ void MmkvSession::OnMmbpRequest(TcpConnectionPtr const& conn, std::unique_ptr<Mm
       auto code = DB.ListGetRange(request->key, values, request->range.left, request->range.right);
 
       SET_XX_ELSE_CODE(SET_OK_VALUES(std::move(values)))
-      // switch (status_code) {
-      //   case S_OK:
-      //     response.SetOk();
-      //     response.SetValues();
-      //     response.values = std::move(values);
-      //     break;
-      //   default:
-      //     response.status_code = status_code;
-      // }
     }
       break;
     case LGETALL: {
@@ -236,14 +225,6 @@ void MmkvSession::OnMmbpRequest(TcpConnectionPtr const& conn, std::unique_ptr<Mm
       StrValues values; 
       auto code = DB.ListGetAll(request->key, values);
       SET_XX_ELSE_CODE(SET_OK_VALUES(std::move(values)))
-
-      // if (!success) {
-      //   response.status_code = S_NONEXISTS;
-      // } else {
-      //   response.SetOk();
-      //   response.SetValues();
-      //   response.values = std::move(values);
-      // }
     }
       break;
     case LDEL: {
@@ -254,13 +235,6 @@ void MmkvSession::OnMmbpRequest(TcpConnectionPtr const& conn, std::unique_ptr<Mm
       size_t count = 0;
       auto code = DB.VsetAdd(std::move(request->key), std::move(request->vmembers), count);
       SET_XX_ELSE_CODE(SET_OK_COUNT(count))
-      // if (code == S_OK) {
-      //   response.SetOk(); 
-      //   response.SetCount();
-      //   response.count = count;
-      // } else {
-      //   response.status_code = code;
-      // }
     }
       break;
 
@@ -268,13 +242,6 @@ void MmkvSession::OnMmbpRequest(TcpConnectionPtr const& conn, std::unique_ptr<Mm
       WeightValues values;
       auto code = DB.VsetAll(request->key, values);
       SET_XX_ELSE_CODE(SET_OK_VMEMBERS(std::move(values)))
-      // if (code == S_OK) {
-      //   response.SetOk();
-      //   response.SetVmembers();
-      //   response.vmembers = std::move(*values);
-      // } else {
-      //   response.status_code = S_NONEXISTS;
-      // }
     }
       break;
     
@@ -287,13 +254,6 @@ void MmkvSession::OnMmbpRequest(TcpConnectionPtr const& conn, std::unique_ptr<Mm
       size_t count = 0;
       auto code = DB.VsetDelRange(request->key, request->range, count);
       SET_XX_ELSE_CODE(SET_OK_COUNT(count))
-      // if (code == S_OK) {
-      //   response.SetOk();
-      //   response.SetCount();
-      //   response.count = count;
-      // } else {
-      //   response.status_code = code;
-      // }
     }
       break;
 
@@ -301,13 +261,6 @@ void MmkvSession::OnMmbpRequest(TcpConnectionPtr const& conn, std::unique_ptr<Mm
       size_t count = 0;
       auto code = DB.VsetDelRangeByWeight(request->key, request->GetWeightRange(), count);
       SET_XX_ELSE_CODE(SET_OK_COUNT(count))
-      // if (code == S_OK) {
-      //   response.SetOk();
-      //   response.SetCount();
-      //   response.count = count;
-      // } else {
-      //   response.status_code = code;
-      // }
     }
       break;
     
@@ -318,13 +271,6 @@ void MmkvSession::OnMmbpRequest(TcpConnectionPtr const& conn, std::unique_ptr<Mm
         DB.VsetSize(request->key, size) :
         DB.VsetSizeByWeight(request->key, request->GetWeightRange(), size);
       SET_XX_ELSE_CODE(SET_OK_COUNT(size))
-      // if (code == S_OK) {
-      //   response.SetOk();
-      //   response.SetCount();
-      //   response.count = size;
-      // } else {
-      //   response.status_code = code;
-      // }
     }
       break;
     
@@ -332,15 +278,6 @@ void MmkvSession::OnMmbpRequest(TcpConnectionPtr const& conn, std::unique_ptr<Mm
       Weight weight;
       auto code = DB.VsetWeight(request->key, request->value, weight);
       SET_XX_ELSE_CODE(SET_OK_COUNT(util::double2u64(weight)))
-      // switch (code) {
-      //   case S_OK:
-      //     response.status_code = S_OK;
-      //     response.SetCount();
-      //     response.count = util::double2u64(weight);
-      //     break;
-      //   default:
-      //     response.status_code = code;
-      // }
     }
       break;
 
@@ -351,15 +288,6 @@ void MmkvSession::OnMmbpRequest(TcpConnectionPtr const& conn, std::unique_ptr<Mm
         DB.VsetOrder(request->key, request->value, order) :
         DB.VsetROrder(request->key, request->value, order);
       SET_XX_ELSE_CODE(SET_OK_COUNT(order))
-      // switch (code) {
-      //   case S_OK:
-      //     response.status_code = S_OK;
-      //     response.SetCount();
-      //     response.count = order;
-      //     break;
-      //   default:
-      //     response.status_code = code;
-      // }      
     }
       break;
 
@@ -371,13 +299,6 @@ void MmkvSession::OnMmbpRequest(TcpConnectionPtr const& conn, std::unique_ptr<Mm
         DB.VsetRRange(request->key, request->range, wms);
 
       SET_XX_ELSE_CODE(SET_OK_VMEMBERS(std::move(wms)))
-      // if (code == S_OK) {
-      //   response.SetOk();
-      //   response.SetVmembers();
-      //   response.vmembers = std::move(wms);
-      // } else {
-      //   response.status_code = S_NONEXISTS;
-      // }
     }
       break;
 
@@ -389,15 +310,69 @@ void MmkvSession::OnMmbpRequest(TcpConnectionPtr const& conn, std::unique_ptr<Mm
         DB.VsetRRangeByWeight(request->key, request->GetWeightRange(), wms);
 
       SET_XX_ELSE_CODE(SET_OK_VMEMBERS(std::move(wms)))
-      // if (code == S_OK) {
-      //   response.SetOk();
-      //   response.SetVmembers();
-      //   response.vmembers = std::move(wms);
-      // } else {
-      //   response.status_code = S_NONEXISTS;
-      // }
     }
       break;
+
+    case MADD: {
+      size_t count = 0;
+      auto code = DB.MapAdd(std::move(request->key), std::move(request->kvs), count);
+
+      SET_XX_ELSE_CODE(SET_OK_COUNT(count));
+    }
+      break;
+
+    case MGET: {
+      String value;
+      auto code = DB.MapGet(request->key, request->value, value);
+      SET_XX_ELSE_CODE(SET_OK_VALUE(std::move(value)));
+    }
+      break;
+
+    case MGETS: {
+      StrValues values;
+      auto code = DB.MapGets(request->key, request->values, values);
+      SET_XX_ELSE_CODE(SET_OK_VALUES(std::move(values)));
+    }
+
+    case MSET: {
+      auto code = DB.MapSet(request->key, std::move(request->values[0]), std::move(request->values[1]));
+      response.status_code = code;
+    }
+      break;
+
+    case MDEL: {
+      response.status_code = DB.MapDel(request->key, request->value);
+    }
+      break;
+
+    case MALL: {
+      StrKvs kvs;
+      auto code = DB.MapAll(request->key, kvs);
+
+      SET_XX_ELSE_CODE(SET_OK_KVS(std::move(kvs)));
+    }
+      break;
+
+    case MFIELDS:
+    case MVALUES: {
+      StrValues values;
+      auto code = request->command == MFIELDS ? DB.MapFields(request->key, values) : DB.MapValues(request->key, values);
+      SET_XX_ELSE_CODE(SET_OK_VALUES(std::move(values)));
+    }
+      break;
+
+    case MSIZE: {
+      size_t count = 0;
+      auto code = DB.MapSize(request->key, count);
+      SET_XX_ELSE_CODE(SET_OK_COUNT(count));
+    }
+      break;
+
+    case MEXISTS: {
+      response.status_code = DB.MapExists(request->key, request->value);
+    }
+      break;
+
   }
   
   response.DebugPrint();  

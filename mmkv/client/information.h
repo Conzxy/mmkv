@@ -24,6 +24,8 @@ enum CommandFormat : uint8_t {
   F_RANGE,        // command key range(integer)
   F_DRANGE,       // command key range(double)
   F_VSET_MEMBERS, // vadd <weight, member>...
+  F_MAP_VALUES,   // madd <field, value>...
+  F_FIELD_VALUE,  // mset field value
   F_HELP,         // help
   F_EXIT,         // exit/quit
   F_NONE,         // command
@@ -45,8 +47,8 @@ extern std::unordered_map<kanon::StringView, mmkv::protocol::Command, StringView
   "[string]\n" \
   "[list]\n" \
   "[sorted set]\n" \
-  "[hash set](later)\n" \
-  "[map](later)\n"
+  "[map]\n" \
+  "[hash set](later)\n"
 
 
 #endif // _MMKV_CLIENT_INFORMATION_H_

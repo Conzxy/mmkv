@@ -95,7 +95,7 @@ Translator::ErrorCode Translator::Parse(MmbpRequest* request, StringView stateme
   } else {
     if (format_iter == command_formats.end()) {
       std::cout << "ERROR: invalid command: " << cmd.ToString() << "\n";
-      std::cout << HELP_INFORMATION;
+      // std::cout << HELP_INFORMATION;
       return E_INVALID_COMMAND;
     }
   }
@@ -119,6 +119,20 @@ Translator::ErrorCode Translator::Parse(MmbpRequest* request, StringView stateme
       SET_VALUES;
     }
       break;
+    case F_FIELD_VALUE: {
+      SET_KEY;
+
+      auto& values = request->values;
+      values.reserve(2);
+      SYNTAX_ERROR_ROUTINE;
+      values.push_back(TO_MMKV_STRING(*token_iter));
+      SYNTAX_ERROR_ROUTINE;
+      values.push_back(TO_MMKV_STRING(*token_iter));
+      SYNTAX_ERROR_ROUTINE_END;
+      request->SetValues();
+    }
+      break;
+
     case F_RANGE: {
       SET_KEY;
       uint32_t range[2];
@@ -172,6 +186,20 @@ Translator::ErrorCode Translator::Parse(MmbpRequest* request, StringView stateme
       break;
     case F_EXIT:
       return E_EXIT;
+    case F_MAP_VALUES: {
+      SET_KEY;
+      auto& kvs = request->kvs;
+      while (++token_iter != tokenizer.end()) {
+        StrKeyValue kv;
+        kv.key = TO_MMKV_STRING(*token_iter);
+        SYNTAX_ERROR_ROUTINE;
+        kv.value = TO_MMKV_STRING(*token_iter);
+        kvs.push_back(std::move(kv));
+      }
+      request->SetKvs();
+    }
+      break;
+      
     default:
       assert(false && "This must be a valid command");
   } 

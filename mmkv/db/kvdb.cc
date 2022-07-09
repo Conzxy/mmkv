@@ -1,6 +1,7 @@
 #include "kvdb.h"
 #include "mmkv/db/mmkv_data.h"
 #include "mmkv/db/vset.h"
+#include "mmkv/protocol/status_code.h"
 
 using namespace mmkv::db;
 using namespace mmkv::protocol;
@@ -41,6 +42,9 @@ bool MmkvDb::Delete(String const& k) {
     case D_SORTED_SET:
       delete (Vset*)value.any_data;
       break;
+    case D_MAP:
+      delete (Map*)value.any_data;
+      break;
   }
 
   return true;
@@ -54,7 +58,7 @@ StatusCode MmkvDb::Rename(String const& old_name, String&& new_name) {
   auto node = dict_.Extract(old_name);
   if (!node) return S_NONEXISTS;
 
-  auto kv = dict_.InsertKv(std::move(new_name), std::move(node->value.value));
+  auto kv = dict_.InsertKv(std::move(new_name), std::move(node->value.value));(void)kv;
   assert(kv);
   dict_.DropNode(node);
   return S_OK;
@@ -247,29 +251,6 @@ StatusCode MmkvDb::ListDel(String const& k) {
 #define TO_VSET(kv) ((Vset*)(kv->value.any_data))
 
 StatusCode MmkvDb::VsetAdd(String&& key, WeightValues&& wms, size_t& count) {
-  // auto kv = dict_.Find(key);
-
-  // if (!kv) {
-  //   MmkvData data {
-  //     .type = D_SORTED_SET,
-  //     .any_data = new Vset(wms),
-  //   };
-
-  //   auto ret = dict_.InsertKv(std::move(key), std::move(data));(void)ret;
-  //   count = wms.size();
-  //   assert(ret);
-  // } else {
-  //   if (kv->value.type != D_SORTED_SET) {
-  //     return S_EXISITS_DIFF_TYPE;
-  //   }
-  //   auto vset = (Vset*)(kv->value.any_data);
-  //   count = 0;
-  //   for (auto& wm : wms) {
-  //     count += (int)vset->Insert(wm.key, std::move(wm.value));
-  //   }
-  // }
-
-  // return S_OK;
   MmkvData data {
     .type = D_SORTED_SET,
     .any_data = nullptr, // dummy
@@ -298,13 +279,13 @@ StatusCode MmkvDb::VsetAdd(String&& key, WeightValues&& wms, size_t& count) {
   return S_EXISITS_DIFF_TYPE;
 }
 
-#define ERROR_ROUTINE \
+#define ERROR_ROUTINE(_type) \
   auto kv = dict_.Find(key); \
   if (!kv) return S_NONEXISTS; \
-  if (kv->value.type != D_SORTED_SET) return S_EXISITS_DIFF_TYPE
+  if (kv->value.type != (_type)) return S_EXISITS_DIFF_TYPE
 
 StatusCode MmkvDb::VsetDel(String const& key, String const& member) {
-  ERROR_ROUTINE;
+  ERROR_ROUTINE(D_SORTED_SET);
   if (TO_VSET(kv)->Erase(member)) {
     return S_OK;
   }
@@ -312,74 +293,211 @@ StatusCode MmkvDb::VsetDel(String const& key, String const& member) {
 }
 
 StatusCode MmkvDb::VsetDelRange(String const& key, OrderRange range, size_t& count) {
-  ERROR_ROUTINE;
+  ERROR_ROUTINE(D_SORTED_SET);
   count = TO_VSET(kv)->EraseRange(range.left, range.right);
   return S_OK;
 }
 
 StatusCode MmkvDb::VsetDelRangeByWeight(String const& key, WeightRange range, size_t& count) {
-  ERROR_ROUTINE;
+  ERROR_ROUTINE(D_SORTED_SET);
   count = TO_VSET(kv)->EraseRangeByWeight(range.left, range.right);
   return S_OK;
 }
 
 StatusCode MmkvDb::VsetSize(String const& key, size_t& count) {
-  ERROR_ROUTINE;
+  ERROR_ROUTINE(D_SORTED_SET);
   count = TO_VSET(kv)->GetSize();
   return S_OK;
 }
 
 StatusCode MmkvDb::VsetSizeByWeight(String const& key, WeightRange range, size_t& count) {
-  ERROR_ROUTINE;
+  ERROR_ROUTINE(D_SORTED_SET);
   count = TO_VSET(kv)->GetSizeByWeight(range.left, range.right);
   return S_OK;
 }
 
 StatusCode MmkvDb::VsetWeight(String const& key, String const& member, Weight& w) {
-  ERROR_ROUTINE;
+  ERROR_ROUTINE(D_SORTED_SET);
   if (TO_VSET(kv)->GetWeight(member, w)) return S_OK;
   else return S_VMEMBER_NONEXISTS;
 }
 
 StatusCode MmkvDb::VsetOrder(String const& key, String const& member, size_t& order) {
-  ERROR_ROUTINE;
+  ERROR_ROUTINE(D_SORTED_SET);
   if (TO_VSET(kv)->GetOrder(member, order)) return S_OK;
   else return S_VMEMBER_NONEXISTS;
 }
 
 StatusCode MmkvDb::VsetROrder(String const& key, String const& member, size_t& order) {
-  ERROR_ROUTINE;
+  ERROR_ROUTINE(D_SORTED_SET);
   if (TO_VSET(kv)->GetROrder(member, order)) return S_OK;
   else return S_VMEMBER_NONEXISTS;
 }
 
 StatusCode MmkvDb::VsetAll(String const& key, WeightValues& wms) {
-  ERROR_ROUTINE;
+  ERROR_ROUTINE(D_SORTED_SET);
   TO_VSET(kv)->GetAll(wms); 
   return S_OK;
 }
 
 StatusCode MmkvDb::VsetRange(String const& key, OrderRange range, WeightValues& wms) {
-  ERROR_ROUTINE;
+  ERROR_ROUTINE(D_SORTED_SET);
   TO_VSET(kv)->GetRange(range.left, range.right, wms); 
   return S_OK;
 }
 
 StatusCode MmkvDb::VsetRangeByWeight(String const& key, WeightRange range, WeightValues& wms) {
-  ERROR_ROUTINE;
+  ERROR_ROUTINE(D_SORTED_SET);
   TO_VSET(kv)->GetRangeByWeight(range.left, range.right, wms); 
   return S_OK;
 }
 
 StatusCode MmkvDb::VsetRRange(String const& key, OrderRange range, WeightValues& wms) {
-  ERROR_ROUTINE;
+  ERROR_ROUTINE(D_SORTED_SET);
   
   TO_VSET(kv)->GetRRange(range.left, range.right, wms); 
   return S_OK;
 }
 
 StatusCode MmkvDb::VsetRRangeByWeight(String const& key, WeightRange range, WeightValues& wms) {
-  ERROR_ROUTINE; 
+  ERROR_ROUTINE(D_SORTED_SET); 
   TO_VSET(kv)->GetRRangeByWeight(range.left, range.right, wms); 
+  return S_OK;
+}
+
+StatusCode MmkvDb::MapAdd(String&& key, StrKvs&& kvs, size_t& count) {
+  MmkvData data {
+    .type = D_MAP,
+    .any_data = nullptr,
+  };
+  
+  Dict::value_type* duplicate = nullptr; 
+
+  auto success = dict_.InsertKvWithDuplicate(std::move(key), std::move(data), duplicate);
+  if (success || duplicate->value.type == D_MAP) {
+    Map* map = nullptr;
+    if (success) {
+      map = new Map();
+      duplicate->value.any_data = map;
+    } else {
+      map = (Map*)duplicate->value.any_data;
+    }
+
+    count = 0;
+    for (auto& kv : kvs) {
+      count += map->Insert(std::move(kv)) ? 1 : 0;
+    }
+    return S_OK;
+  }
+  
+  return S_EXISITS_DIFF_TYPE;
+}
+
+#define TO_MAP ((Map*)(kv->value.any_data))
+
+StatusCode MmkvDb::MapGet(String const& key, String const& field, String& value) {
+  ERROR_ROUTINE(D_MAP);
+  
+  auto map = TO_MAP;
+  auto fv = map->Find(field);
+
+  if (fv) {
+    value = fv->value;
+    return S_OK;
+  }
+
+  return S_FIELD_NONEXISTS;
+}
+
+StatusCode MmkvDb::MapGets(String const& key, StrValues const& fields, StrValues& values) {
+  ERROR_ROUTINE(D_MAP);
+  
+  auto map = TO_MAP;
+
+  for (auto const& field : fields) {
+    auto fv = map->Find(field);
+
+    if (fv) {
+      values.push_back(fv->value);
+    } else {
+      return S_FIELD_NONEXISTS;
+    }
+  }
+
+  return S_OK;
+}
+
+StatusCode MmkvDb::MapSet(String const& key, String&& field, String&& value) {
+  ERROR_ROUTINE(D_MAP);
+
+  auto map = TO_MAP;
+
+  Map::value_type* duplicate = nullptr;
+  // auto success = map->InsertKvWithDuplicate(std::move(field), std::move(value), duplicate);
+  StrKeyValue fv{ std::move(field), std::move(value) };
+  auto success = map->InsertWithDuplicate(std::move(fv), duplicate);
+
+  if (!success) {
+    duplicate->value = std::move(fv.value);
+  }
+
+  return S_OK;
+}
+
+StatusCode MmkvDb::MapDel(String const& key, String const& field) {
+  ERROR_ROUTINE(D_MAP);
+
+  if (TO_MAP->Erase(field)) {
+    return S_OK;
+  }
+
+  return S_FIELD_NONEXISTS;
+}
+
+StatusCode MmkvDb::MapSize(String const& key, size_t& count) {
+  ERROR_ROUTINE(D_MAP);
+  count = TO_MAP->size(); 
+  return S_OK;
+}
+
+StatusCode MmkvDb::MapExists(String const& key, String const& field) {
+  ERROR_ROUTINE(D_MAP);
+  if (TO_MAP->Find(field)) {
+    return S_OK;
+  }
+
+  return S_FIELD_NONEXISTS;
+}
+
+StatusCode MmkvDb::MapFields(String const& key, StrValues& fields) {
+  ERROR_ROUTINE(D_MAP);
+  auto& m = *TO_MAP;
+
+  for (auto const& kv : m) {
+    fields.push_back(kv.key);
+  }
+
+  return S_OK;
+}
+
+StatusCode MmkvDb::MapValues(String const& key, StrValues& values) {
+  ERROR_ROUTINE(D_MAP);
+  auto& m = *TO_MAP;
+
+  for (auto const& kv : m) {
+    values.push_back(kv.value);
+  }
+
+  return S_OK;
+}
+
+StatusCode MmkvDb::MapAll(String const& key, StrKvs& kvs) {
+  ERROR_ROUTINE(D_MAP);
+  auto& m = *TO_MAP;
+
+  for (auto const& kv : m) {
+    kvs.push_back({kv.key, kv.value});
+  }
+
   return S_OK;
 }

@@ -30,6 +30,20 @@ static inline int GenCommandMetadata() {
         command_formats[command_strings[i]] = F_VALUE;
         command_hints[i] += " key value";
         break;
+      case MEXISTS:
+      case MDEL:
+      case MGET:
+        command_formats[command_strings[i]] = F_VALUE;
+        command_hints[i] += " key field";
+        break;
+      case MGETS:
+        command_formats[command_strings[i]] = F_VALUES;
+        command_hints[i] += " key fields...";
+        break;
+      case MSET:
+        command_formats[command_strings[i]] = F_FIELD_VALUE;
+        command_hints[i] += " key field value";
+        break;
       case STR_GET:
       case STR_DEL:
       case LGETALL:
@@ -39,6 +53,10 @@ static inline int GenCommandMetadata() {
       case VALL:
       case DEL:
       case TYPE:
+      case MALL:
+      case MSIZE:
+      case MFIELDS:
+      case MVALUES:
         command_formats[command_strings[i]] = F_ONLY_KEY;
         command_hints[i] += " key";
         break;
@@ -60,6 +78,10 @@ static inline int GenCommandMetadata() {
       case VADD:
         command_formats[command_strings[i]] = F_VSET_MEMBERS;
         command_hints[i] += " key <weight, member>...";
+        break;
+      case MADD:
+        command_formats[command_strings[i]] = F_MAP_VALUES;
+        command_hints[i] += " key <field, value>...";
         break;
       case VDELM:
       case VWEIGHT:
@@ -83,7 +105,8 @@ static inline int GenCommandMetadata() {
         break;
       case RENAME:
         command_formats[command_strings[i]] = F_VALUE;
-        command_hints[i] += " key old_name new_name";
+        command_hints[i] += " key new_name";
+        break;
 
       default:
         break;

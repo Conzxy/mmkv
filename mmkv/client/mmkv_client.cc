@@ -100,7 +100,7 @@ bool MmkvClient::ConsoleIoProcess() {
     
     case Translator::E_NO_COMMAND: {
       std::cout << "Syntax error: no command\n";
-      std::cout << HELP_INFORMATION;
+      // std::cout << HELP_INFORMATION;
       return false;
     }
       break;

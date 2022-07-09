@@ -10,6 +10,7 @@ enum DataType : uint8_t {
   D_STRING = 0,
   D_STRLIST,
   D_SORTED_SET,
+  D_MAP,
 };
 
 char const* GetDataTypeString(DataType type) noexcept;

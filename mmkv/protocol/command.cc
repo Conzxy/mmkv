@@ -33,8 +33,19 @@ std::string mmkv::protocol::command_strings[] = {
   "vrangebyweight",
   "vrrange",
   "vrrangebyweight",
+  "madd",
+  "mset",
+  "mget",
+  "mgets",
+  "mdel",
+  "mall",
+  "mfields",
+  "mvalues",
+  "msize",
+  "mexists",
   "del",
   "rename",
   "type",
 };
 
+static_assert(sizeof(command_strings) / sizeof(std::string) == COMMAND_NUM, "The size of command_strings must be equal to the number of the commands");

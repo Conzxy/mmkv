@@ -41,7 +41,19 @@ enum Command : uint16_t {
   VRANGEBYWEIGHT,
   VRRANGE,
   VRRANGEBYWEIGHT,
-
+  // map operation
+  MADD,
+  MSET,
+  MGET,
+  MGETS,
+  MDEL,
+  MALL,
+  MFIELDS,
+  MVALUES,
+  MSIZE,
+  MEXISTS,
+  // hash set operation
+  
   // common
   DEL,
   RENAME,
