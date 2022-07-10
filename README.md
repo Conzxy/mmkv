@@ -12,13 +12,25 @@
 | string | 支持动态增长的字符串 | mmkv::algo::String | algo/string.h |
 | list | 无哨兵的双向链表（暂时）| mmkv::algo::Blist | algo/blist.h |
 | sorted set(vset) | AvlTree与哈希表共同实现, AvlTree允许键(权重)重复而member是unique的，基于这个特性和一些命令的实现需要哈希表提供反向映射| mmkv::db::Vset | db/vset.h, algo/avl_tree.h, algo/internal/avl\*.h, algo/internal/func_util.h, algo/dictionary.h |
-| hash set | 采用separate list实现的哈希表（支持Incremental rehash） | mmkv::algo::HashSet | algo/hash_set.h, slist.h, reserved_array.h, hash\*.h, internal/hash\*.h |  |
-| map | 同hash set，不过元素类型是KeyValue | mmkv::algo::Dictionary | algo/dictionary.h, slist.h, reserved_array.h, hash\*.h, internal/hash\*.h |
+| hash set | 采用separate list实现的哈希表（支持Incremental rehash） | mmkv::algo::HashSet | algo/hash_set.h, slist.h, reserved_array.h, hash\*.h, algo/internal/hash\*.h |  |
+| map | 同hash set，不过元素类型是KeyValue | mmkv::algo::Dictionary | algo/dictionary.h, slist.h, reserved_array.h, hash\*.h, algo/internal/hash\*.h |
 
 全局哈希表可能之后会将链表更换为`Self-balanced binary search tree`(e.g. avltree, rbtree)<br>
 暂时没有考虑针对个别数据类型进行特化，比如满足一定的条件，list可以采用局部性更好的动态数组而不是链表等。
 
 ## Schedule
+现在该项目还处于初级阶段，只是个单纯支持多个数据结构的单机单线程服务器，
+尽管要支持多线程是十分轻松的（因为kanon支持mutilthread-reactor），但是现在我暂时不关注这方面。
+* 支持string并实现其相关命令
+* 支持list并实现其相关命令
+* 支持sorted set并实现其相关命令
+* 支持map并实现其相关命令
+* 支持hash set并实现其相关命令
+* 支持Recovery <--
+* 支持分布式存储(distributed system)
+* 支持Expire并实现其管理
+* 支持Raft容错
+* 支持多线程
 
 ## Command
 支持的命令：
