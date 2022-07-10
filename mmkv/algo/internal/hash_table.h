@@ -77,6 +77,7 @@ class HashTable : protected BucketAllocator<T, Alloc>
   HashTable();
   ~HashTable() noexcept;
   
+  void Clone(HashTable const& table);
   // 不提供Emplace()
   // 因为如果有重复键new后还得delete 
 

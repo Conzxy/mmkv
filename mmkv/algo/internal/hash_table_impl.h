@@ -1,3 +1,6 @@
+#ifndef _MMKV_ALGO_INTERNAL_HASH_TABLE_IMPL_H_
+#define _MMKV_ALGO_INTERNAL_HASH_TABLE_IMPL_H_
+
 #include "hash_table.h"
 
 #include <assert.h>
@@ -33,6 +36,46 @@ HASH_TABLE_CLASS::HashTable()
 HASH_TABLE_TEMPLATE
 HASH_TABLE_CLASS::~HashTable() noexcept {
 };
+
+HASH_TABLE_TEMPLATE
+void HASH_TABLE_CLASS::Clone(HashTable const& ht) {
+  auto& table = table1();
+  if (ht.InRehashing()) {
+    auto& otable1 = ht.table1();
+    auto& otable2 = ht.table2();
+    table.Grow(otable2.size());
+
+    for (size_type i = 0; i < otable2.size(); ++i) {
+      auto& lst = table[i];
+      auto& olst = otable2[i];
+      for (auto const& val : olst) {
+        lst.EmplaceFront(val);
+      }
+    }
+  
+    for (size_type i = ht.rehash_move_bucket_index_; i < otable1.size(); ++i) {
+      auto& olst = otable1[i];
+      for (auto const& val : olst) {
+        auto hash_val = HASH_FUNC(val);
+        table[bucket_index(0, hash_val)].EmplaceFront(val);
+      }
+    } 
+  } else {
+    auto& otable = ht.table1();
+    auto n = otable.size();
+    table.Grow(otable.size());
+
+    for (size_type i = 0; i < n; ++i) {
+      auto& lst = table[i];
+      auto& olst = otable[i];
+      for (auto const& val : olst) {
+        lst.EmplaceFront(val);
+      }
+    }
+  }
+
+  table.used = ht.table1().used;
+}
 
 HASH_TABLE_TEMPLATE
 template<typename U>
@@ -271,3 +314,5 @@ void HASH_TABLE_CLASS::DebugPrint() {
 
 } // namespace algo
 } // namespace mmkv
+
+#endif
