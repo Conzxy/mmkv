@@ -101,6 +101,7 @@ void MmkvSession::OnMmbpRequest(TcpConnectionPtr const& conn, std::unique_ptr<Mm
       break;
 
     case TYPE: {
+      MMKV_ASSERT(request->HasKey(), "type");
       db::DataType type;
       if (DB.Type(request->key, type)) {
         SET_OK_VALUE(GetDataTypeString(type));
@@ -111,13 +112,22 @@ void MmkvSession::OnMmbpRequest(TcpConnectionPtr const& conn, std::unique_ptr<Mm
       break;
 
     case DEL: {
+      MMKV_ASSERT(request->HasKey(), "del");
       SET_OK_ELSE_NONEXISTS(DB.Delete(request->key));
     }
       break;
 
     case RENAME: {
+      MMKV_ASSERT(request->HasKey() && request->HasValue(), "rename");
       auto code = DB.Rename(request->key, std::move(request->value));
       response.status_code = code;
+    }
+      break;
+
+    case KEYALL: {
+      DB.GetAllKeys(response.values);
+      response.SetValues();
+      response.SetOk();
     }
       break;
 
@@ -150,11 +160,48 @@ void MmkvSession::OnMmbpRequest(TcpConnectionPtr const& conn, std::unique_ptr<Mm
       String* str = nullptr;
       const auto code = DB.GetStr(request->key, str);
       
-      if (code) {
+      if (code == S_OK) {
         *str = std::move(request->value);
         response.SetOk();
       } else {
         response.status_code = code;
+      }
+    }
+      break;
+
+    case STRLEN: {
+      MMKV_ASSERT(request->HasKey(), "strlen");
+      String* str = nullptr;
+      const auto code = DB.GetStr(request->key, str);
+
+      response.status_code = code;
+      if (code == S_OK) {
+        response.count = str->size();
+        response.SetCount();
+      }
+    }
+      break;
+
+    case STRAPPEND: {
+      MMKV_ASSERT(request->HasKey() && request->HasValue(), "strappend");
+      String* str = nullptr;
+      const auto code = DB.GetStr(request->key, str);
+
+      response.status_code = code;
+      if (code == S_OK) {
+        str->append(request->value);
+      }
+    }
+      break;
+
+    case STRPOPBACK: {
+      MMKV_ASSERT(request->HasKey() && request->HasCount(), "strpopback");
+      String* str = nullptr;
+      const auto code = DB.GetStr(request->key, str);
+
+      response.status_code = code;
+      if (code == S_OK) {
+        str->erase(str->size()-request->count, request->count);
       }
     }
       break;
@@ -219,6 +266,7 @@ void MmkvSession::OnMmbpRequest(TcpConnectionPtr const& conn, std::unique_ptr<Mm
       SET_XX_ELSE_CODE(SET_OK_VALUES(std::move(values)))
     }
       break;
+
     case LGETALL: {
       MMKV_ASSERT(request->HasKey(), "lgetrange/getall");
       
@@ -227,11 +275,15 @@ void MmkvSession::OnMmbpRequest(TcpConnectionPtr const& conn, std::unique_ptr<Mm
       SET_XX_ELSE_CODE(SET_OK_VALUES(std::move(values)))
     }
       break;
+
     case LDEL: {
+      MMKV_ASSERT(request->HasKey(), "ldel");
       response.status_code = DB.ListDel(request->key);
     }
       break;
+
     case VADD: {
+      MMKV_ASSERT(request->HasKey() && request->HasVmembers(), "vadd");
       size_t count = 0;
       auto code = DB.VsetAdd(std::move(request->key), std::move(request->vmembers), count);
       SET_XX_ELSE_CODE(SET_OK_COUNT(count))
@@ -239,6 +291,7 @@ void MmkvSession::OnMmbpRequest(TcpConnectionPtr const& conn, std::unique_ptr<Mm
       break;
 
     case VALL: {
+      MMKV_ASSERT(request->HasKey(), "vall");
       WeightValues values;
       auto code = DB.VsetAll(request->key, values);
       SET_XX_ELSE_CODE(SET_OK_VMEMBERS(std::move(values)))
@@ -246,11 +299,13 @@ void MmkvSession::OnMmbpRequest(TcpConnectionPtr const& conn, std::unique_ptr<Mm
       break;
     
     case VDELM: {
+      MMKV_ASSERT(request->HasKey(), "vdelm");
       response.status_code = DB.VsetDel(request->key, request->value);
     }
       break;
     
     case VDELMRANGE: {
+      MMKV_ASSERT(request->HasKey() && request->HasRange(), "vdelmrange");
       size_t count = 0;
       auto code = DB.VsetDelRange(request->key, request->range, count);
       SET_XX_ELSE_CODE(SET_OK_COUNT(count))
@@ -258,62 +313,92 @@ void MmkvSession::OnMmbpRequest(TcpConnectionPtr const& conn, std::unique_ptr<Mm
       break;
 
     case VDELMRANGEBYWEIGHT: {
+      MMKV_ASSERT(request->HasKey() && request->HasRange(), "vdelmrangebyweight");
       size_t count = 0;
       auto code = DB.VsetDelRangeByWeight(request->key, request->GetWeightRange(), count);
       SET_XX_ELSE_CODE(SET_OK_COUNT(count))
     }
       break;
     
-    case VSIZE:
-    case VSIZEBYWEIGHT: {
+    case VSIZE: {
+      MMKV_ASSERT(request->HasKey(), "vsize");
       size_t size;
-      auto code = request->command == VSIZE ? 
-        DB.VsetSize(request->key, size) :
-        DB.VsetSizeByWeight(request->key, request->GetWeightRange(), size);
+      auto code = DB.VsetSize(request->key, size);
+      SET_XX_ELSE_CODE(SET_OK_COUNT(size))
+    }
+      break;
+
+    case VSIZEBYWEIGHT: {
+      MMKV_ASSERT(request->HasKey() && request->HasRange(), "vsizebyweight");
+      size_t size;
+      auto code = DB.VsetSizeByWeight(request->key, request->GetWeightRange(), size);
       SET_XX_ELSE_CODE(SET_OK_COUNT(size))
     }
       break;
     
     case VWEIGHT: {
+      MMKV_ASSERT(request->HasKey() && request->HasValue(), "vweight");
       Weight weight;
       auto code = DB.VsetWeight(request->key, request->value, weight);
       SET_XX_ELSE_CODE(SET_OK_COUNT(util::double2u64(weight)))
     }
       break;
 
-    case VORDER:
-    case VRORDER: {
-      size_t order;
-      auto code = request->command == VORDER ? 
-        DB.VsetOrder(request->key, request->value, order) :
-        DB.VsetROrder(request->key, request->value, order);
+    case VORDER: {
+      MMKV_ASSERT(request->HasKey() && request->HasValue(), "vorder");
+      size_t order = 0;
+      auto code = DB.VsetOrder(request->key, request->value, order);
       SET_XX_ELSE_CODE(SET_OK_COUNT(order))
     }
       break;
 
-    case VRANGE:
-    case VRRANGE: {
+    case VRORDER: {
+      MMKV_ASSERT(request->HasKey() && request->HasValue(), "vrorder");
+      size_t order = 0;
+      auto code = DB.VsetROrder(request->key, request->value, order);
+      SET_XX_ELSE_CODE(SET_OK_COUNT(order))
+    }
+      break;
+
+    case VRANGE: {
+      MMKV_ASSERT(request->HasKey() && request->HasRange(), "vrange");
       WeightValues wms;
-      auto code = request->command == VRANGE ?
-        DB.VsetRange(request->key, request->range, wms) :
-        DB.VsetRRange(request->key, request->range, wms);
+      auto code = DB.VsetRange(request->key, request->range, wms);
+
+      SET_XX_ELSE_CODE(SET_OK_VMEMBERS(std::move(wms)))
+
+    }
+      break;
+
+    case VRRANGE: {
+      MMKV_ASSERT(request->HasKey() && request->HasRange(), "vrrange");
+      WeightValues wms;
+      auto code = DB.VsetRRange(request->key, request->range, wms);
 
       SET_XX_ELSE_CODE(SET_OK_VMEMBERS(std::move(wms)))
     }
       break;
 
-    case VRANGEBYWEIGHT:
-    case VRRANGEBYWEIGHT: {
+    case VRANGEBYWEIGHT: {
+      MMKV_ASSERT(request->HasKey() && request->HasRange(), "vrangebyweight");
       WeightValues wms;
-      auto code = request->command == VRANGEBYWEIGHT ?
-        DB.VsetRangeByWeight(request->key, request->GetWeightRange(), wms) :
-        DB.VsetRRangeByWeight(request->key, request->GetWeightRange(), wms);
+      auto code = DB.VsetRangeByWeight(request->key, request->GetWeightRange(), wms);
+
+      SET_XX_ELSE_CODE(SET_OK_VMEMBERS(std::move(wms)))     
+    }
+      break;
+
+    case VRRANGEBYWEIGHT: {
+      MMKV_ASSERT(request->HasKey() && request->HasRange(), "vrrangebyweight");
+      WeightValues wms;
+      auto code = DB.VsetRRangeByWeight(request->key, request->GetWeightRange(), wms);
 
       SET_XX_ELSE_CODE(SET_OK_VMEMBERS(std::move(wms)))
     }
       break;
 
     case MADD: {
+      MMKV_ASSERT(request->HasKey() && request->HasKvs(), "madd");
       size_t count = 0;
       auto code = DB.MapAdd(std::move(request->key), std::move(request->kvs), count);
 
@@ -322,6 +407,7 @@ void MmkvSession::OnMmbpRequest(TcpConnectionPtr const& conn, std::unique_ptr<Mm
       break;
 
     case MGET: {
+      MMKV_ASSERT(request->HasKey() && request->HasValue(), "mget");
       String value;
       auto code = DB.MapGet(request->key, request->value, value);
       SET_XX_ELSE_CODE(SET_OK_VALUE(std::move(value)));
@@ -329,23 +415,27 @@ void MmkvSession::OnMmbpRequest(TcpConnectionPtr const& conn, std::unique_ptr<Mm
       break;
 
     case MGETS: {
+      MMKV_ASSERT(request->HasKey() && request->HasValues(), "mgets");
       StrValues values;
       auto code = DB.MapGets(request->key, request->values, values);
       SET_XX_ELSE_CODE(SET_OK_VALUES(std::move(values)));
     }
 
     case MSET: {
+      MMKV_ASSERT(request->HasKey() && request->HasValues(), "mset");
       auto code = DB.MapSet(request->key, std::move(request->values[0]), std::move(request->values[1]));
       response.status_code = code;
     }
       break;
 
     case MDEL: {
+      MMKV_ASSERT(request->HasKey() && request->HasValue(), "mdel");
       response.status_code = DB.MapDel(request->key, request->value);
     }
       break;
 
     case MALL: {
+      MMKV_ASSERT(request->HasKey(), "mall");
       StrKvs kvs;
       auto code = DB.MapAll(request->key, kvs);
 
@@ -353,15 +443,24 @@ void MmkvSession::OnMmbpRequest(TcpConnectionPtr const& conn, std::unique_ptr<Mm
     }
       break;
 
-    case MFIELDS:
-    case MVALUES: {
+    case MFIELDS: {
+      MMKV_ASSERT(request->HasKey(), "mfields");
       StrValues values;
-      auto code = request->command == MFIELDS ? DB.MapFields(request->key, values) : DB.MapValues(request->key, values);
+      auto code = DB.MapFields(request->key, values);
+      SET_XX_ELSE_CODE(SET_OK_VALUES(std::move(values)));
+    }
+      break;
+
+    case MVALUES: {
+      MMKV_ASSERT(request->HasKey(), "mvalues");
+      StrValues values;
+      auto code = DB.MapValues(request->key, values);
       SET_XX_ELSE_CODE(SET_OK_VALUES(std::move(values)));
     }
       break;
 
     case MSIZE: {
+      MMKV_ASSERT(request->HasKey(), "msize");
       size_t count = 0;
       auto code = DB.MapSize(request->key, count);
       SET_XX_ELSE_CODE(SET_OK_COUNT(count));
@@ -369,11 +468,117 @@ void MmkvSession::OnMmbpRequest(TcpConnectionPtr const& conn, std::unique_ptr<Mm
       break;
 
     case MEXISTS: {
+      MMKV_ASSERT(request->HasKey() && request->HasValue(), "mexists");
       response.status_code = DB.MapExists(request->key, request->value);
     }
       break;
+  
+    case SADD: {
+      MMKV_ASSERT(request->HasKey() && request->HasValues(), "sadd");
+      response.status_code = DB.SetAdd(std::move(request->key), request->values, response.count);
+      if (response.status_code == S_OK)
+        response.SetCount();
+    }
+      break;
+    
+    case SDELM: {
+      MMKV_ASSERT(request->HasKey() && request->HasValue(), "sdelm");
+      response.status_code = DB.SetDelm(request->key, request->value);
+    }
+      break;
 
+    case SEXISTS: {
+      MMKV_ASSERT(request->HasKey() && request->HasValue(), "sexists");
+      response.status_code = DB.SetExists(request->key, request->value);
+    }
+      break;
+    
+    case SSIZE: {
+      MMKV_ASSERT(request->HasKey(), "ssize");
+      size_t count = 0;
+      response.status_code = DB.SetSize(request->key, count);
+      if (response.status_code == S_OK) {
+        response.count = count;
+        response.SetCount();
+      }
+    }
+      break;
+    
+    case SALL: {
+      MMKV_ASSERT(request->HasKey(), "sall");
+      response.status_code = DB.SetAll(request->key, response.values);
+      if (response.status_code == S_OK)
+        response.SetValues();
+    }
+      break;
+    
+    case SAND: {
+      MMKV_ASSERT(request->HasKey() && request->HasValue(), "sand");
+      response.status_code = DB.SetAnd(request->key, request->value, response.values);
+      if (response.status_code == S_OK)
+        response.SetValues();
+    }
+      break;
+
+    case SOR: {
+      MMKV_ASSERT(request->HasKey() && request->HasValue(), "sor");
+      response.status_code = DB.SetOr(request->key, request->value, response.values);
+      if (response.status_code == S_OK)
+        response.SetValues();
+    }
+      break;
+
+    case SSUB: {
+      MMKV_ASSERT(request->HasKey() && request->HasValue(), "ssub");
+      response.status_code = DB.SetSub(request->key, request->value, response.values);
+      if (response.status_code == S_OK)
+        response.SetValues();
+    }
+      break;
+
+    case SANDTO: {
+      MMKV_ASSERT(request->HasValues(), "sandto");
+      response.status_code = DB.SetAndTo(request->values[1], request->values[2], std::move(request->values[0]));
+    }
+      break;
+
+    case SORTO: {
+      MMKV_ASSERT(request->HasValues(), "sorto");
+      response.status_code = DB.SetOrTo(request->values[1], request->values[2], std::move(request->values[0]));
+    }
+      break;
+
+    case SSUBTO: {
+      MMKV_ASSERT(request->HasValues(), "ssubto");
+      response.status_code = DB.SetSubTo(request->values[1], request->values[2], std::move(request->values[0]));
+    }
+      break;
+
+    case SANDSIZE: {
+      MMKV_ASSERT(request->HasKey() && request->HasValue(), "sandsize");
+      size_t count = 0;
+      auto code = DB.SetAndSize(request->key, request->value, count);
+      SET_XX_ELSE_CODE(SET_OK_COUNT(count));
+    }
+      break;
+
+    case SORSIZE: {
+      MMKV_ASSERT(request->HasKey() && request->HasValue(), "sorsize");
+      size_t count = 0;
+      auto code = DB.SetOrSize(request->key, request->value, count);
+      SET_XX_ELSE_CODE(SET_OK_COUNT(count));
+    }
+      break;
+
+    case SSUBSIZE: {
+      MMKV_ASSERT(request->HasKey() && request->HasValue(), "ssubsize");
+      size_t count = 0;
+      auto code = DB.SetSubSize(request->key, request->value, count);
+      SET_XX_ELSE_CODE(SET_OK_COUNT(count));
+    }
+      break;
   }
+
   
   response.DebugPrint();  
   codec_.Send(conn, &response);

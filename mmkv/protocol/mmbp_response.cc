@@ -61,4 +61,23 @@ void MmbpResponse::DebugPrint() const noexcept {
   LOG_DEBUG << "HasKvs: " << HasValue();
   LOG_DEBUG << "HasCount: " << HasCount();
   LOG_DEBUG << "HasVmember: " << HasVmembers();
+
+  if (HasValue()) {
+    LOG_DEBUG << "Value: " << value;
+  } else if (HasValues()) {
+    LOG_DEBUG << "Value: ";
+    for (auto const& value : values)
+      LOG_DEBUG << value;
+  } else if (HasKvs()) {
+    LOG_DEBUG << "KeyValues: ";
+    for (auto const& kv : kvs)
+      LOG_DEBUG << "<" << kv.key << ", " << kv.value << ">";
+  } else if (HasCount()) {
+    LOG_DEBUG << "Count: " << count;
+  } else if (HasVmembers()) {
+    LOG_DEBUG << "<Weight, Member>: ";
+    for (auto const& wm : vmembers)
+      LOG_DEBUG << "(" << wm.key << "," << wm.value << ")";
+  }
+
 }

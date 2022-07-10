@@ -13,9 +13,9 @@ enum Command : uint16_t {
   STR_DEL,
   STR_GET,
   STR_SET,
-  MEM_STAT,
-  EXPIRE_AT,
-  EXPIRE_AFTER,
+  STRLEN,
+  STRAPPEND,
+  STRPOPBACK,
   // list operation
   LADD,
   LAPPEND,
@@ -53,11 +53,28 @@ enum Command : uint16_t {
   MSIZE,
   MEXISTS,
   // hash set operation
-  
+  SADD,
+  SDELM,
+  SSIZE,
+  SALL,
+  SEXISTS,
+  SAND,
+  SANDTO,
+  SSUB,
+  SSUBTO,
+  SOR,
+  SORTO,
+  SANDSIZE,
+  SSUBSIZE,
+  SORSIZE,
   // common
+  MEM_STAT,
+  EXPIRE_AT,
+  EXPIRE_AFTER,
   DEL,
   RENAME,
   TYPE,
+  KEYALL,
   COMMAND_NUM,
 };
 

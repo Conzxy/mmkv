@@ -7,8 +7,6 @@
 * 无序集合(hash set)
 * 映射(map)
 
-存储键值对用的关键数据结构基本都是自造的轮子，这是由于STL是基于general-purpose设计的，而我们要的是specialized的数据结构，比如渐进式再哈希(`Incremental rehash`)的哈希表，无哨兵的单链表等(see `mmkv/algo`)，并且经量保证接口简洁易用。
-
 | 数据类型 | 实现 | 对应数据结构 | 源文件 |
 |---|---|---|---|
 | string | 支持动态增长的字符串 | mmkv::algo::String | algo/string.h |
@@ -19,6 +17,8 @@
 
 全局哈希表可能之后会将链表更换为`Self-balanced binary search tree`(e.g. avltree, rbtree)<br>
 暂时没有考虑针对个别数据类型进行特化，比如满足一定的条件，list可以采用局部性更好的动态数组而不是链表等。
+
+## Schedule
 
 ## Command
 支持的命令：
@@ -89,7 +89,7 @@
 | Command | Effect |
 | --- | --- |
 | sadd key members... | 添加members...到key对应的(无序)集合中，如果key不存在，则先创建 |
-| srem key member | 删除key对应集合中的member |
+| sdelm key member | 删除key对应集合中的member |
 | ssize key | 获取key对应集合的成员个数 |
 | sall key | 获取key对应集合的所有成员 |
 | sexists key member | 检验key对应的集合中是否存在成员member |

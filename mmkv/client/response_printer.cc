@@ -17,12 +17,17 @@ void ResponsePrinter::Printf(Command cmd, MmbpResponse* response) {
         std::cout << response->value << std::endl;
       } else if (response->HasValues()) {
         auto& values = response->values;
-        std::cout << "{";
-        size_t i;
-        for (i = 0; i < values.size()-1; ++i) {
-          std::cout << values[i] << ", ";
+        int64_t n = values.size();
+        if (n == 0) {
+          std::cout << "{}" << std::endl;
+        } else {
+          int64_t i;
+          std::cout << "{";
+          for (i = 0; i < n-1; ++i) {
+            std::cout << values[i] << ", ";
+          }
+          std::cout << values[i] << "}" << std::endl;
         }
-        std::cout << values[i] << "}" << std::endl;
       } else if (response->HasCount()) {
         if (cmd == VWEIGHT) {
           std::cout << "(double)" << util::int2double(response->count) << std::endl;

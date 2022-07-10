@@ -21,6 +21,8 @@ char const* mmkv::protocol::GetStatusMessage(mmkv::protocol::StatusCode code) no
     return "ERROR: Key exists but with different type" ;
   case S_FIELD_NONEXISTS:
     return "ERROR: Field doesn't exists";
+  case S_SET_MEMBER_NONEXISTS:
+    return "ERROR: Member doesn't exists in set";
   }
   
   return "ERROR: Unknown error";

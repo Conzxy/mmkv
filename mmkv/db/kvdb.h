@@ -36,6 +36,8 @@ class MmkvDb {
   
   bool Delete(String const& k);
   bool Type(String const& key, DataType& type) noexcept;
+  void GetAllKeys(StrValues& keys);
+
   StatusCode Rename(String const& old_name, String&& new_name);
 
   StatusCode InsertStr(String k, String v);
@@ -80,6 +82,21 @@ class MmkvDb {
   StatusCode MapValues(String const& key, StrValues& values);
   StatusCode MapSize(String const& key, size_t& count);
   StatusCode MapExists(String const& key, String const& field);
+
+  StatusCode SetAdd(String&& key, StrValues& members, size_t& count);
+  StatusCode SetDelm(String const& key, String const& member);
+  StatusCode SetSize(String const& key, size_t& count);
+  StatusCode SetExists(String const& key, String const& member);
+  StatusCode SetAll(String const& key, StrValues& members);
+  StatusCode SetAnd(String const& key1, String const& key2, StrValues& members);
+  StatusCode SetOr(String const& key, String const& key2, StrValues& members);
+  StatusCode SetSub(String const& key1, String const& key2, StrValues& members);
+  StatusCode SetAndTo(String const& key1, String const& key2, String&& dest);
+  StatusCode SetOrTo(String const& key1, String const& key2, String&& dest);
+  StatusCode SetSubTo(String const& key1, String const& key2, String&& dest);
+  StatusCode SetAndSize(String const& key1, String const& key2, size_t& count);
+  StatusCode SetOrSize(String const& key1, String const& key2, size_t& count);
+  StatusCode SetSubSize(String const& key1, String const& key2, size_t& count);
 
  private:
   Dict dict_;

@@ -26,6 +26,8 @@ enum CommandFormat : uint8_t {
   F_VSET_MEMBERS, // vadd <weight, member>...
   F_MAP_VALUES,   // madd <field, value>...
   F_FIELD_VALUE,  // mset field value
+  F_SET_OP,       // sand/or/sub key1 key2
+  F_SET_OP_TO,    // sand/or/subto dest key1 key2
   F_HELP,         // help
   F_EXIT,         // exit/quit
   F_NONE,         // command
@@ -41,14 +43,14 @@ extern std::unordered_map<kanon::StringView, mmkv::protocol::Command, StringView
 
 #define APPLICATION_INFORMATION \
   "Apache LICENSE Copyright(c) 2022.6 Conzxy\n" \
-  "Mmkv is an In-Memory Key-value remote database(or cache)\n" \
-  "Supported data structure(temporary): \n" \
+  "Mmkv is an Memory Key-value remote database(or cache)\n" \
+  "Supported data structure: \n" \
   "Github homepage: https://github.com/Conzxy/mmkv\n" \
   "[string]\n" \
   "[list]\n" \
   "[sorted set]\n" \
   "[map]\n" \
-  "[hash set](later)\n"
+  "[hash set]\n"
 
 
 #endif // _MMKV_CLIENT_INFORMATION_H_

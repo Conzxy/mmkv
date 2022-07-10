@@ -23,10 +23,12 @@ static inline int GenCommandMetadata() {
 
     switch (i) {
       case MEM_STAT:
+      case KEYALL:
         command_formats[command_strings[i]] = F_NONE;
         break;
       case STR_ADD:
       case STR_SET:
+      case STRAPPEND:
         command_formats[command_strings[i]] = F_VALUE;
         command_hints[i] += " key value";
         break;
@@ -44,8 +46,28 @@ static inline int GenCommandMetadata() {
         command_formats[command_strings[i]] = F_FIELD_VALUE;
         command_hints[i] += " key field value";
         break;
+      case SAND:
+      case SOR:
+      case SSUB:
+      case SANDSIZE:
+      case SORSIZE:
+      case SSUBSIZE:
+        command_formats[command_strings[i]] = F_SET_OP;
+        command_hints[i] += " key1 key2";
+        break;
+      case SANDTO:
+      case SORTO:
+      case SSUBTO:
+        command_formats[command_strings[i]] = F_SET_OP_TO;
+        command_hints[i] += " destination key1 key2";
+        break;
+      case SADD:
+        command_formats[command_strings[i]] = F_VALUES;
+        command_hints[i] += " key members...";
+        break;
       case STR_GET:
       case STR_DEL:
+      case STRLEN:
       case LGETALL:
       case LGETSIZE:
       case LDEL:
@@ -57,6 +79,8 @@ static inline int GenCommandMetadata() {
       case MSIZE:
       case MFIELDS:
       case MVALUES:
+      case SALL:
+      case SSIZE:
         command_formats[command_strings[i]] = F_ONLY_KEY;
         command_hints[i] += " key";
         break;
@@ -66,6 +90,7 @@ static inline int GenCommandMetadata() {
         command_formats[command_strings[i]] = F_VALUES;
         command_hints[i] += " key values...";
         break;
+      case STRPOPBACK:
       case LPOPBACK:
       case LPOPFRONT:
         command_formats[command_strings[i]] = F_COUNT;
@@ -87,6 +112,8 @@ static inline int GenCommandMetadata() {
       case VWEIGHT:
       case VORDER:
       case VRORDER:
+      case SDELM:
+      case SEXISTS:
         command_formats[command_strings[i]] = F_VALUE;
         command_hints[i] += " key member";
         break;

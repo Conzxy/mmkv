@@ -119,6 +119,22 @@ Translator::ErrorCode Translator::Parse(MmbpRequest* request, StringView stateme
       SET_VALUES;
     }
       break;
+
+    case F_SET_OP: {
+      SET_KEY;
+      SET_VALUE;
+      SYNTAX_ERROR_ROUTINE_END;
+    }
+      break;
+    
+    case F_SET_OP_TO: {
+      SET_VALUES;
+      if (request->values.size() > 3) {
+        return E_SYNTAX_ERROR;
+      }
+    }
+      break;
+
     case F_FIELD_VALUE: {
       SET_KEY;
 

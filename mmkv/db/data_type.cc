@@ -10,6 +10,10 @@ char const* mmkv::db::GetDataTypeString(DataType type) noexcept {
       return "list";
     case D_SORTED_SET:
       return "vset";
+    case D_MAP:
+      return "map";
+    case D_SET:
+      return "hash set";
     default:
       return "unknown and invalid data type";
   }
