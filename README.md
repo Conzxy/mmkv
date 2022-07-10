@@ -1,23 +1,24 @@
 # Mmkv(Memory Key-Value database/cache)
 ## Introducation
-`mmkv`是**内存**型**键值**数据库（或缓存），支持多种数据结构，包括
-* 字符串（string）(√)
-* 列表（list）(√)
-* 有序集合（sorted set）(√)
-* 无序集合（hash set）(×)
-* 映射（map）(√)
+`mmkv`是一个基于**内存**的**键值型**数据库（或缓存），支持多种数据结构，包括
+* 字符串(string)
+* 列表(list)
+* 有序集合(sorted set)
+* 无序集合(hash set)
+* 映射(map)
 
 存储键值对用的关键数据结构基本都是自造的轮子，这是由于STL是基于general-purpose设计的，而我们要的是specialized的数据结构，比如渐进式再哈希(`Incremental rehash`)的哈希表，无哨兵的单链表等(see `mmkv/algo`)，并且经量保证接口简洁易用。
 
-| 数据类型 | 对应数据结构 | 源文件 | 说明 |
-|---|---|---| ---|
-| string | mmkv::algo::String | algo/string.h | 使用自定义allocator的std::string |
-| list | mmkv::algo::Blist | algo/blist.h | 无哨兵的双向链表 |
-| sorted set(vset) | mmkv::db::Vset | db/vset.h, algo/avl_tree.h, algo/internal/avl\*.h, algo/dictionary.h | 无header的Avl树，支持异质删除 |
-| hash set | mmkv::algo::HashSet | algo/hash_set.h, slist.h, reserved_array.h, hash\*.h, internal/hash\*.h | 采用separate list实现的哈希表（支持Incremental rehash） |
-| map | mmkv::algo::Dictionary | algo/dictionary.h | 同上，只不过元素类型为KeyValue |
+| 数据类型 | 实现 | 对应数据结构 | 源文件 |
+|---|---|---|---|
+| string | 支持动态增长的字符串 | mmkv::algo::String | algo/string.h |
+| list | 无哨兵的双向链表（暂时）| mmkv::algo::Blist | algo/blist.h |
+| sorted set(vset) | AvlTree与哈希表共同实现, AvlTree允许键(权重)重复而member是unique的，基于这个特性和一些命令的实现需要哈希表提供反向映射| mmkv::db::Vset | db/vset.h, algo/avl_tree.h, algo/internal/avl\*.h, algo/internal/func_util.h, algo/dictionary.h |
+| hash set | 采用separate list实现的哈希表（支持Incremental rehash） | mmkv::algo::HashSet | algo/hash_set.h, slist.h, reserved_array.h, hash\*.h, internal/hash\*.h |  |
+| map | 同hash set，不过元素类型是KeyValue | mmkv::algo::Dictionary | algo/dictionary.h, slist.h, reserved_array.h, hash\*.h, internal/hash\*.h |
 
-全局哈希表可能之后会将链表更换为`Self-balanced binary search tree`(e.g. avltree, rbtree)
+全局哈希表可能之后会将链表更换为`Self-balanced binary search tree`(e.g. avltree, rbtree)<br>
+暂时没有考虑针对个别数据类型进行特化，比如满足一定的条件，list可以采用局部性更好的动态数组而不是链表等。
 
 ## Command
 支持的命令：
@@ -29,7 +30,7 @@
 | rename key new_name | 更换key，其数据结构不变 |
 | del key | 删除key，无论其数据类型 |
 | keyall | 获取所有键 |
-| memorystat | 返回memoryfootprint信息，一般供CLI使用 |
+| memorystat | 返回memory footprint信息，一般供CLI使用 |
 
 * CLI(Command line interface)
 
@@ -44,9 +45,9 @@
 | Command | Effect |
 | --- | --- |
 | stradd key value | 添加string pair <key, value> |
-| strget key | 获取key对应的value |
-| strset key value | 修改key对应的value |
-| strdel key | 删除key |
+| strget key | 获取key对应的字符串 |
+| strset key value | 修改key对应的字符串为value |
+| strdel key | 删除key对应的字符串 |
 | strappend key value | 添加value到key对应字符串尾后 |
 | strpopback key count | 删除key对应字符串尾部count个数字符 |
 
@@ -129,7 +130,7 @@
 
 尽管如此，我还是选用了二进制协议，是因为我想尝试一下自定义二进制协议（因此也没有用json，protobuf等流行序列化方式）。
 
-具体来说，我将该协议命名为`MMBP(Memory binary protocol)`。
+具体来说，我将该协议命名为`MMBP(Memory binary protocol)`。<br>
 协议格式有两种（其实也可以合并为一种，但有些字段实际还是没必要，会占用多余的bit以表示是否设置）
 
 #### MMBP request
@@ -138,23 +139,23 @@
 * [`command`](https://github.com/Conzxy/mmkv/blob/main/mmkv/protocol/command.h): 命令类型（16bit的枚举类型）
 
 除了`command`是**required**字段，其它均为**optional**字段
-* `has_bits`: 表示optinoal字段哪些被设置
-* `key_size`, key：key字符串
+* `has_bits`: 表示`optinoal`字段哪些被设置，一个byte可以表示8个`optional`字段
+* `key`：key字符串
 
 目前，有四种值类型
-* `value`: 单value值，用于string命令和sorted set部分命令
-* `value[]`: value数组，用于list命令和hash set命令
+* `value`: 单value值，用于string命令和sorted set/map/hash set部分命令
+* `value[]`: value数组，用于list命令和hash set/sorted set/map部分命令
 * `{ weight, member }[]`: { weight, member} 对数组，用于sorted set部分命令
-* `{ key, value }[]`: 键值对数组，用于map命令
+* `{ key, value }[]`: 键值对数组，用于map部分命令
 
 还有一些字段负责实现部分数据类型的部分命令：
-* `count`: 32位整型，用于list pop命令
+* `count`: 32位整型，用于strpopback, list pop命令，sorted set的order相关命令等
 * `range`: 2个64位整型构成的范围，之所以是64位，是因为我想把`double`类型塞进去。只要通过`*(uint64_t*)&d`强转就能使`double`的bit mode不变，因此无关乎整型是否，只要底层表示不变。用于实现list和sorted set部分命令。
 
 #### MMBP response
 
 ![mmbp2.png](https://s2.loli.net/2022/07/07/Kg9cIR3xJ2sm4Xz.png)
-* `status_code`: 状态码，表示命令执行的结果。
+* `status_code`: 状态码，表示命令执行的结果。<br>
 具体参考protocol/command.h
 
 其他同request。
@@ -195,10 +196,9 @@ chmod u+x release_build.sh
 ![vset_mmkv.gif](https://s2.loli.net/2022/07/07/EpM1YRKg4GVNZky.gif)
 
 ## TODO
-* 使用AvlTree实现新的哈希表
-* 实现expire_time管理
-* 实现replacement管理
-* Hash set支持
 * 持久化复原(Recovery)
 * 分布式支持
 * Raft容错支持
+* 使用AvlTree实现新的哈希表
+* 实现expire_time管理
+* 实现replacement管理
