@@ -129,3 +129,68 @@ TEST(hash_set, find2) {
   assert(res2 == 0);
   assert(!res);
 }
+
+TEST_F(HashSetTest, clone) {
+  HashSet<int> s;
+  s.Clone(hset);
+
+  hset.DebugPrint();
+  s.DebugPrint();
+  
+  EXPECT_EQ(s.size(), hset.size());
+  for (auto x : hset) {
+    ASSERT_TRUE(s.Find(x));
+  }
+}
+
+TEST(hash_set_test, union) {
+  HashSet<int> s1({ 0, 1, 2, 3, 4, 5 });
+  HashSet<int> s2({ 1, 2, 3, 4, 6, 7 });
+
+  std::vector<int> result;
+
+  s1.Union(s2, [&result](int x) {
+    result.push_back(x);
+  });
+  
+  ASSERT_EQ(result.size(), 8);
+  for (auto const& x : result) {
+    std::cout << x << " ";
+  }
+  std::cout << std::endl;
+}
+
+TEST(hash_set_test, difference) {
+  HashSet<int> s1({ 0, 1, 2, 3, 4, 5 });
+  HashSet<int> s2({ 1, 2, 3, 4, 6, 7 });
+
+  std::vector<int> result;
+
+  s1.Difference(s2, [&result](int x) {
+    result.push_back(x);
+  });
+  
+  ASSERT_EQ(result.size(), 2);
+  for (auto const& x : result) {
+    std::cout << x << " ";
+  }
+  std::cout << std::endl;
+}
+
+TEST(hash_set_test, intersection) {
+  HashSet<int> s1({ 0, 1, 2, 3, 4, 5 });
+  HashSet<int> s2({ 1, 2, 3, 4, 6, 7 });
+
+  std::vector<int> result;
+
+  s1.Intersection(s2, [&result](int x) {
+    result.push_back(x);
+  });
+  
+  ASSERT_EQ(result.size(), 4);
+
+  for (auto const& x : result) {
+    std::cout << x << " ";
+  }
+  std::cout << std::endl;
+}
