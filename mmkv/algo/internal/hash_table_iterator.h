@@ -71,18 +71,18 @@ class HashTableConstIterator {
   }
 
  protected:
-  explicit HashTableConstIterator(table_type* ht, int table_index=0, size_type bucket_index=0)
-    : ht_(ht)
+  explicit HashTableConstIterator(table_type const* ht, int table_index=0, size_type bucket_index=0)
+    : ht_((table_type*)ht)
     , table_index_(table_index)
     , bucket_index_(bucket_index)
     , slot_(nullptr)
   { 
-    if (!ht) {
+    if (!ht_) {
       return;
     }
 
     for (int i = table_index_; i < 2; ++i) {
-      auto* table = &ht->table(i);
+      auto* table = &ht_->table(i);
       auto size = table->size();
       for (size_type j = bucket_index_; j < size; ++j) {
         if (!(*table)[j].empty()) {
