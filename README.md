@@ -10,7 +10,7 @@
 | 数据类型 | 实现 | 对应数据结构 | 源文件 |
 |---|---|---|---|
 | string | 支持动态增长的字符串 | mmkv::algo::String | algo/string.h |
-| list | 无哨兵的双向链表（暂时）| mmkv::algo::Blist | algo/blist.h |
+| list | 无哨兵的双向链表（暂时）| mmkv::algo::Blist | algo/blist.h, algo/internal/bnode.h, algo/internal/blist_iterator.h |
 | sorted set(vset) | AvlTree与哈希表共同实现, AvlTree允许键(权重)重复而member是unique的，基于这个特性和一些命令的实现需要哈希表提供反向映射| mmkv::db::Vset | db/vset.h, algo/avl_tree.h, algo/internal/avl\*.h, algo/internal/func_util.h, algo/dictionary.h |
 | hash set | 采用separate list实现的哈希表（支持Incremental rehash） | mmkv::algo::HashSet | algo/hash_set.h, slist.h, reserved_array.h, hash\*.h, algo/internal/hash\*.h |  |
 | map | 同hash set，不过元素类型是KeyValue | mmkv::algo::Dictionary | algo/dictionary.h, slist.h, reserved_array.h, hash\*.h, algo/internal/hash\*.h |
