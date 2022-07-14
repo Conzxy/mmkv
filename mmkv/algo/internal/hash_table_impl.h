@@ -123,7 +123,7 @@ bool HASH_TABLE_CLASS::InsertWithDuplicate_impl(U&& elem, value_type*& duplicate
       bucket = &table2()[bucket_index2]; 
       CHECK_AND_SET_DUPLICATE;
     } else {
-#if 1
+#if 0
       if (bucket_index2 >= table1().size()) {
         bucket = &table1()[bucket_index1];
         CHECK_AND_SET_DUPLICATE;
@@ -136,9 +136,11 @@ bool HASH_TABLE_CLASS::InsertWithDuplicate_impl(U&& elem, value_type*& duplicate
       }
 #else
         bucket = &table1()[bucket_index1];
-        if (CheckDuplicate(bucket, elem)) {
-          return false;
-        }
+        CHECK_AND_SET_DUPLICATE;
+
+        bucket = &table2()[bucket_index2];
+        CHECK_AND_SET_DUPLICATE;
+
 #endif
     }
   }

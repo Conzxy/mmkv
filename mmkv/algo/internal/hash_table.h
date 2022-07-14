@@ -21,12 +21,23 @@ namespace algo {
 template<typename T, typename Alloc>
 using BucketAllocator = typename Alloc::template rebind<Slist<T, Alloc>>::other;
 
+#ifdef HASH_FUNC
+#undef HASH_FUNC
+#endif
 #define HASH_FUNC (*((HF*)this))
+
+#ifndef EQUAL_KEY
+#undef EQUAL_KEY
+#endif
 #define EQUAL_KEY (*((EK*)this))
+
+#ifdef GET_KEY
+#undef GET_KEY
+#endif
 #define GET_KEY (*((GK*)this))
 
 /**
- * \brief Fast look-up table
+ * \brief Fast look-up table based on the strategy of hashing
  *
  * 因为有rehash的需求，采用separate list法。
  * 相比一般的separate list而言：
@@ -37,11 +48,15 @@ using BucketAllocator = typename Alloc::template rebind<Slist<T, Alloc>>::other;
  *     多个客户端长时间等待，减少响应时间
  *
  * 暂时不提供Shrink
- * TODO: 将Slist换成AvlTree（另起一个类）
+ * \note 
+ *   在时间和空间的trade-off中，如果时间更为重要，或许采用TreeHashTable是更好的
+ * \see 
+ *   tree_hashtable.h
+ *   ../avl_tree_hashtable.h
  */
 template<typename K, typename T, typename HF, typename GK, typename EK, typename Alloc>
 class HashTable : protected BucketAllocator<T, Alloc>
-                , protected NodeAlloctor<T, Alloc>
+                , protected slist::NodeAlloctor<T, Alloc>
                 , protected EK
                 , protected HF
                 , protected GK {
@@ -69,7 +84,7 @@ class HashTable : protected BucketAllocator<T, Alloc>
   using Node = typename Bucket::Node;
 
  private:
-  using NodeAllocTraits = std::allocator_traits<NodeAlloctor<T, Alloc>>;
+  using NodeAllocTraits = std::allocator_traits<slist::NodeAlloctor<T, Alloc>>;
   friend class HashTableIterator<K, T, HF, GK, EK, Alloc>;
   friend class HashTableConstIterator<K, T, HF, GK, EK, Alloc>;
   
@@ -80,6 +95,10 @@ class HashTable : protected BucketAllocator<T, Alloc>
   void Clone(HashTable const& table);
   // 不提供Emplace()
   // 因为如果有重复键new后还得delete 
+
+  /************************************************************/
+  /* Insert interface                                         */
+  /************************************************************/
 
   /**
    * \brief Insert entry(unique key)
@@ -104,6 +123,10 @@ class HashTable : protected BucketAllocator<T, Alloc>
   bool InsertWithDuplicate(T const& elem, value_type*& duplicate) { return InsertWithDuplicate_impl(elem, duplicate); }
   bool InsertWithDuplicate(T&& elem, value_type*& duplicate) { return InsertWithDuplicate_impl(std::move(elem), duplicate); }
 
+  /************************************************************/
+  /* Search interface                                         */
+  /************************************************************/
+
   /**
    * \brief Search the entry with given \p key
    * \return
@@ -121,6 +144,10 @@ class HashTable : protected BucketAllocator<T, Alloc>
    *   Because MTF policy, this must be the header of a list
    */
   Node** FindSlot(K const& key);
+
+  /************************************************************/
+  /* Delete interface                                         */
+  /************************************************************/
 
   /**
    * \brief Erase the slot returnd by FindSlot()
@@ -150,6 +177,25 @@ class HashTable : protected BucketAllocator<T, Alloc>
    */
   Node* Extract(K const& key) noexcept;  
 
+  /**
+   * \brief Reclaims the memory of the node
+   * \warning
+   *   If value_type is non-trivially-destructive type, should call DropNode
+   *   instead of call this.
+   *   Indeed, using enable_if_t and is_trivially_destructive can take static check here
+   *   but I don't like use SFINAE traits in such way.
+   */
+  void FreeNode(Node* node) { NodeAllocTraits::deallocate(*this, node, 1); }
+
+  /**
+   * \brief Destory the object and reclaims the memory
+   */
+  void DropNode(Node* node) { NodeAllocTraits::destroy(*this, node); FreeNode(node); }
+
+  /************************************************************/
+  /* Getter interface                                         */
+  /************************************************************/
+
   size_type size() const noexcept { return table1().used; }
   size_type GetSize() const noexcept { return size(); }
   bool empty() const noexcept { return size() == 0; }
@@ -169,21 +215,6 @@ class HashTable : protected BucketAllocator<T, Alloc>
   const_iterator end() const noexcept { return const_iterator(this, 1, table2().size()); }
   const_iterator cbegin() const noexcept { return begin(); }
   const_iterator cend() const noexcept { return end(); }
-
-  /**
-   * \brief Reclaims the memory of the node
-   * \warning
-   *   If value_type is non-trivially-destructive type, should call DropNode
-   *   instead of call this.
-   *   Indeed, using enable_if_t and is_trivially_destructive can take static check here
-   *   but I don't like use SFINAE traits in such way.
-   */
-  void FreeNode(Node* node) { NodeAllocTraits::deallocate(*this, node, 1); }
-
-  /**
-   * \brief Destory the object and reclaims the memory
-   */
-  void DropNode(Node* node) { NodeAllocTraits::destroy(*this, node); FreeNode(node); }
 
   // For debugging
   void DebugPrint();
