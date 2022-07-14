@@ -1,10 +1,14 @@
 #ifndef _MMKV_ALGO_RESERVED_ARRAY_H_
 #define _MMKV_ALGO_RESERVED_ARRAY_H_
 
+#ifdef DLOG
+#undef DLOG
+#endif
+
 #ifdef _DEBUG_RESERVED_ARRAY_
   #include <iostream>
   #include <stdio.h>
-  
+ 
   #define DLOG(...) printf(__VA_ARGS__);
 #else
   #define DLOG(...) 

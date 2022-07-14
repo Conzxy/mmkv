@@ -44,30 +44,9 @@ BASIC_TYPE_SPECILIZATION(float)
 BASIC_TYPE_SPECILIZATION(double)
 BASIC_TYPE_SPECILIZATION(long double)
 
-// Get Key
-template<typename K>
-struct GetKey {
-  constexpr K const& operator()(K const& key) const noexcept {
-    return key;
-  }
-};
-
-template<typename K, typename V>
-struct GetKey <KeyValue<K, V>> {
-  constexpr K const& operator()(KeyValue<K, V> const& kv) const noexcept {
-    return kv.key;
-  }
-};
-
-// Equal Key
-template<typename K>
-struct EqualKey {
-  constexpr bool operator()(K const& k1, K const& k2) const noexcept {
-    return k1 == k2;
-  }
-};
-
 } // algo
 } // mmkv
+
+#include "internal/func_util.h"
 
 #endif // _MMKV_ALGO_HASH_UTIL_H

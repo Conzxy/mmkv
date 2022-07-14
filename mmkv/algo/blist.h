@@ -28,17 +28,19 @@ using BNodeAllocator = typename Alloc::template rebind<BNode<T>>::other;
  * 之所以不提供哨兵是因为mmkv本身是内存敏感性应用，其他数据结构也是能省则省
  * 为了能提供end()/cend()以支持迭代，最后一个结点的next并不指向第一个结点
  * 链表结构如下：
- * header -> node1 -> node2 -> tail node -> nullptr
+ * header <-> node1 <-> node2 <-> tail node -> nullptr
  *   |                            ^
  *   ------------------------------
  *
- * \note
+ * \notssary
  *   Public class
- *   copyable
+ *   Should be copyable but not necessary for mmkv
  */
 template<typename T, typename Alloc=LibcAllocatorWithRealloc<T>>
-class Blist : protected blist::BNodeAllocator<T, Alloc> {
+class Blist : protected blist::BNodeAllocator<T, Alloc>
+            , protected Alloc {
   using NodeAllocTraits = std::allocator_traits<blist::BNodeAllocator<T, Alloc>>;
+  using AllocTraits = std::allocator_traits<Alloc>;
 
  public:
   using size_type = size_t;
@@ -244,7 +246,7 @@ class Blist : protected blist::BNodeAllocator<T, Alloc> {
   // deprecated
   template<typename... Args>
   void ConstructNode(Node* node, Args&&... args) {
-    NodeAllocTraits::construct(*this, &node->value, std::forward<Args>(args)...);
+    AllocTraits::construct(*this, &node->value, std::forward<Args>(args)...);
   } 
 
   template<typename... Args>
@@ -252,7 +254,7 @@ class Blist : protected blist::BNodeAllocator<T, Alloc> {
     auto node = AllocateNode();
     try {
       node->prev = node->next = nullptr;
-      NodeAllocTraits::construct(*this, &node->value, std::forward<Args>(args)...);
+      AllocTraits::construct(*this, &node->value, std::forward<Args>(args)...);
     } catch (...) {
       FreeNode(node);
       throw;
@@ -262,7 +264,7 @@ class Blist : protected blist::BNodeAllocator<T, Alloc> {
   }
 
   void FreeNode(Node* node) { NodeAllocTraits::deallocate(*this, node, 1); count_--; }
-  void DestroyNode(Node* node) { NodeAllocTraits::destroy(*this, &node->value); }
+  void DestroyNode(Node* node) { AllocTraits::destroy(*this, &node->value); }
   void DropNode(Node* node) { DestroyNode(node); FreeNode(node); }
 
   // Data member:
