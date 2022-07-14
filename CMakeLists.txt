@@ -20,6 +20,8 @@ set(CXX_FLAGS
  -Wno-unused-function
  -Wno-switch
  -Wno-format-security
+ # support INT2DOUBLE
+ -Wno-strict-aliasing
  -Werror
  # make non-trivial(but like "trivial") class can reallocate
  -Wno-class-memaccess

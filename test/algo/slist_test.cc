@@ -133,7 +133,3 @@ TEST_F(SlistTest, copy_assignment) {
   }
   elem = 0;
 }
-
-TEST_F(SlistTest, memory_footprint) {
-  mmkv::util::MemoryFootPrint();
-}

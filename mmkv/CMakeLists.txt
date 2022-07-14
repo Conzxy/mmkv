@@ -1,12 +1,12 @@
 file(GLOB_RECURSE MMKV_SRC
   util/*.cc
   protocol/*.cc
-  db/*.cc
 )
 
 file(GLOB_RECURSE MMKV_SERVER_SRC
   app/server_main.cc
   server/*.cc
+  db/*.cc
 )
 
 file(GLOB_RECURSE MMKV_CLIENT_SRC

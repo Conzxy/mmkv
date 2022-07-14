@@ -15,7 +15,7 @@ TEST(vset, insert) {
   EXPECT_FALSE(vs.Insert(2.0, "A"));
   
   Weight w;
-  uint32_t order;
+  size_t order;
   EXPECT_TRUE(vs.GetWeight("A", w));
   EXPECT_EQ(w, 1.0);
 
@@ -74,7 +74,7 @@ TEST_F(VsetTest, getweight) {
 }
 
 TEST_F(VsetTest, getorder) {
-  uint32_t order;
+  size_t order;
   EXPECT_TRUE(set.GetOrder("C", order));
   EXPECT_EQ(order, 0);
   EXPECT_TRUE(set.GetOrder("D", order));
@@ -90,7 +90,7 @@ TEST_F(VsetTest, getorder) {
 }
 
 TEST_F(VsetTest, getrorder) {
-  uint32_t order;
+  size_t order;
   EXPECT_TRUE(set.GetROrder("C", order));
   EXPECT_EQ(order, 5);
   EXPECT_TRUE(set.GetROrder("D", order));

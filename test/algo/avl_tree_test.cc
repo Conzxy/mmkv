@@ -115,4 +115,10 @@ TEST_F(AvlTreeTest, doinall) {
   set.DoInAll([](int x) {
       std::cout << x << " ";
   });
+
+  std::cout << "\n";
+}
+
+TEST_F(AvlTreeTest, size) {
+  std::cout << "sizeof set = " << sizeof set << std::endl;
 }

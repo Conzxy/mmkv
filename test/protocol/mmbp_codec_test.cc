@@ -46,8 +46,10 @@ TEST(mmbp_codec, parse_request) {
   ChunkList output_buffer;
 
   MmbpRequest msg;
-  msg.SetKey("A");
-  msg.SetValue("B");
+  msg.key = "A";
+  msg.value = "B";
+  msg.SetKey();
+  msg.SetValue();
   ASSERT_TRUE(msg.HasKey());
   ASSERT_TRUE(msg.HasValue());
   ASSERT_FALSE(msg.HasExpireTime());
@@ -76,17 +78,18 @@ TEST(mmbp_codec, parse_request) {
   ASSERT_TRUE(request->HasKey());
   ASSERT_TRUE(request->HasValue());
   ASSERT_FALSE(request->HasExpireTime());
-  EXPECT_EQ(request->GetKey(), "A");
-  EXPECT_EQ(request->GetValue(), "B");
+  EXPECT_EQ(request->key, "A");
+  EXPECT_EQ(request->value, "B");
 }
 
 TEST(mmbp_codec, parse_response) {
   MmbpCodec codec(MmbpResponse::GetPrototype());
   
   MmbpResponse res;
-  res.SetStatusCode(S_OK);
-  res.SetContent("OK");
-  
+  res.status_code = S_OK;
+  res.value = "OK";
+  res.SetValue(); 
+
   ChunkList output_buffer;
   codec.SerializeTo(&res, output_buffer);
   
@@ -102,7 +105,6 @@ TEST(mmbp_codec, parse_response) {
   ASSERT_TRUE(msg);
 
   auto msg1 = kanon::down_pointer_cast<MmbpResponse>(msg);
-  EXPECT_EQ(msg1->GetStatusCode(), S_OK);
-  EXPECT_EQ(msg1->GetContent(), "OK");
-
+  EXPECT_EQ(msg1->status_code, S_OK);
+  EXPECT_EQ(msg1->value, "OK");
 }

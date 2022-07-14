@@ -13,9 +13,11 @@ TEST(mmbp_request, serialize) {
   String value = "MMKV";
 
   std::unique_ptr<MmbpRequest> mmbp_message(new MmbpRequest());
-  mmbp_message->SetKey(key);
-  mmbp_message->SetValue(value);
-  mmbp_message->SetCommand(Command::STR_ADD);
+  mmbp_message->SetKey();
+  mmbp_message->key = key;
+  mmbp_message->SetValue();
+  mmbp_message->value = value;
+  mmbp_message->command = Command::STR_ADD;
   ASSERT_TRUE(mmbp_message->HasKey());
   ASSERT_TRUE(mmbp_message->HasValue());
   ASSERT_FALSE(mmbp_message->HasExpireTime());
@@ -55,9 +57,11 @@ TEST(mmbp_request, parse) {
   String value = "MMKV";
 
   std::unique_ptr<MmbpRequest> mmbp_message(new MmbpRequest());
-  mmbp_message->SetKey(key);
-  mmbp_message->SetValue(value);
-  mmbp_message->SetCommand(Command::STR_ADD);
+  mmbp_message->SetKey();
+  mmbp_message->key = key;
+  mmbp_message->SetValue();
+  mmbp_message->value = value;
+  mmbp_message->command = (Command::STR_ADD);
 
   ChunkList output_buffer;
 
@@ -74,7 +78,7 @@ TEST(mmbp_request, parse) {
   ASSERT_TRUE(request.HasKey());
   ASSERT_TRUE(request.HasValue());
   ASSERT_FALSE(request.HasExpireTime());
-  ASSERT_EQ(request.GetCommnd(), STR_ADD);
-  ASSERT_EQ(request.GetKey(), "Conzxy");
-  ASSERT_EQ(request.GetValue(), "MMKV");
+  ASSERT_EQ(request.command, STR_ADD);
+  ASSERT_EQ(request.key, "Conzxy");
+  ASSERT_EQ(request.value, "MMKV");
 }

@@ -228,7 +228,3 @@ TEST(slist, grow_shrink) {
 
   arr.Shrink(2);
 }
-
-TEST_F(ReservedArrayTest, memory_footprint) {
-  mmkv::util::MemoryFootPrint();
-}

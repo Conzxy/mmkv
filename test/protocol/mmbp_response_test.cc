@@ -8,7 +8,7 @@ using namespace mmkv::protocol;
 
 TEST(mmbp_response, serialize) {
   MmbpResponse msg;
-  msg.SetError(S_INVALID_MESSAGE); 
+  msg.status_code = (S_INVALID_MESSAGE); 
 
   ChunkList output_buffer;
   msg.SerializeTo(output_buffer);
@@ -24,9 +24,6 @@ TEST(mmbp_response, serialize) {
   MmbpResponse test_response;
 
   test_response.ParseFrom(input_buffer);
-
-  ASSERT_EQ(test_response.GetStatusCode(), S_INVALID_MESSAGE);
-  ASSERT_TRUE(GetStatusMessage(S_INVALID_MESSAGE) == test_response.GetContent());
 }
 
 TEST(mmbp_response, parse) {

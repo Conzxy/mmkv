@@ -8,7 +8,6 @@
 #include "mmkv/algo/avl_tree.h"
 #include "mmkv/algo/dictionary.h"
 #include "mmkv/algo/key_value.h"
-#include "mmkv/db/kvdb.h"
 #include "mmkv/db/type.h"
 
 #include <assert.h>
@@ -19,6 +18,7 @@ namespace db {
 using algo::AvlTree;
 using algo::Dictionary;
 using algo::KeyValue;
+using protocol::WeightValues;
 
 /*
  * V is taken from AVL tree

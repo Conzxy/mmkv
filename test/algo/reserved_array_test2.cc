@@ -1,4 +1,4 @@
-#include "mmkv/util/memory_stat.h"
+#include "mmkv/util/memory_footprint.h"
 #define _DEBUG_RESERVED_ARRAY_
 #include "mmkv/algo/reserved_array.h"
 
