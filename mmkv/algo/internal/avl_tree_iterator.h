@@ -16,8 +16,8 @@ class AvlTreeConstIterator {
   using BaseNode = avl::AvlBaseNode;
   using Self = AvlTreeConstIterator;
   
-  template<typename K, typename V, typename Compare, typename Alloc>
-  friend class AvlTree;
+  template<typename K, typename V, typename Compare, typename GK, typename Alloc, typename D>
+  friend class AvlTreeBase;
  public:
   using value_type = T;
   using reference = T const&;
@@ -96,8 +96,8 @@ class AvlTreeIterator final : public AvlTreeConstIterator<T> {
   using Self = AvlTreeIterator;
   using Base::node_;
   
-  template<typename K, typename V, typename Compare, typename Alloc>
-  friend class AvlTree;
+  template<typename K, typename V, typename Compare, typename GK, typename Alloc, typename D>
+  friend class AvlTreeBase;
  public:
   using reference = T&;
   using pointer = T*;
