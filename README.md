@@ -1,5 +1,5 @@
 # Mmkv(Memory Key-Value database/cache)
-其他细节内容参考[wiki](https://github.com/Conzxy/mmkv.wiki.git)。
+其他细节内容参考[wiki](https://github.com/Conzxy/mmkv/wiki)。
 
 ## Introducation
 `mmkv`是一个基于**内存**的**键值型**数据库（或缓存），支持多种数据结构，包括
