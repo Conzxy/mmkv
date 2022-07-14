@@ -44,13 +44,14 @@ extern std::unordered_map<kanon::StringView, mmkv::protocol::Command, StringView
 #define APPLICATION_INFORMATION \
   "Apache LICENSE Copyright(c) 2022.6 Conzxy\n" \
   "Mmkv is an Memory Key-value remote database(or cache)\n" \
+  "Github page: https://github.com/Conzxy/mmkv\n" \
   "Supported data structure: \n" \
-  "Github homepage: https://github.com/Conzxy/mmkv\n" \
   "[string]\n" \
   "[list]\n" \
   "[sorted set]\n" \
   "[map]\n" \
-  "[hash set]\n"
+  "[hash set]\n\n" \
+  "Type help to check all the supported commands\n"
 
 
 #endif // _MMKV_CLIENT_INFORMATION_H_
