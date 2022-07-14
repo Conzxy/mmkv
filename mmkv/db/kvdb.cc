@@ -91,13 +91,14 @@ StatusCode MmkvDb::InsertStr(String k, String v) {
 }
 
 StatusCode MmkvDb::EraseStr(String const& k) {
-  auto slot = dict_.FindSlot(k);
-  auto& str = (*slot)->value.value;
+  typename Dict::Bucket* bucket = nullptr;
+  auto slot = dict_.FindNode(k, &bucket);
+  auto& str = (slot)->value.value;
 
   if (slot) {
     if (str.type == D_STRING) {
       delete (String*)str.any_data;
-      dict_.EraseAfterFindSlot(*slot);
+      dict_.EraseNode(bucket, slot);
       return S_OK;
     } else {
       return S_EXISITS_DIFF_TYPE;
@@ -245,13 +246,14 @@ StatusCode MmkvDb::ListPopBack(String const& k, uint32_t count) {
 
 
 StatusCode MmkvDb::ListDel(String const& k) {
-  auto slot = dict_.FindSlot(k);
-  auto& str = (*slot)->value.value;
+  Dict::Bucket* bucket = nullptr;
+  auto slot = dict_.FindNode(k, &bucket);
+  auto& str = (slot)->value.value;
 
   if (slot) {
     if (str.type == D_STRLIST) {
       delete (StrList*)str.any_data;
-      dict_.EraseAfterFindSlot(*slot);
+      dict_.EraseNode(bucket, slot);
       return S_OK;
     } else {
       return S_EXISITS_DIFF_TYPE;

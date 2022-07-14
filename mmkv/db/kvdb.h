@@ -5,18 +5,24 @@
 #include "mmkv/algo/string.h"
 #include "mmkv/algo/dictionary.h"
 #include "mmkv/algo/key_value.h"
+#include "mmkv/algo/avl_dictionary.h"
+#include "mmkv/algo/comparator_util.h"
+
 #include "mmkv/protocol/mmbp.h"
 #include "mmkv/protocol/status_code.h"
 #include "mmkv_data.h"
-#include "type.h"
 #include "mmkv/protocol/type.h"
+
+#include "type.h"
 
 #include <kanon/util/noncopyable.h>
 
 namespace mmkv {
 namespace db {
 
-using algo::Dictionary;
+using algo::AvlDictionary;
+// using algo::Dictionary;
+using algo::Comparator;
 using protocol::StrValues;
 using protocol::StatusCode;
 using protocol::WeightValues;
@@ -26,10 +32,21 @@ using protocol::WeightRange;
 
 #define DB_MIN(x, y) (((x) < (y)) ? (x) : (y))
 
+/**
+ * \brief Database instance of mmkv
+ *
+ * Encapsulate the operation of different data structure
+ * that including string, list, etc.
+ * 
+ * \note
+ *  Internal class
+ *  Non-copyable
+ */
 class MmkvDb {
-  using Dict = Dictionary<String, MmkvData>;
-
   DISABLE_EVIL_COPYABLE(MmkvDb)
+
+  using Dict = AvlDictionary<String, MmkvData, Comparator<String>>;
+
  public:
   MmkvDb();
   ~MmkvDb() noexcept;
@@ -37,7 +54,6 @@ class MmkvDb {
   bool Delete(String const& k);
   bool Type(String const& key, DataType& type) noexcept;
   void GetAllKeys(StrValues& keys);
-
   StatusCode Rename(String const& old_name, String&& new_name);
 
   StatusCode InsertStr(String k, String v);
