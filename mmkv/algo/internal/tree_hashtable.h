@@ -22,6 +22,29 @@ namespace algo {
 #endif
 #define GET_KEY (*(get_key*)(this))
 
+/*
+ * 起初，我是打算通过给HashTable增加一个模板参数ListType来提供可选的list类型
+ * ListType准备一个接口类ListTypeInterface并通过CRTP继承下去实现各自的接口
+ * 最终由HashTable调用list的API即可。
+ * 一开始，我误以为这会使TreeHashtable依赖上EqualKey，而HashTable依赖上Comparator
+ * 其他的就是Linked-list在具体实现中依赖于predicate，而这个会导致两种不同的实现难以统一API，
+ * 因为Tree并不需要predicate，这样就会提供dummy argument，即接受该实参但不使用。
+ * 在这个时点，我认为这导致在具体实现上彼此耦合了，并且每增加一个新的接口可能导致耦合得更严重。
+ * 因此最终我还是将TreeHashtable分离出来，尽管有共同代码，但我想那部分几乎固定，大的变动是不太会有的，
+ * 并且维护两份也不是很大的负担，故就此作罢。
+ * 但是后面仔细一想，实际上，TreeHashtable和HashTable依次可以不依赖上EqualKey和Comparator，只需要这么做：
+ * template<typename K, typename V, typename GK, typename LT, typename Alloc>
+ * class HashTableBase { ... };
+ * template<typename K, typename V, typename GK, typename EK, typename Alloc>
+ * class HashTable : public HashTableBase <K, V, GK, LinkedList<K, V, GK, EK, Alloc>, Alloc> { ... };
+ * template<typename K, typename V, typename GK, typename Comparator, typename Alloc>
+ * class TreeHashTable : public HashTableBase <K, V, GK, Tree<K, V, GK, Comparator, Alloc>, Alloc> { ... };
+ * 同时，这也避免了HashTable的具体实现需要使用predicate，因为LT都有GK，但这其实也有个假设就是EK == empty class，不然space cost
+ * 会比较大(8bytes/list)。
+ * 但是如果之后还是接口可能需要依赖于一些特定特性，可能会留下隐患，所以也不能说是完全解决了耦合问题（毕竟现实就是没有“银弹”）。
+ * 事至如此，我已经不想重写了，因为这类底层数据结构代码一般是不会有大改动的，因此为了复用而“复用”我觉得是很愚蠢且无含金量的。
+ */
+
 /**
  * \brief Hash table implemented by separate-list method but the list is avltree instead of linked-list
  *
@@ -87,6 +110,8 @@ class TreeHashTable : protected Alloc::template rebind<typename Tree::Node>::oth
   bool InsertWithDuplicate(value_type const& elem, value_type*& duplicate) { return InsertWithDuplicate_impl(elem, duplicate); }
   bool InsertWithDuplicate(value_type&& elem, value_type*& duplicate) { return InsertWithDuplicate_impl(std::move(elem), duplicate); }
 
+  bool PushWithDuplicate(Node* node, value_type** duplicate);
+  bool Push(Node* node);
 
   /************************************************************/
   /* Search interface                                         */

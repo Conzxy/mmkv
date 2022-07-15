@@ -18,6 +18,78 @@ TREE_HASH_TABLE_CLASS::TreeHashTable()
 }
 
 TREE_HASH_TABLE_TEMPLATE
+inline bool TREE_HASH_TABLE_CLASS::Push(Node* node) {
+  return PushWithDuplicate(node, nullptr);
+}
+
+TREE_HASH_TABLE_TEMPLATE
+inline bool TREE_HASH_TABLE_CLASS::PushWithDuplicate(Node* node, value_type** duplicate) {
+  Rehash();
+  IncrementalRehash();
+
+  // Not in rehashing: 
+  //   insert to table1
+  // In rehashing:
+  //   If rehash_move_bucket_index > bucket_index1 ==> table2
+  //   otherwise, if bucket_index > table1.size ==> table2
+  //              otherwise, tabel1
+  const auto hash_val = HASH_FUNC(GET_KEY(node->value));
+  const auto bucket_index1 = bucket_index(0, hash_val);
+  Bucket* bucket = nullptr;
+
+#define PUSH_AND_SET_DUPLICATE do { \
+    auto success = bucket->PushWithDuplicate(node, duplicate); \
+    if (!success) { \
+      return false; \
+    } \
+    } while (0)
+
+#define AVL_CHECK_AND_SET_DUPLICATE_OF_PUSH do {\
+    auto value = bucket->Find(GET_KEY(node->value)); \
+    if (value) { \
+      if (duplicate) *duplicate = value; \
+      return false; \
+    } } while (0)
+
+  if (!InRehashing()) {
+    bucket = &table1()[bucket_index1];
+    PUSH_AND_SET_DUPLICATE;
+  } else {
+    // index < rehash_move_bucket_index_ in the table2
+    if (rehash_move_bucket_index_ > bucket_index1) {
+      auto bucket_index2 = bucket_index(1, hash_val);
+      bucket = &table2()[bucket_index2]; 
+      PUSH_AND_SET_DUPLICATE;
+    } else {
+      auto bucket_index2 = bucket_index(1, hash_val);
+#if 0
+      if (bucket_index2 >= table1().size()) {
+        bucket = &table1()[bucket_index1];
+        CHECK_AND_SET_DUPLICATE;
+
+        bucket = &table2()[bucket_index2];
+        INSERT_AND_SET_DUPLICATE;
+      } else {
+        bucket = &table1()[bucket_index1];
+        INSERT_AND_SET_DUPLICATE;
+      }
+#else
+      bucket = &table1()[bucket_index1];
+      PUSH_AND_SET_DUPLICATE;
+
+      bucket = &table2()[bucket_index2];
+      AVL_CHECK_AND_SET_DUPLICATE_OF_PUSH;
+#endif
+    }
+  }
+
+  // FIXME 0?
+  ++table1().used;
+
+  return true; 
+}
+
+TREE_HASH_TABLE_TEMPLATE
 template<typename U>
 inline typename TREE_HASH_TABLE_CLASS::value_type* 
 TREE_HASH_TABLE_CLASS::Insert_impl(U&& elem) {
