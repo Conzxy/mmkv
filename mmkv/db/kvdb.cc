@@ -64,16 +64,19 @@ bool MmkvDb::Delete(String const& k) {
 }
 
 StatusCode MmkvDb::Rename(String const& old_name, String&& new_name) {
-  // FIXME
   auto exists = dict_.Find(new_name);
   if (exists) return S_EXISTS;
 
   auto node = dict_.Extract(old_name);
   if (!node) return S_NONEXISTS;
 
-  auto kv = dict_.InsertKv(std::move(new_name), std::move(node->value.value));(void)kv;
-  assert(kv);
-  dict_.DropNode(node);
+  // auto kv = dict_.InsertKv(std::move(new_name), std::move(node->value.value));(void)kv;
+  // assert(kv);
+  // dict_.DropNode(node);
+  node->value.key = std::move(new_name);
+  // FIXME Efficient push without check of unique key
+  auto success = dict_.Push(node); (void)success;
+  assert(success);
   return S_OK;
 }
 
