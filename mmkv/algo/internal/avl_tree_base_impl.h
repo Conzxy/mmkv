@@ -27,9 +27,15 @@ AVL_CLASS::~AvlTreeBase() noexcept {
 
 // \see CLRS 12.3 Insertion part
 AVL_TEMPLATE
-bool AVL_CLASS::Push(Node* node) noexcept {
+inline bool AVL_CLASS::Push(Node* node) noexcept {
+  return PushWithDuplicate(node, nullptr);
+}
+
+AVL_TEMPLATE
+inline bool AVL_CLASS::PushWithDuplicate(Node* node, value_type** duplicate) {
   if (!root_) {
     root_ = node;
+    if (duplicate) *duplicate = std::addressof(NODE2VALUE(root_));
   } else {
     if (!root_->left && !root_->right) {
       auto res = TO_COMPARE(TO_GK(node->value), TO_GK(NODE2VALUE(root_)));
@@ -39,11 +45,13 @@ bool AVL_CLASS::Push(Node* node) noexcept {
       } else if (res < 0) {
         slot = &root_->left;
       } else {
+        if (duplicate) *duplicate = std::addressof(NODE2VALUE(slot[0]));
         return false;
       }
 
       *slot = node;
       (*slot)->parent = root_;
+      if (duplicate) *duplicate = std::addressof(NODE2VALUE(slot[0]));
 
       return true;
     }
@@ -64,6 +72,7 @@ bool AVL_CLASS::Push(Node* node) noexcept {
       } else if (res < 0) {
         slot = &(slot[0]->right);
       } else {
+        if (duplicate) *duplicate = std::addressof(NODE2VALUE(slot[0]));
         return false;
       }
     }
@@ -71,12 +80,13 @@ bool AVL_CLASS::Push(Node* node) noexcept {
     // 由于这两个语句与value无关，我把它分出去了
     _LinkSlot(slot, node, parent); 
     _InsertFixup(parent, &root_);
+    if (duplicate) *duplicate = std::addressof(NODE2VALUE(slot[0]));
   }
 
   IncreaseCount();
   return true;
-}
 
+}
 AVL_TEMPLATE
 inline void AVL_CLASS::PushEq(Node* node) noexcept {
   if (!root_) {
@@ -117,7 +127,7 @@ template<typename T>
 inline bool AVL_CLASS::_InsertWithDuplicate(T&& value, value_type** dup) {
   if (!root_) {
     root_ = VALUE_TO_NODE;
-    *dup = &(NODE2VALUE(root_));
+    if (dup) *dup = &(NODE2VALUE(root_));
   } else {
     if (!root_->left && !root_->right) {
       auto res = TO_COMPARE(TO_GK(value), TO_GK(NODE2VALUE(root_)));
@@ -127,13 +137,13 @@ inline bool AVL_CLASS::_InsertWithDuplicate(T&& value, value_type** dup) {
       } else if (res < 0) {
         slot = &root_->left;
       } else {
-        *dup = std::addressof((NODE2VALUE(root_)));
+        if (dup) *dup = std::addressof((NODE2VALUE(root_)));
         return false;
       }
 
       *slot = VALUE_TO_NODE;
       (*slot)->parent = root_;
-      *dup = std::addressof(NODE2VALUE(*slot));
+      if (dup) *dup = std::addressof(NODE2VALUE(*slot));
 
       return true;
     }
@@ -154,14 +164,14 @@ inline bool AVL_CLASS::_InsertWithDuplicate(T&& value, value_type** dup) {
       } else if (res < 0) {
         slot = &(slot[0]->right);
       } else {
-        *dup = &(NODE2VALUE(slot[0]));
+        if (dup) *dup = &(NODE2VALUE(slot[0]));
         return false;
       }
     }
     
     _LinkSlot(slot, VALUE_TO_NODE, parent); 
     _InsertFixup(parent, &root_);
-    *dup = &(NODE2VALUE(slot[0]));
+    if (dup) *dup = &(NODE2VALUE(slot[0]));
   }
 
   IncreaseCount();
@@ -171,50 +181,7 @@ inline bool AVL_CLASS::_InsertWithDuplicate(T&& value, value_type** dup) {
 AVL_TEMPLATE
 template<typename T>
 inline bool AVL_CLASS::_Insert(T&& value) {
-  if (!root_) {
-    root_ = VALUE_TO_NODE;
-  } else {
-    if (!root_->left && !root_->right) {
-      auto res = TO_COMPARE(TO_GK(value), TO_GK(NODE2VALUE(root_)));
-      if (res > 0) {
-        root_->right = VALUE_TO_NODE;
-        root_->right->parent = root_;
-      } else if (res < 0) {
-        root_->left = VALUE_TO_NODE;
-        root_->left->parent = root_;
-      } else {
-        return false;
-      }
-
-      return true;
-    }
-
-    BaseNode* parent = nullptr; 
-    // slot最终会指向空槽（slot）
-    // 采用二级指针，避免了定义表示插入哪边的元数据
-    BaseNode** slot = &root_;
-    
-    int res; 
-    
-    while (slot[0]) {
-      res = TO_COMPARE(TO_GK(((Node*)slot[0])->value), TO_GK(value));
-      parent = slot[0];
-
-      if (res > 0) {
-        slot = &(slot[0]->left);
-      } else if (res < 0) {
-        slot = &(slot[0]->right);
-      } else {
-        return false;
-      }
-    }
-    
-    _LinkSlot(slot, VALUE_TO_NODE, parent); 
-    _InsertFixup(parent, &root_);
-  }
-
-  IncreaseCount();
-  return true;
+  return _InsertWithDuplicate(std::forward<T>(value), nullptr);
 }
 
 AVL_TEMPLATE

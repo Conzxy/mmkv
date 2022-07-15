@@ -110,6 +110,11 @@ class AvlTreeBase : protected avl::AvlNodeAllocator<V, Alloc>
   bool Push(Node* node) noexcept;
 
   /**
+   * \brief Like InsertWithDuplicate() but push node 
+   */
+  bool PushWithDuplicate(Node* node, value_type** duplicate);
+
+  /**
    * \brief Push node returnd by extract()[although key exists]
    */
   void PushEq(Node* node) noexcept;
