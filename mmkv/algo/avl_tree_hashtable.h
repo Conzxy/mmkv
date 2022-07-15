@@ -14,6 +14,10 @@ namespace algo {
 template<typename T, typename Comparator, typename HF=Hash<T>, typename GK=GetKey<T>, typename Alloc=LibcAllocatorWithRealloc<T>>
 using AvlTreeHashSet = TreeHashTable<T, T, HF, GK, AvlListSet<T, Comparator, GK, Alloc>, Alloc>;
 
+/**
+ * \note
+ *  To reuse the node and rename key, I don't set key to "const K" specifier.
+ */
 template<typename K, typename V, typename Comparator, typename HF=Hash<K>, typename GK=GetKey<KeyValue<K, V>>, typename Alloc=LibcAllocatorWithRealloc<KeyValue<K, V>>>
 using AvlTreeHashMap = TreeHashTable<K, KeyValue<K, V>, HF, GK, AvlListMap<K, V, Comparator, GK, Alloc>, Alloc>;
 
