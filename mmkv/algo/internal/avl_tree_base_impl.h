@@ -79,8 +79,8 @@ inline bool AVL_CLASS::PushWithDuplicate(Node* node, value_type** duplicate) {
     
     // 由于这两个语句与value无关，我把它分出去了
     _LinkSlot(slot, node, parent); 
-    _InsertFixup(parent, &root_);
     if (duplicate) *duplicate = std::addressof(NODE2VALUE(slot[0]));
+    _InsertFixup(parent, &root_);
   }
 
   IncreaseCount();
@@ -127,7 +127,7 @@ template<typename T>
 inline bool AVL_CLASS::_InsertWithDuplicate(T&& value, value_type** dup) {
   if (!root_) {
     root_ = VALUE_TO_NODE;
-    if (dup) *dup = &(NODE2VALUE(root_));
+    if (dup) *dup = std::addressof(NODE2VALUE(root_));
   } else {
     if (!root_->left && !root_->right) {
       auto res = TO_COMPARE(TO_GK(value), TO_GK(NODE2VALUE(root_)));
@@ -143,7 +143,7 @@ inline bool AVL_CLASS::_InsertWithDuplicate(T&& value, value_type** dup) {
 
       *slot = VALUE_TO_NODE;
       (*slot)->parent = root_;
-      if (dup) *dup = std::addressof(NODE2VALUE(*slot));
+      if (dup) *dup = std::addressof((NODE2VALUE(*slot)));
 
       return true;
     }
@@ -164,14 +164,18 @@ inline bool AVL_CLASS::_InsertWithDuplicate(T&& value, value_type** dup) {
       } else if (res < 0) {
         slot = &(slot[0]->right);
       } else {
-        if (dup) *dup = &(NODE2VALUE(slot[0]));
+        if (dup) *dup = std::addressof(NODE2VALUE(slot[0]));
         return false;
       }
     }
     
-    _LinkSlot(slot, VALUE_TO_NODE, parent); 
+    _LinkSlot(slot, VALUE_TO_NODE, parent);
+    // !!!
+    // 下面这句不能放在_InsertFixup()后，因为slot指向parent的孩子
+    // 而Fixup可能进行旋转，从而可能改变其孩子的相对位置，因此slot[0]得不到原来的节点
+    // 所以在Fixup之前先记录value的地址
+    if (dup) *dup = std::addressof(NODE2VALUE(slot[0]));
     _InsertFixup(parent, &root_);
-    if (dup) *dup = &(NODE2VALUE(slot[0]));
   }
 
   IncreaseCount();
