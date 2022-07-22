@@ -153,11 +153,11 @@ inline bool TREE_HASH_TABLE_CLASS::InsertWithDuplicate_impl(U&& elem, value_type
         INSERT_AND_SET_DUPLICATE;
       }
 #else
-      bucket = &table1()[bucket_index1];
-      INSERT_AND_SET_DUPLICATE;
-
       bucket = &table2()[bucket_index2];
       AVL_CHECK_AND_SET_DUPLICATE;
+
+      bucket = &table1()[bucket_index1];
+      INSERT_AND_SET_DUPLICATE;
 #endif
     }
   }
