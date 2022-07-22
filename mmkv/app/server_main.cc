@@ -8,6 +8,6 @@ int main() {
   EventLoop loop;
   MmkvServer server(&loop);
   
-  server.Listen();
+  server.Start();
   loop.StartLoop();
 }

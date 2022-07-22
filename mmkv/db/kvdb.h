@@ -59,6 +59,7 @@ class MmkvDb {
   StatusCode InsertStr(String k, String v);
   StatusCode EraseStr(String const& k);
   StatusCode GetStr(String const& k, String*& str) noexcept;
+  StatusCode SetStr(String k, String v);
 
   StatusCode ListAdd(String k, StrValues& elems); 
   StatusCode ListAppend(String const& k, StrValues& elems);

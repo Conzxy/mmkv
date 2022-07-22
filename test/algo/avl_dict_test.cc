@@ -1,4 +1,5 @@
 #define _DEBUG_TREE_HASH_TABLE_
+#include "mmkv/algo/avl_tree_hashtable.h"
 #include "mmkv/algo/avl_dictionary.h"
 #include "mmkv/algo/avl_tree.h"
 
@@ -37,15 +38,21 @@ TEST(dictionary_test, insert) {
     }
   };
 
-  AvlTreeSet<std::string, StrComparator> ht;
+  AvlTreeHashSet<std::string, StrComparator> ht;
   
   for (int i = 0; i < 100; ++i) {
-    ht.Insert(GetRandomString(14));
-  }
-
-  for (auto s : ht) {
-    std::cout << s << "\n";
+    auto si = std::to_string(i);
+    std::cout << i << " " << ht.Insert(std::move(si)) << "\n";
+    ht.DebugPrint();
   }
   
-  std::cout << std::endl;
+  int count = 0;
+  for (auto s : ht) {
+    std::cout << s << "\n";
+    count++;
+  }
+  
+  std::cout << "count = " << count << std::endl;
 }
+
+

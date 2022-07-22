@@ -2,7 +2,7 @@
 #include "mmkv/protocol/command.h"
 #include "mmkv/protocol/mmbp_util.h"
 
-#include <cstdint>
+#include <stdint.h>
 #include <kanon/log/logger.h>
 
 using namespace mmkv::protocol;

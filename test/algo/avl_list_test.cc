@@ -1,3 +1,5 @@
+#define _AVL_TREE_DEBUG_
+#include "mmkv/algo/comparator_util.h"
 #include "mmkv/algo/internal/avl_list.h"
 
 #include <iostream>
@@ -23,4 +25,15 @@ int main() {
   std::cout << "\n";
 
   std::cout << "sizeof(AvlList) = " << sizeof avl_lst << std::endl;
+
+  AvlListSet<std::string, Comparator<std::string>> lst;
+  
+  for (int i = 0; i < 100; ++i) {
+    std::string* duplicate = nullptr;
+    auto e = lst.InsertWithDuplicate(std::to_string(i), &duplicate);
+    assert(e);
+    auto res = lst.VerifyAvlProperties();
+    assert(res);
+    std::cout << i << ": " << duplicate << "\n";
+  }
 }

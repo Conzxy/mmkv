@@ -123,6 +123,27 @@ StatusCode MmkvDb::GetStr(String const& k, String*& str) noexcept {
   return S_NONEXISTS;
 }
 
+StatusCode MmkvDb::SetStr(String k, String v) {
+  Dict::value_type* duplicate = nullptr;
+  MmkvData data = {
+    .type = D_STRING,
+    .any_data = nullptr,
+  };
+
+  auto success = dict_.InsertKvWithDuplicate(std::move(k), data, duplicate);
+  if (success) {
+    duplicate->value.any_data = new String(std::move(v));
+  } else {
+    if (duplicate->value.type == D_STRING) {
+      *((String*)(duplicate->value.any_data)) = std::move(v);
+    } else {
+      return S_EXISITS_DIFF_TYPE;
+    }
+  }
+
+  return S_OK;
+}
+
 #define LIST_ERROR_ROUTINE \
   auto kv = dict_.Find(k); \
   if (!kv) return S_NONEXISTS; \

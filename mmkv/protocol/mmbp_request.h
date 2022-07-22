@@ -119,12 +119,14 @@ class MmbpRequest : public MmbpMessage {
   static MmbpRequest* GetPrototype() {
     return &detail::prototype;
   }
-  
- private:  
+ 
+ private: 
   uint8_t has_bits_[1];
 
  public: 
   uint16_t command; // required
+
+
   String key; // optional
   
   // optional 

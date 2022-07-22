@@ -17,7 +17,7 @@ using kanon::ChunkList;
 using kanon::Buffer;
 
 inline void SetField(String& str, Buffer& buffer, bool is_16=false) {
-  assert(str.size() == 0);
+  str.clear();
   auto len = is_16 ? buffer.Read16() : buffer.Read32();
   str.reserve(len);
   str.append(buffer.GetReadBegin(), len);
