@@ -17,7 +17,7 @@ struct Hash {
 
 template<typename Alloc>
 struct Hash<std::basic_string<char, std::char_traits<char>, Alloc>> {
-  uint64_t operator()(String const& x) const noexcept {
+  uint64_t operator()(std::basic_string<char, std::char_traits<char>, Alloc> const& x) const noexcept {
     return XXH64(x.c_str(), x.size(), 0);
   }
 };
