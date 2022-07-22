@@ -167,6 +167,7 @@ class ReservedArray : protected Alloc {
       zstl::DestroyRange(data_, end_);
       AllocTraits::deallocate(*this, data_, size());
     }
+    data_ = end_ = nullptr;
   }
   
   void Grow(size_type n) {
