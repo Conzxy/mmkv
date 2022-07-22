@@ -1,10 +1,12 @@
 #include "mmbp_codec.h"
-#include "mmkv/protocol/mmbp.h"
-#include "mmkv/protocol/mmbp_response.h"
-#include "mmkv/protocol/status_code.h"
+#include "mmbp.h"
+#include "mmbp_response.h"
+#include "status_code.h"
+
+#include "mmkv/disk/request_log.h"
+#include "mmkv/disk/log_command.h"
 
 #include <kanon/net/endian_api.h>
-#include <kanon/net/user_common.h>
 
 #include <xxhash.h>
 
@@ -28,14 +30,16 @@ void MmbpCodec::SetUpConnection(TcpConnectionPtr const& conn) {
 
 void MmbpCodec::OnMessage(TcpConnectionPtr const& conn, Buffer& buffer, TimeStamp recv_time) {
   MmbpMessage* message = nullptr;
-  auto error_code = Parse(buffer, message);
 
-  std::unique_ptr<MmbpMessage> pm(message);
-
-  if (error_code == E_NOERROR) {
-    assert(pm);
+  ErrorCode error_code;
+  while ( (error_code = Parse(buffer, message)) == E_NOERROR) {
+    std::unique_ptr<MmbpMessage> pm(message);
+    assert(pm.get() == message);
+    assert(message);
     message_cb_(conn, std::move(pm), recv_time);
-  } else if (error_code != E_NO_COMPLETE_MESSAGE) {
+  }
+
+  if (error_code != E_NO_COMPLETE_MESSAGE) {
     error_cb_(conn, error_code);
   }
 }
@@ -53,7 +57,6 @@ MmbpCodec::ErrorCode MmbpCodec::Parse(Buffer& buffer, MmbpMessage*& message) {
           buffer.GetReadableSize() >= MAX_SIZE) {
         return E_INVALID_SIZE_HEADER;
       } else {
-
         if (VerifyCheckSum(buffer, size_header)) {
           if (::memcmp(buffer.GetReadBegin(), MMBP_TAG, MMBP_TAG_SIZE) != 0) {
             return E_INVALID_MESSAGE;
@@ -62,8 +65,16 @@ MmbpCodec::ErrorCode MmbpCodec::Parse(Buffer& buffer, MmbpMessage*& message) {
           buffer.AdvanceRead(MMBP_TAG_SIZE);
           message = prototype_->New();
 
+          auto cmd = buffer.GetReadBegin16();
+          if (disk::GetCommandType((Command)cmd) == disk::CT_WRITE) {
+            const auto request_len = size_header - MMBP_TAG_SIZE - CHECKSUM_LENGTH;
+            LOG_DEBUG << "Log request to file: " << command_strings[cmd];
+            LOG_DEBUG << "log bytes = " << sizeof request_len + request_len;
+            const auto nrlen = sock::ToNetworkByteOrder32(request_len);
+            disk::g_rlog.Append(&nrlen, sizeof nrlen);
+            disk::g_rlog.Append(buffer.GetReadBegin(), request_len);
+          }
           message->ParseFrom(buffer);
-          
           buffer.AdvanceRead32();  // checksum
           return E_NOERROR;
         } else {

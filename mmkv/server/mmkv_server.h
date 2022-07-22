@@ -27,6 +27,7 @@ class MmkvServer {
     server_.SetLoopNum(num);
   }
 
+  void Start();
  private:
   TcpServer server_;
 
