@@ -3,11 +3,6 @@
 #include "mmbp_response.h"
 #include "status_code.h"
 
-#include "mmkv/disk/request_log.h"
-#include "mmkv/disk/log_command.h"
-
-#include <kanon/net/endian_api.h>
-
 #include <xxhash.h>
 
 using namespace mmkv::protocol;
@@ -29,23 +24,7 @@ void MmbpCodec::SetUpConnection(TcpConnectionPtr const& conn) {
 }
 
 void MmbpCodec::OnMessage(TcpConnectionPtr const& conn, Buffer& buffer, TimeStamp recv_time) {
-  MmbpMessage* message = nullptr;
-
-  ErrorCode error_code;
-  while ( (error_code = Parse(buffer, message)) == E_NOERROR) {
-    std::unique_ptr<MmbpMessage> pm(message);
-    assert(pm.get() == message);
-    assert(message);
-    message_cb_(conn, std::move(pm), recv_time);
-  }
-
-  if (error_code != E_NO_COMPLETE_MESSAGE) {
-    error_cb_(conn, error_code);
-  }
-}
-
-MmbpCodec::ErrorCode MmbpCodec::Parse(Buffer& buffer, MmbpMessage*& message) {
-  if (buffer.GetReadableSize() >= SIZE_LENGTH) {
+  while (buffer.GetReadableSize() >= SIZE_LENGTH) {
     const auto size_header = buffer.GetReadBegin32();
     
     LOG_DEBUG << "Size header = " << size_header;
@@ -55,36 +34,26 @@ MmbpCodec::ErrorCode MmbpCodec::Parse(Buffer& buffer, MmbpMessage*& message) {
       buffer.AdvanceRead32();
       if (buffer.GetReadableSize() < size_t(MMBP_TAG_SIZE + CHECKSUM_LENGTH) || 
           buffer.GetReadableSize() >= MAX_SIZE) {
-        return E_INVALID_SIZE_HEADER;
+        error_cb_(conn, E_INVALID_SIZE_HEADER);
+        break;
       } else {
         if (VerifyCheckSum(buffer, size_header)) {
           if (::memcmp(buffer.GetReadBegin(), MMBP_TAG, MMBP_TAG_SIZE) != 0) {
-            return E_INVALID_MESSAGE;
+            error_cb_(conn, E_INVALID_MESSAGE);
+            break;
           }
         
           buffer.AdvanceRead(MMBP_TAG_SIZE);
-          message = prototype_->New();
 
-          auto cmd = buffer.GetReadBegin16();
-          if (disk::GetCommandType((Command)cmd) == disk::CT_WRITE) {
-            const auto request_len = size_header - MMBP_TAG_SIZE - CHECKSUM_LENGTH;
-            LOG_DEBUG << "Log request to file: " << command_strings[cmd];
-            LOG_DEBUG << "log bytes = " << sizeof request_len + request_len;
-            const auto nrlen = sock::ToNetworkByteOrder32(request_len);
-            disk::g_rlog.Append(&nrlen, sizeof nrlen);
-            disk::g_rlog.Append(buffer.GetReadBegin(), request_len);
-          }
-          message->ParseFrom(buffer);
+          message_cb_(conn, buffer, size_header-MMBP_TAG_SIZE-CHECKSUM_LENGTH, recv_time);
           buffer.AdvanceRead32();  // checksum
-          return E_NOERROR;
         } else {
-          return E_INVALID_CHECKSUM;
+          error_cb_(conn, E_INVALID_CHECKSUM);
+          break;
         }
       }
     }
   }
-  
-  return E_NO_COMPLETE_MESSAGE; 
 }
 
 void MmbpCodec::Send(TcpConnectionPtr const& conn, MmbpMessage const* message) {

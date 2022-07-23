@@ -25,7 +25,8 @@ class MmbpCodec {
   };
  private:
 
-  using MessageCallback = std::function<void(TcpConnectionPtr const&, std::unique_ptr<MmbpMessage>, TimeStamp)>;
+  // using MessageCallback = std::function<void(TcpConnectionPtr const&, std::unique_ptr<MmbpMessage>, TimeStamp)>;
+  using MessageCallback = std::function<void(TcpConnectionPtr const&, Buffer&, uint32_t, TimeStamp)>;
   using ErrorCallback = std::function<void(TcpConnectionPtr const&, ErrorCode)>;
 
   using SizeHeaderType = uint32_t;
@@ -52,7 +53,6 @@ class MmbpCodec {
 
   void Send(TcpConnectionPtr const& conn, MmbpMessage const* message);
 
-  ErrorCode Parse(Buffer& buffer, MmbpMessage*& message);
   void SerializeTo(MmbpMessage const* message, OutputBuffer& buffer);
 
   static char const* GetErrorString(ErrorCode code) noexcept;
@@ -67,6 +67,8 @@ class MmbpCodec {
   MmbpMessage* prototype_;
   MessageCallback message_cb_;
   ErrorCallback error_cb_;
+
+  // static void(* raw_request_cb_)(void const*, size_t);
 };
 
 } // protocol
