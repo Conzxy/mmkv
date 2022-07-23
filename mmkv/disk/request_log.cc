@@ -1,17 +1,19 @@
 #include "request_log.h"
 
+#include <unistd.h>
+
 #include "common.h"
 
 using namespace mmkv::disk;
 using namespace kanon;
 
 RequestLog mmkv::disk::g_rlog;
-bool mmkv::disk::g_log_request = false;
 
 RequestLog::RequestLog() 
   : empty_cond_(empty_lock_) 
   , io_thread_("RequestLogBackground")
   , file_(REQUEST_LOG_LOCALTION) 
+  , fd_(::fileno(file_.fp()))
   , latch_(1)
   , running_(false)
 {
@@ -26,8 +28,8 @@ void RequestLog::Start() {
     // Wait the first log
     latch_.Countdown(); 
     running_ = true; 
+
     while (running_) {
-      
       std::vector<Block> blks; 
       {
         MutexGuard g(empty_lock_);
@@ -44,8 +46,10 @@ void RequestLog::Start() {
         file_.Append(blk.data(), blk.len());
       }
 
-      file_.Flush();
-    } 
+      Flush();
+    }
+
+    Flush();
   });
 
   latch_.Wait();
