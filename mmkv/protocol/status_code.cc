@@ -27,3 +27,28 @@ char const* mmkv::protocol::GetStatusMessage(mmkv::protocol::StatusCode code) no
   
   return "ERROR: Unknown error";
 }
+
+char const* mmkv::protocol::StatusCode2Str(StatusCode code) noexcept {
+  switch (code) {
+    case S_OK:
+      return "Ok";
+    case S_EXISTS:
+      return "EXISTS";
+    case S_NONEXISTS:
+      return "Nonexists";
+    case S_INVALID_MESSAGE:
+      return "Invalid message";
+    case S_INVALID_RANGE:
+      return "Invalid range";
+    case S_VMEMBER_NONEXISTS:
+      return "Vmember nonexists";
+    case S_EXISITS_DIFF_TYPE:
+      return "exists with diff type";
+    case S_FIELD_NONEXISTS:
+      return "field nonexists";
+    case S_SET_MEMBER_NONEXISTS:
+      return "set member nonexists";
+    default:
+      return "Unknown status code";
+  }
+}

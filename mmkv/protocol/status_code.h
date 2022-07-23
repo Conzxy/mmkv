@@ -20,6 +20,8 @@ enum StatusCode : uint8_t {
 
 char const* GetStatusMessage(StatusCode code) noexcept;
 
+char const* StatusCode2Str(StatusCode code) noexcept;
+
 } // protocol
 } // mmkv
 
