@@ -1,29 +1,31 @@
 #include "mmkv/client/mmkv_client.h"
+#include "mmkv/client/information.h"
 
-#include <kanon/net/user_client.h>
+#include "mmkv/client/option.h"
+#include "mmkv/option/takina.h"
 
 using namespace mmkv::client;
 using namespace kanon;
 
+Option mmkv::client::g_option;
+
+void RegisterOptions();
+
 int main(int argc, char* argv[]) {
-  uint16_t port = 9998;
-  std::string ip = "127.0.0.1";
-
-  if (argc > 1) {
-    port = ::atoi(argv[1]);
+  RegisterOptions();
+  std::string errmsg;
+  if (!takina::Parse(argc, argv, &errmsg)) {
+    ::fprintf(stderr, "Failed to parse option: %s\n", errmsg.c_str());
+    return 0;
   }
 
-  if (argc > 2) {
-    ip = argv[2];
-  }
+  InstallInformation();
 
   EventLoopThread loop_thread;
-  
   auto loop = loop_thread.StartRun(); 
 
-  InetAddr server_addr(ip, port);
+  InetAddr server_addr(g_option.host, g_option.port);
   MmkvClient client(loop, server_addr);
-  
   client.Start();
   
   bool need_wait = true; 
@@ -31,4 +33,11 @@ int main(int argc, char* argv[]) {
     if (need_wait) client.IoWait();
     need_wait = client.ConsoleIoProcess();
   }
+}
+
+inline void RegisterOptions() {
+  takina::AddUsage("./mmkv_cli [OPTIONS]");
+  takina::AddDescription("Command-line-interface client of mmkv");
+  takina::AddOption({"p", "port", "Port of mmkv server", "PORT"}, &g_option.port);
+  takina::AddOption({"h", "host", "Hostname of mmkv server", "HOST"}, &g_option.host);
 }

@@ -11,6 +11,9 @@
 #include "translator.h"
 #include "information.h"
 
+#include "third-party/linenoise/linenoise.h"
+// #include "linenoise.h"
+
 #include <kanon/net/callback.h>
 #include <kanon/util/ptr.h>
 
@@ -49,13 +52,11 @@ MmkvClient::MmkvClient(EventLoop* loop, InetAddr const& server_addr)
     std::cout << "ERROR occurred: " << MmbpCodec::GetErrorString(code);
   });
 
-  codec_.SetMessageCallback([this](TcpConnectionPtr const& conn, std::unique_ptr<MmbpMessage> msg, TimeStamp recv_time) {
-    MMKV_UNUSED(recv_time);
-    MMKV_UNUSED(conn);
-    auto response = kanon::down_pointer_cast<MmbpResponse>(msg);
-
+  codec_.SetMessageCallback([this](TcpConnectionPtr const&, Buffer& buffer, uint32_t, TimeStamp) {
+    MmbpResponse response;
+    response.ParseFrom(buffer);
     // std::cout << response->GetContent() << "\n";
-    response_printer_.Printf(current_cmd_, response.get());
+    response_printer_.Printf(current_cmd_, &response);
 
     // ConsoleIoProcess();
     io_cond_.Notify();
@@ -70,6 +71,7 @@ bool MmkvClient::ConsoleIoProcess() {
   std::string statement; 
 
   std::cout << "mmkv " << client_.GetServerAddr().ToIpPort() << "> ";
+  ::linenoise("")
   getline(std::cin, statement);
   MmbpRequest request;
   

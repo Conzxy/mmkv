@@ -39,6 +39,8 @@ class MmkvClient {
   kanon::Condition io_cond_;
   kanon::MutexLock mutex_;
 
+  std::string prompt_;
+
   protocol::Command current_cmd_;
 };
 
