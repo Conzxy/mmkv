@@ -2,7 +2,10 @@
 #include <unordered_map>
 
 #include "information.h"
+
 #include "mmkv/protocol/command.h"
+
+#include <kanon/log/logger.h>
 
 using namespace mmkv::protocol;
 using namespace kanon;
@@ -13,13 +16,15 @@ std::unordered_map<StringView, Command, StringViewHash> command_map;
 std::unordered_map<StringView, CommandFormat, StringViewHash> command_formats;
 
 static inline int GenCommandMetadata() {
+  command_formats["exit"] = F_EXIT;
+  command_formats["quit"] = F_EXIT;
+  command_formats["help"] = F_HELP;
+
   for (size_t i = 0; i < COMMAND_NUM; ++i) {
     command_hints[i].clear();
     command_hints[i] += command_strings[i];
 
-    command_formats["exit"] = F_EXIT;
-    command_formats["quit"] = F_EXIT;
-    command_formats["help"] = F_HELP;
+    LOG_DEBUG << "command_strings[" << i << "]: " << command_strings[i];
 
     switch (i) {
       case MEM_STAT:
@@ -143,7 +148,7 @@ static inline int GenCommandMetadata() {
   return 0;
 }
 
-static int dummy = GenCommandMetadata();
+// static int dummy = GenCommandMetadata();
 
 static int GenHelp() {
   HELP_INFORMATION += "Help: \n";
@@ -159,7 +164,7 @@ static int GenHelp() {
   return 0;
 }
 
-static int dummy2 = GenHelp();
+// static int dummy2 = GenHelp();
 
 static int GenCommandMap() {
   for (size_t i = 0; i < COMMAND_NUM; ++i) {
@@ -169,4 +174,10 @@ static int GenCommandMap() {
   return 0;
 }
 
-static int dummy3 = GenCommandMap();
+// static int dummy3 = GenCommandMap();
+
+void InstallInformation() noexcept {
+  GenCommandMetadata();
+  GenHelp();
+  GenCommandMap();
+}

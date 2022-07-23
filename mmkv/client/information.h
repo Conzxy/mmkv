@@ -53,5 +53,6 @@ extern std::unordered_map<kanon::StringView, mmkv::protocol::Command, StringView
   "[hash set]\n\n" \
   "Type help to check all the supported commands\n"
 
+void InstallInformation() noexcept;
 
 #endif // _MMKV_CLIENT_INFORMATION_H_
