@@ -21,8 +21,6 @@ class MmkvSession {
   ~MmkvSession() noexcept;
    
  private:
-  void OnMmbpRequest(TcpConnectionPtr const& conn, std::unique_ptr<protocol::MmbpMessage> message, TimeStamp recv_time);
-
   TcpConnection* conn_;
   protocol::MmbpCodec codec_;
   MmkvServer* server_;
