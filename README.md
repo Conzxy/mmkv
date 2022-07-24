@@ -23,15 +23,15 @@
 
 ## Schedule
 现在该项目还处于初级阶段，只是个单纯支持多个数据结构的单机单线程服务器，
-尽管要支持多线程是十分轻松的（因为kanon支持mutilthread-reactor），但是现在我暂时不关注这方面。
+尽管要支持多线程是较为简单的（因为kanon支持mutilthread-reactor），但是现在我暂时不关注这方面。
 * 支持string并实现其相关命令
 * 支持list并实现其相关命令
 * 支持sorted set并实现其相关命令
 * 支持map并实现其相关命令
 * 支持hash set并实现其相关命令
-* 支持Recovery <--
+* 支持Recovery
+* 支持Expire并实现其管理 <--
 * 支持分布式存储(distributed system)
-* 支持Expire并实现其管理
 * 支持Raft容错
 * 支持多线程
 
@@ -46,20 +46,21 @@ cd mmkv/bin
 export MMKV_BUILD_PATH=... # build目录的路径
 # 或在~/.bash_profile中加上该句
 chmod u+x release_build.sh
-./release_build.sh mmkv_client
-./release_build.sh mmkv_server
+./release_build.sh mmkv-client
+./release_build.sh mmkv-server
 # Debug mode by following:
 # chmod u+x build.sh
-# ./build.sh mmkv_client
-# ./build.sh mmkv_server
+# ./build.sh mmkv-client
+# ./build.sh mmkv-server
 ```
 
 ## Run
 运行结果可以参考以下GIF。<br>
 
 ### FAQ
-* 如果`mmkv_client`输出了日志信息，可以通过设置环境变量关闭`KANON_DEBUG=0`，server的日志信息也可以通过相同的方法关闭。
+* 如果`mmkv-cli`输出了日志信息，可以通过设置环境变量关闭`KANON_DEBUG=0`，server的日志信息也可以通过相同的方法关闭。
 * 最终运行时若提示`xxHash`的动态库找不到，你可能需要输入`ldconfig`更新动态库缓存，以找到刚安装的`xxHash`(see [戳](https://stackoverflow.com/questions/480764/linux-error-while-loading-shared-libraries-cannot-open-shared-object-file-no-s))
+* 基于[linenoise](https://github.com/antirez/linenoise)，`mmkv-cli`可以提供**补全**(completion)，**提示**(hint)，**历史命令**(history)，**清屏**(clear screen)。
 
 #### string
 ![str_mmkv.gif](https://s2.loli.net/2022/07/07/5Zx69JDHMOzg3WF.gif)
@@ -71,9 +72,7 @@ chmod u+x release_build.sh
 ![vset_mmkv.gif](https://s2.loli.net/2022/07/07/EpM1YRKg4GVNZky.gif)
 
 ## TODO
-* 持久化复原(Recovery)
 * 分布式支持
 * Raft容错支持
-* 使用AvlTree实现新的哈希表
 * 实现expire_time管理
 * 实现replacement管理
