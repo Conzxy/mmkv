@@ -87,20 +87,16 @@ Translator::ErrorCode Translator::Parse(MmbpRequest* request, StringView stateme
   }
   
   auto cmd = *token_iter;
-  auto success = command_map.find(cmd);
-  auto format_iter = command_formats.find(cmd);
 
-  if (success != command_map.end()) {
-    request->command = success->second;
-  } else {
-    if (format_iter == command_formats.end()) {
-      std::cout << "ERROR: invalid command: " << cmd.ToString() << "\n";
-      // std::cout << HELP_INFORMATION;
-      return E_INVALID_COMMAND;
-    }
+  const auto valid_cmd = GetCommand(cmd, request->command);
+
+  if (!valid_cmd) {
+    std::cout << "ERROR: invalid command: " << cmd.ToString() << "\n";
+    // std::cout << GetHelp();
+    return E_INVALID_COMMAND;
   }
 
-  switch (format_iter->second) {
+  switch (GetCommandFormat(cmd)) {
     case F_NONE:
       break;
     case F_VALUE: {
@@ -196,7 +192,7 @@ Translator::ErrorCode Translator::Parse(MmbpRequest* request, StringView stateme
     }
       break;
     case F_HELP: {
-      std::cout << HELP_INFORMATION;
+      std::cout << GetHelp();
       return E_INVALID_COMMAND;
     }
       break;
