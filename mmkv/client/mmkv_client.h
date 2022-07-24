@@ -32,6 +32,8 @@ class MmkvClient {
   }
 
  private:
+  void InstallLinenoise();
+  
   TcpClient client_;
   protocol::MmbpCodec codec_;
 
