@@ -4,19 +4,41 @@
 #include "mmkv/disk/common.h"
 #include "mmkv/disk/log_command.h"
 
+#include "mmkv/option/takina.h"
+
 #include "mmkv/util/conv.h"
 #include "mmkv/protocol/mmbp_request.h"
-
 
 using namespace mmkv::disk;
 using namespace mmkv::protocol;
 using namespace mmkv;
 
+struct Option {
+  bool clear;
+};
+
+Option g_option;
+
 static constexpr int BUFFER_SIZE = 1 << 16;
 
 void PrintRequest(MmbpRequest const& req);
 
-int main() {
+int main(int argc, char** argv) {
+  takina::AddUsage("./rlogdump [OPTIONS]");
+  takina::AddDescription("This is a parser of mmkv request log");
+  takina::AddOption({"", "clear", "Clear the request log"}, &g_option.clear);
+
+  std::string errmsg;
+  if (!takina::Parse(argc, argv, &errmsg)) {
+    ::printf("Failed to parse the options: %s\n", errmsg.c_str()); 
+    return 0;
+  }
+
+  if (g_option.clear) {
+    ::system("cat " REQUEST_LOG_LOCALTION "> " REQUEST_LOG_LOCALTION);
+    return 0;
+  }
+
   File file(REQUEST_LOG_LOCALTION, File::READ);
   Buffer buffer;
   buffer.ReserveWriteSpace(BUFFER_SIZE);
@@ -49,7 +71,7 @@ int main() {
 }
 
 inline void PrintRequest(MmbpRequest const& req) {
-  std::cout << "Command: " << command_strings[req.command] << "\n";
+  std::cout << "Command: " << GetCommandString((Command)req.command) << "\n";
   if (req.HasKey()) {
     std::cout << "Key: " << req.key << "\n";
   }
