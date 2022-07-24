@@ -1,7 +1,6 @@
 #ifndef _MMKV_CLIENT_INFORMATION_H_
 #define _MMKV_CLIENT_INFORMATION_H_
 
-#include <kanon/net/user_common.h>
 #include <string>
 #include <unordered_map>
 
@@ -9,6 +8,9 @@
 #include <xxhash.h>
 
 #include "mmkv/protocol/command.h"
+
+using mmkv::protocol::Command;
+
 
 struct StringViewHash {
   uint64_t operator()(kanon::StringView const& view) const noexcept {
@@ -33,14 +35,6 @@ enum CommandFormat : uint8_t {
   F_NONE,         // command
 };
 
-extern std::string HELP_INFORMATION;
-extern std::string command_hints[];
-extern std::unordered_map<kanon::StringView, CommandFormat, StringViewHash> command_formats;
-
-// command_strings都是在data segment上的变量
-// 故key为StringView也无妨
-extern std::unordered_map<kanon::StringView, mmkv::protocol::Command, StringViewHash> command_map;
-
 #define APPLICATION_INFORMATION \
   "Apache LICENSE Copyright(c) 2022.6 Conzxy\n" \
   "Mmkv is an Memory Key-value remote database(or cache)\n" \
@@ -52,6 +46,37 @@ extern std::unordered_map<kanon::StringView, mmkv::protocol::Command, StringView
   "[map]\n" \
   "[hash set]\n\n" \
   "Type help to check all the supported commands\n"
+
+namespace detail {
+
+extern std::string help;
+extern std::string command_hints[];
+extern std::unordered_map<kanon::StringView, CommandFormat, StringViewHash> command_formats;
+
+// command_strings都是在data segment上的变量
+// 故key为StringView也无妨
+extern std::unordered_map<kanon::StringView, Command, StringViewHash> command_map;
+
+} // detail
+
+inline std::string const &GetCommandHint(Command cmd) {
+  return detail::command_hints[cmd]; 
+}
+
+inline std::string const &GetHelp() {
+  return detail::help;
+}
+
+inline CommandFormat GetCommandFormat(kanon::StringView command) {
+  return detail::command_formats[command];
+}
+
+inline bool GetCommand(kanon::StringView command, uint16_t &cmd) {
+  auto iter = detail::command_map.find(command);
+  if (iter == detail::command_map.end()) return false;
+  cmd = iter->second;
+  return true;
+}
 
 void InstallInformation() noexcept;
 
