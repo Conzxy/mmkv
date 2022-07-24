@@ -65,13 +65,8 @@ endif ()
 
 set(MMKV_LIB_LIST kanon_net kanon_base xxhash)
 
-GenLib(mmkv_server_src ${MMKV_SERVER_SRC})
-GenLib(mmkv_client_src ${MMKV_CLIENT_SRC})
-
-target_include_directories(mmkv_client_src PRIVATE ${LINENOISE_DIR})
-
-set(CLIENT_LIB_LIST mmkv_client_src kanon_net kanon_base xxhash)
-
+# GenLib(mmkv_server_src ${MMKV_SERVER_SRC})
+# GenLib(mmkv_client_src ${MMKV_CLIENT_SRC})
 GenApplication(mmkv-server MMKV_SERVER_SRC MMKV_LIB_LIST)
 GenApplication(mmkv-cli MMKV_CLIENT_SRC MMKV_LIB_LIST)
 GenApplication(rlogdump RLOG_DUMP_SRC MMKV_LIB_LIST)

@@ -55,8 +55,12 @@ message(STATUS "BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 set(MMKV_SOURCE_DIR ${PROJECT_SOURCE_DIR}/mmkv)
 set(THIRD_PARTY_DIR ${PROJECT_SOURCE_DIR}/third-party)
 set(LINENOISE_DIR ${THIRD_PARTY_DIR}/linenoise)
+set(XXHASH_DIR ${THIRD_PARTY_DIR}/xxHash)
 
 include_directories(${PROJECT_SOURCE_DIR})
+include_directories(${LINENOISE_DIR})
+include_directories(${XXHASH_DIR})
+link_directories(${XXHASH_DIR})
 
 # I don't want to use the builtin variable ${BUILD_SHARED_LIBS}
 # since it you don't set it to ON explicitly, then the NOT 
@@ -91,3 +95,4 @@ message(STATUS "BUILD_ALL_EXAMPLES = ${BUILD_ALL_EXAMPLES}")
 
 add_subdirectory(mmkv)
 add_subdirectory(test)
+add_subdirectory(third-party)

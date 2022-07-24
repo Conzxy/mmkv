@@ -13,7 +13,7 @@
 #include "translator.h"
 #include "information.h"
 
-#include "third-party/linenoise/linenoise.h"
+#include "linenoise.h"
 // #include "linenoise.h"
 
 #include <kanon/net/callback.h>

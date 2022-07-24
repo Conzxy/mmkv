@@ -36,9 +36,9 @@
 * 支持多线程
 
 ## Build
-项目依赖于[kanon](https://github.com/Conzxy/kanon)和[xxHash](https://github.com/Cyan4973/xxHash)。<br>
-前者是我个人开发的网络库，后者是项目使用的哈希算法。<br>
-安装参考各自的`github`页面中的`README.md`。<br>
+该项目需要额外安装[kanon](https://github.com/Conzxy/kanon)，是我个人编写的网络库，为该项目提供网络模块的支持。安装方式参考其github页面。
+
+其他的依赖放在`third-party`，由项目本身管理。
 
 ```shell
 git clone https://github.com/Conzxy/mmkv
