@@ -18,9 +18,6 @@ struct MmkvConfig {
 };
 
 extern MmkvConfig g_config;
-
-bool ParseConfig(std::string const& path);
-
 } // namespace config
 } // namespace mmkv
 

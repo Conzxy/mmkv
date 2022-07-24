@@ -78,7 +78,13 @@ enum Command : uint16_t {
   COMMAND_NUM,
 };
 
+namespace detail {
 extern std::string command_strings[];
+} // detail
+
+inline std::string const &GetCommandString(Command cmd) {
+  return detail::command_strings[cmd];
+}
 
 } // protocol
 } // mmkv

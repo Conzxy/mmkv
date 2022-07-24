@@ -6,7 +6,7 @@ using namespace disk;
 using namespace disk::detail;
 using namespace mmkv::protocol;
 
-CommandType detail::g_command_type[COMMAND_NUM];
+CommandType disk::detail::g_command_type[COMMAND_NUM];
 
 int InitCommandType() noexcept {
   for (size_t i = 0; i < COMMAND_NUM; ++i) {

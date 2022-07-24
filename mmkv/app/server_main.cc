@@ -14,7 +14,7 @@ MmkvOption mmkv::server::g_option;
 MmkvConfig mmkv::server::g_config;
 
 void RegisterOptions();
-bool ParseConfig();
+bool ParseConfig(std::string& path);
 
 int main(int argc, char* argv[]) {
   RegisterOptions();
@@ -27,7 +27,9 @@ int main(int argc, char* argv[]) {
 
   LOG_INFO << "Options has parsed successfully";
 
-  if (!ParseConfig()) {
+  errmsg.clear(); 
+  if (!ParseConfig(errmsg)) {
+    ::fprintf(stderr, "Failed to parse the config file\n");
     return 0;
   }
 
@@ -42,12 +44,12 @@ int main(int argc, char* argv[]) {
 
 inline void RegisterOptions() {
   takina::AddUsage("./mmkv_server [OPTIONS]");
-  takina::AddDescription("This is the server of mmkv(memory key-value)");
+  takina::AddDescription("The server of mmkv(memory key-value)");
   takina::AddOption({"c", "config", "The filename of config(default : ./.mmkv.conf)", "CONFIG_NAME"}, &g_option.config_name);
 }
 
-inline bool ParseConfig() {
-  auto success = chisato::Parse(g_option.config_name); 
+inline bool ParseConfig(std::string &errmsg) {
+  auto success = chisato::Parse(g_option.config_name, errmsg); 
 
   if (!success) return false;
 

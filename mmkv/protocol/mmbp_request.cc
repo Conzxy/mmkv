@@ -76,7 +76,7 @@ void MmbpRequest::ParseFrom(Buffer& buffer) {
 }
 
 void MmbpRequest::DebugPrint() const noexcept {
-  LOG_DEBUG << "Command: " << command_strings[command];
+  LOG_DEBUG << "Command: " << GetCommandString((Command)command);
   if (HasKey()) {
     LOG_DEBUG << "Key: " << key;
   }

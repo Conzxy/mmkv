@@ -61,12 +61,14 @@ inline bool ReadLine(FILE* file, std::string& line, const bool need_newline=true
   return true;
 }
 
-inline bool Parse(char const* path) {
+inline bool Parse(char const* path, std::string &errmsg) {
   FILE* file = ::fopen(path, "r");
 
   if (!file) {
-    ::fprintf(stderr, "Failed to open the config file: %s\n", path);
-    ::fprintf(stderr, "Error message: %s\n", strerror(errno));
+    errmsg += "Failed to open the config file: ";
+    errmsg += path;
+    errmsg += "\nError message: ";
+    errmsg += ::strerror(errno);
     return false;
   }
 
@@ -94,15 +96,17 @@ inline bool Parse(char const* path) {
   }
 
   if (::feof(file) == 0) {
-    ::fprintf(stderr, "Failed to read one line from %s\n", path);
+    errmsg += "Failed to read one line from ";
+    errmsg += path;
+    errmsg += "\n";
     return false;
   }
 
   return true;
 }
 
-inline bool Parse(std::string const& path) {
-  return Parse(path.c_str());
+inline bool Parse(std::string const& path, std::string &errmsg) {
+  return Parse(path.c_str(), errmsg);
 }
 
 inline std::string GetField(std::string const& field) {

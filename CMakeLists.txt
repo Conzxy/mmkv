@@ -51,9 +51,12 @@ string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CXX_FLAGS}")
 message(STATUS "CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 message(STATUS "BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
-include_directories(${PROJECT_SOURCE_DIR})
 
 set(MMKV_SOURCE_DIR ${PROJECT_SOURCE_DIR}/mmkv)
+set(THIRD_PARTY_DIR ${PROJECT_SOURCE_DIR}/third-party)
+set(LINENOISE_DIR ${THIRD_PARTY_DIR}/linenoise)
+
+include_directories(${PROJECT_SOURCE_DIR})
 
 # I don't want to use the builtin variable ${BUILD_SHARED_LIBS}
 # since it you don't set it to ON explicitly, then the NOT 

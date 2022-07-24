@@ -22,7 +22,6 @@ int main() {
   auto rlen = sock::ToNetworkByteOrder32(list.GetReadableSize());
 
   g_rlog.Start();
-  g_log_request = true;
   for (int i = 0; i < N; ++i) {
     LOG_DEBUG << "readable size = " << chunk->GetReadableSize();
     g_rlog.Append(&rlen, sizeof rlen);

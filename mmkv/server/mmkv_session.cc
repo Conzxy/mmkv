@@ -30,7 +30,7 @@ MmkvSession::MmkvSession(TcpConnectionPtr const& conn, MmkvServer* server)
   codec_.SetMessageCallback([this](TcpConnectionPtr const& conn, Buffer& buffer, uint32_t request_len, TimeStamp) {
     auto cmd = buffer.GetReadBegin16();
     if (GetCommandType((Command)cmd) == CT_WRITE) {
-      LOG_DEBUG << "Log request to file: " << command_strings[cmd];
+      LOG_DEBUG << "Log request to file: " << GetCommandString((Command)cmd);
       LOG_DEBUG << "log bytes = " << sizeof request_len + request_len;
       const auto nrlen = sock::ToNetworkByteOrder32(request_len);
       disk::g_rlog.Append(&nrlen, sizeof nrlen);
@@ -44,13 +44,11 @@ MmkvSession::MmkvSession(TcpConnectionPtr const& conn, MmkvServer* server)
 
     MmbpResponse response; 
 
+    if (request.HasKey()) LOG_MMKV(conn) << " " << "key:" << request.key;
+
+    LOG_MMKV(conn) << " " << GetCommandString((Command)request.command);
+
     storage::DbExecute(request, &response);
-
-    LOG_MMKV(conn) << " " << command_strings[request.command];
-
-    if (request.HasKey()) {
-      LOG_INFO << " " << "key:" << request.key;
-    }
 
     response.DebugPrint();  
     codec_.Send(conn, &response);
