@@ -1,6 +1,7 @@
 #include "mmkv_client.h"
 
 #include <iostream>
+#include <inttypes.h>
 
 #include "mmkv/protocol/command.h"
 #include "mmkv/protocol/mmbp_request.h"
@@ -8,6 +9,7 @@
 
 #include "mmkv/util/macro.h"
 #include "mmkv/util/str_util.h"
+#include "mmkv/util/time_util.h"
 
 #include "response_printer.h"
 #include "translator.h"
@@ -30,6 +32,8 @@ static bool is_exit = false;
 
 #define COMMAND_HISTORY_LOCATION "/tmp/.mmkv-command.history"
 
+static int64_t start_time = 0;
+
 MmkvClient::MmkvClient(EventLoop* loop, InetAddr const& server_addr) 
   : client_(loop, server_addr, "Mmkv console client") 
   , codec_(MmbpResponse::GetPrototype())
@@ -48,8 +52,6 @@ MmkvClient::MmkvClient(EventLoop* loop, InetAddr const& server_addr)
         std::cout << "Disconnect successfully!" << std::endl;
         ::exit(0);
       } else {
-        printf("sssss\n");
-        printf("xxxxxx\n");
         std::cout << "\nConnection is closed by peer server" << std::endl;
       }
 
@@ -61,12 +63,13 @@ MmkvClient::MmkvClient(EventLoop* loop, InetAddr const& server_addr)
     std::cout << "ERROR occurred: " << MmbpCodec::GetErrorString(code);
   });
 
-  codec_.SetMessageCallback([this](TcpConnectionPtr const&, Buffer& buffer, uint32_t, TimeStamp) {
+  codec_.SetMessageCallback([this](TcpConnectionPtr const&, Buffer& buffer, uint32_t, TimeStamp recv_time) {
     MmbpResponse response;
     response.ParseFrom(buffer);
     // std::cout << response->GetContent() << "\n";
+    ::printf("(%.3lf sec)", (double)(recv_time.GetMicrosecondsSinceEpoch() - start_time) / 1000000);
     response_printer_.Printf(current_cmd_, &response);
-
+    
     // ConsoleIoProcess();
     io_cond_.Notify();
   });
@@ -94,15 +97,13 @@ static void InstallCommandCompletion(char const *line, linenoiseCompletions *lc)
 #define _REGISTER_COMMAND_COMPLETION_CH2(_ch, _cmd) \
   if (line[0] == _ch) \
     ::linenoiseAddCompletion(lc, _cmd);
+  
+  const auto len = ::strlen(line); 
+  for (int i = 0; i < COMMAND_NUM; ++i) {
+    StringView command(GetCommandString((Command)i));
 
-  StringView line_view(line);
-  for (int n = line_view.size(); n >= 1; --n) {
-    for (int i = 0; i < COMMAND_NUM; ++i) {
-      StringView command(GetCommandString((Command)i));
-
-      if (!::strncasecmp(line_view.data(), command.data(), n)) {
-        ::linenoiseAddCompletion(lc, command.data());
-      }
+    if (!::strncasecmp(line, command.data(), len)) {
+      ::linenoiseAddCompletion(lc, command.data());
     }
   }
 
@@ -177,6 +178,7 @@ bool MmkvClient::ConsoleIoProcess() {
 
     case Translator::E_OK: {
       codec_.Send(client_.GetConnection(), &request);
+      start_time = GetTimeUs();
     }
       break;
 

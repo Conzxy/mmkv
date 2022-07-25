@@ -53,5 +53,6 @@ void ResponsePrinter::Printf(Command cmd, MmbpResponse* response) {
       
     default:
       std::cout << GetStatusMessage((StatusCode)response->status_code) << std::endl;
+
   }
 }
