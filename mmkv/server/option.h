@@ -8,6 +8,8 @@ namespace server {
 
 struct MmkvOption {
   std::string config_name = "./.mmkv.conf";
+  bool log_to_file = false;
+  std::string log_dir = "./log";
 };
 
 extern MmkvOption g_option;

@@ -6,6 +6,8 @@
 #include "mmkv/server/config.h"
 #include "mmkv/config/chisato.h"
 
+#include <kanon/log/async_log.h>
+
 using namespace kanon;
 using namespace mmkv;
 using namespace mmkv::server;
@@ -23,6 +25,10 @@ int main(int argc, char* argv[]) {
   if (!success) {
     ::fprintf(stderr, "Failed to parse the options: %s\n", errmsg.c_str());
     return 0;
+  }
+  
+  if (g_option.log_to_file) {
+    kanon::SetupAsyncLog("mmkv-server", 1 << 21, g_option.log_dir);
   }
 
   LOG_INFO << "Options has parsed successfully";
@@ -46,6 +52,8 @@ inline void RegisterOptions() {
   takina::AddUsage("./mmkv_server [OPTIONS]");
   takina::AddDescription("The server of mmkv(memory key-value)");
   takina::AddOption({"c", "config", "The filename of config(default : ./.mmkv.conf)", "CONFIG_NAME"}, &g_option.config_name);
+  takina::AddOption({"f", "log-file", "Log to the file"}, &g_option.log_to_file);
+  takina::AddOption({"d", "log-dir", "The directory of log(default: ./log)", "DIR"}, &g_option.log_dir);
 }
 
 inline bool ParseConfig(std::string &errmsg) {
