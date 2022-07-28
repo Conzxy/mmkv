@@ -15,9 +15,12 @@ enum LogMethod : uint8_t {
 
 struct MmkvConfig {
   LogMethod log_method = LM_NONE;
+  uint64_t expiration_check_cycle;
+  std::string request_log_location;
 };
 
 extern MmkvConfig g_config;
+
 } // namespace config
 } // namespace mmkv
 
