@@ -6,12 +6,14 @@
 #include "mmkv/disk/recover.h"
 #include "mmkv/disk/request_log.h"
 
+#include "mmkv/storage/db.h"
 #include "mmkv/server/config.h"
 
 using namespace kanon;
 using namespace mmkv::server;
 using namespace mmkv::disk;
 using namespace mmkv::server;
+using namespace mmkv::storage;
 
 MmkvServer::MmkvServer(EventLoop* loop, InetAddr const& addr)
   : server_(loop, addr, "In-Memory Key-Value database server")
@@ -37,9 +39,25 @@ MmkvServer::~MmkvServer() noexcept {
 void MmkvServer::Start() {
   if (g_config.log_method == LM_REQUEST) {
     LOG_INFO << "Recover from request log";
-    Recover recover;
-    recover.ParseFromRequest();
-    LOG_INFO << "Recover complete";
+    try { 
+      Recover recover;
+      recover.ParseFromRequest();
+      LOG_INFO << "Recover complete";
+    } catch (FileException const &ex) {
+      LOG_ERROR << ex.what();
+      LOG_ERROR << "Don't recover database from log";
+    }
+  }
+
+  if (g_config.expiration_check_cycle > 0) {
+    LOG_INFO << "The mmkv will check all expired entries";
+    LOG_INFO << "The cycle is " << g_config.expiration_check_cycle << " seconds";
+
+    server_.GetLoop()->RunEvery([]() {
+      // FIXME thread-safe
+      LOG_DEBUG << "Check expiration";
+      storage::DbCheckExpirationCycle();
+    }, g_config.expiration_check_cycle);
   }
 
   g_rlog.Start();

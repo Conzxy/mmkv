@@ -30,8 +30,6 @@ class MmkvServer {
   void Start();
  private:
   TcpServer server_;
-
-  db::MmkvDb db_;  
 };
 
 } // server
