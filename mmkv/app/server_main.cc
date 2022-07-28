@@ -2,18 +2,16 @@
 
 #include "mmkv/option/takina.h"
 #include "mmkv/server/option.h"
-
 #include "mmkv/server/config.h"
 #include "mmkv/config/chisato.h"
+
+#include "mmkv/util/conv.h"
 
 #include <kanon/log/async_log.h>
 
 using namespace kanon;
 using namespace mmkv;
 using namespace mmkv::server;
-
-MmkvOption mmkv::server::g_option;
-MmkvConfig mmkv::server::g_config;
 
 void RegisterOptions();
 bool ParseConfig(std::string& path);
@@ -66,6 +64,18 @@ inline bool ParseConfig(std::string &errmsg) {
   if (log_method == "request") {
     g_config.log_method = LM_REQUEST;
   } 
+
+  auto exp_cycle = chisato::GetField("ExpirationCheckCycle");
+
+  auto res = util::str2u64(exp_cycle.c_str(), g_config.expiration_check_cycle);
+  if (!res) return false;
+
+  auto request_log_loc = chisato::GetField("RequestLogLocation");
+
+  if (request_log_loc.empty()) {
+    LOG_ERROR << "The RequestLogLocation field in the config file is missing";
+    return false;
+  }
 
   return true;
 }
