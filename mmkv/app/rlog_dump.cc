@@ -1,12 +1,13 @@
 #include <iostream>
 
 #include "mmkv/disk/file.h"
-#include "mmkv/disk/common.h"
 #include "mmkv/disk/log_command.h"
 
 #include "mmkv/option/takina.h"
+#include "mmkv/disk/stat.h"
 
 #include "mmkv/util/conv.h"
+#include "mmkv/util/str_util.h"
 #include "mmkv/protocol/mmbp_request.h"
 
 using namespace mmkv::disk;
@@ -15,6 +16,8 @@ using namespace mmkv;
 
 struct Option {
   bool clear;
+  bool size;
+  std::string file_location = "/tmp/.mmkv-request.log";
 };
 
 Option g_option;
@@ -27,6 +30,8 @@ int main(int argc, char** argv) {
   takina::AddUsage("./rlogdump [OPTIONS]");
   takina::AddDescription("This is a parser of mmkv request log");
   takina::AddOption({"", "clear", "Clear the request log"}, &g_option.clear);
+  takina::AddOption({"s", "size", "Size of log file"}, &g_option.size);
+  takina::AddOption({"f", "file", "File location(default: /tmp/.mmkv-request.log)", "LOCATION"}, &g_option.file_location);
 
   std::string errmsg;
   if (!takina::Parse(argc, argv, &errmsg)) {
@@ -35,11 +40,18 @@ int main(int argc, char** argv) {
   }
 
   if (g_option.clear) {
-    ::system("cat " REQUEST_LOG_LOCALTION "> " REQUEST_LOG_LOCALTION);
+    std::string cmd;
+    util::StrCat(cmd, "cat %a > %a", g_option.file_location.c_str(), g_option.file_location.c_str());
+    ::system(cmd.c_str());
     return 0;
   }
 
-  File file(REQUEST_LOG_LOCALTION, File::READ);
+  File file;
+  if (!file.Open(g_option.file_location, File::READ)) {
+    fprintf(stderr, "Failed to open file: %s\n", g_option.file_location.c_str());
+    return 0;
+  }
+
   Buffer buffer;
   buffer.ReserveWriteSpace(BUFFER_SIZE);
 
