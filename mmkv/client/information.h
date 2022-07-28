@@ -32,6 +32,7 @@ enum CommandFormat : uint8_t {
   F_SET_OP_TO,    // sand/or/subto dest key1 key2
   F_HELP,         // help
   F_EXIT,         // exit/quit
+  F_EXPIRE,       // expirexxx expiration
   F_NONE,         // command
 };
 

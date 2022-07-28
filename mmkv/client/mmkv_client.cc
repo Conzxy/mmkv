@@ -1,6 +1,5 @@
 #include "mmkv_client.h"
 
-#include <iostream>
 #include <inttypes.h>
 
 #include "mmkv/protocol/command.h"
@@ -10,13 +9,13 @@
 #include "mmkv/util/macro.h"
 #include "mmkv/util/str_util.h"
 #include "mmkv/util/time_util.h"
+#include "mmkv/util/print_util.h"
 
 #include "response_printer.h"
 #include "translator.h"
 #include "information.h"
 
 #include "linenoise.h"
-// #include "linenoise.h"
 
 #include <kanon/net/callback.h>
 #include <kanon/util/ptr.h>
@@ -42,17 +41,17 @@ MmkvClient::MmkvClient(EventLoop* loop, InetAddr const& server_addr)
   client_.SetConnectionCallback([this, &server_addr](TcpConnectionPtr const& conn) {
     if (conn->IsConnected()) {
       codec_.SetUpConnection(conn);
-      std::cout << "Connect to " << server_addr.ToIpPort() << " successfully\n\n";
+      printf("Connect to %s successfully\n\n", server_addr.ToIpPort().c_str());
       // ConsoleIoProcess();
       io_cond_.Notify();
 
       if (prompt_.empty()) StrCat(prompt_, "mmkv %a> ", server_addr.ToIpPort().c_str());
     } else {
       if (is_exit) {
-        std::cout << "Disconnect successfully!" << std::endl;
+        puts("Disconnect successfully!");
         ::exit(0);
       } else {
-        std::cout << "\nConnection is closed by peer server" << std::endl;
+        puts("\nConnection is closed by peer server");
       }
 
     }
@@ -60,7 +59,7 @@ MmkvClient::MmkvClient(EventLoop* loop, InetAddr const& server_addr)
   
   codec_.SetErrorCallback([](TcpConnectionPtr const& conn, MmbpCodec::ErrorCode code) {
     MMKV_UNUSED(conn);
-    std::cout << "ERROR occurred: " << MmbpCodec::GetErrorString(code);
+    ErrorPrintf("ERROR occurred: %s",  MmbpCodec::GetErrorString(code));
   });
 
   codec_.SetMessageCallback([this](TcpConnectionPtr const&, Buffer& buffer, uint32_t, TimeStamp recv_time) {
@@ -130,6 +129,7 @@ bool MmkvClient::ConsoleIoProcess() {
     return false;
   }
 
+  std::unique_ptr<char> wrapper_line(line);
   if (::strcasecmp(line, "clear") == 0) {
     ::linenoiseClearScreen();
     return false;
@@ -163,14 +163,14 @@ bool MmkvClient::ConsoleIoProcess() {
       break;
 
     case Translator::E_SYNTAX_ERROR: {
-      std::cout << "Syntax error: " << GetCommandHint((Command)request.command) << std::endl;
+      ErrorPrintf("Syntax error: %s\n", GetCommandHint((Command)request.command).c_str());
       // ConsoleIoProcess();
       return false;
     }
       break;
     
     case Translator::E_NO_COMMAND: {
-      std::cout << "Syntax error: no command\n";
+      ErrorPrintf("Syntax error: no command\n");
       // std::cout << GetHelp();
       return false;
     }
@@ -182,6 +182,10 @@ bool MmkvClient::ConsoleIoProcess() {
     }
       break;
 
+    case Translator::E_SHELL_CMD: {
+      return false;
+    }
+      break;
     default:
       ;
   }
@@ -190,8 +194,8 @@ bool MmkvClient::ConsoleIoProcess() {
 }
 
 void MmkvClient::Start() {
-  std::cout << APPLICATION_INFORMATION << "\n" << std::endl;
-  std::cout << "Connecting " << client_.GetServerAddr().ToIpPort() << " ...\n";
+  printf("%s\n\n", APPLICATION_INFORMATION);
+  printf("Connecting %s...\n", client_.GetServerAddr().ToIpPort().c_str());
   
   client_.Connect();
 }

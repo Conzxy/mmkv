@@ -4,6 +4,7 @@
 #include "information.h"
 
 #include "mmkv/protocol/command.h"
+#include "mmkv/util/tcolor_macro.h"
 
 #include <kanon/log/logger.h>
 
@@ -144,7 +145,16 @@ static inline int GenCommandMetadata() {
         command_formats[GetCommandString((Command)i)] = F_VALUE;
         command_hints[i] = " key new_name";
         break;
-
+      case EXPIRE_AT:
+      case EXPIREM_AT:
+        command_formats[GetCommandString(Command(i))] = F_EXPIRE;
+        command_hints[i] = " key expiration_time";
+        break;
+      case EXPIRE_AFTER:
+      case EXPIREM_AFTER:
+        command_formats[GetCommandString((Command)i)] = F_EXPIRE;
+        command_hints[i] = " key time_interval";
+        break;
       default:
         break;
     }
@@ -157,12 +167,14 @@ static inline int GenCommandMetadata() {
 
 static int GenHelp() {
   help += "Help: \n";
-  
-  help += "help\n";
-  help += "exit/quit\n";
+
+  help += GREEN "help\n" RESET;
+  help += GREEN "exit/quit\n" RESET;
 
   for (int i = 0; i < COMMAND_NUM; ++i) {
+    help += L_GREEN;
     help += GetCommandString((Command)i);
+    help += RESET;
     help += GetCommandHint((Command)i);
     help += "\n";
   }
