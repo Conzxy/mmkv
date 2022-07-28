@@ -60,10 +60,12 @@ std::string mmkv::protocol::detail::command_strings[] = {
   "memorystat",
   "expireat",
   "expireafter",
+  "expiremat",
+  "expiremafter",
   "del",
   "rename",
   "type",
-  "keyall"
+  "keyall",
 };
 
 static_assert(sizeof(mmkv::protocol::detail::command_strings) / sizeof(std::string) == COMMAND_NUM, "The size of command_strings must be equal to the number of the commands");

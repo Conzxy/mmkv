@@ -2,22 +2,26 @@
 #include "mmkv/db/data_type.h"
 #include "mmkv/db/mmkv_data.h"
 #include "mmkv/db/vset.h"
+#include "mmkv/protocol/command.h"
 #include "mmkv/protocol/status_code.h"
+#include "mmkv/protocol/mmbp_type.h"
+#include "mmkv/protocol/mmbp_request.h"
 #include "mmkv/protocol/type.h"
+#include "mmkv/server/config.h"
+#include "mmkv/util/time_util.h"
+
+#include "mmkv/disk/request_log.h"
+
+#include <kanon/log/logger.h>
 
 using namespace mmkv::db;
 using namespace mmkv::protocol;
+using namespace mmkv::disk;
+using namespace mmkv::server;
 using namespace kanon;
 
-MmkvDb::MmkvDb() {
-
-}
-
-MmkvDb::~MmkvDb() noexcept {
-
-}
-
 void MmkvDb::GetAllKeys(StrValues& keys) {
+  // Don't reclaim expired kv
   keys.clear();
   keys.reserve(dict_.size());
   for (auto const& kv : dict_) {
@@ -26,6 +30,8 @@ void MmkvDb::GetAllKeys(StrValues& keys) {
 }
 
 bool MmkvDb::Type(String const& key, DataType& type) noexcept {
+  if (CheckExpire(key)) return false;
+
   auto kv = dict_.Find(key);
   if (!kv) return false; 
 
@@ -33,15 +39,7 @@ bool MmkvDb::Type(String const& key, DataType& type) noexcept {
   return true;
 }
 
-bool MmkvDb::Delete(String const& k) {
-  auto node = dict_.Extract(k);
-
-  if (!node) {
-    return false;
-  }
-  
-  auto& value = node->value.value;
-
+void MmkvDb::DeleteData(MmkvData &value) {
   switch (value.type) {
     case D_STRING:
       delete (String*)value.any_data;
@@ -59,11 +57,31 @@ bool MmkvDb::Delete(String const& k) {
       delete (Set*)value.any_data;
       break;
   }
+}
+
+bool MmkvDb::Delete(String const& k) {
+  // Don't call CheckExpire()
+  // Delete handle all
+
+  auto node = dict_.Extract(k);
+
+  if (!node) {
+    return false;
+  }
+  
+  auto& value = node->value.value;
+  DeleteData(value);
+  dict_.DropNode(node);
+
+  // It's ok even though k doesn't exists
+  exp_dict_.Erase(k);
 
   return true;
 }
 
 StatusCode MmkvDb::Rename(String const& old_name, String&& new_name) {
+  if (CheckExpire(old_name)) return S_NONEXISTS;
+
   auto exists = dict_.Find(new_name);
   if (exists) return S_EXISTS;
 
@@ -108,10 +126,13 @@ StatusCode MmkvDb::EraseStr(String const& k) {
     }
   }
 
+  exp_dict_.Erase(k);
   return S_NONEXISTS;
 }
 
 StatusCode MmkvDb::GetStr(String const& k, String*& str) noexcept {
+  if (CheckExpire(k)) return S_NONEXISTS;
+
   KeyValue<String, MmkvData>* data = dict_.Find(k);
   if (data) {
     if (data->value.type == D_STRING) {
@@ -124,6 +145,8 @@ StatusCode MmkvDb::GetStr(String const& k, String*& str) noexcept {
 }
 
 StatusCode MmkvDb::SetStr(String k, String v) {
+  if (CheckExpire(k)) return S_NONEXISTS;
+
   Dict::value_type* duplicate = nullptr;
   MmkvData data = {
     .type = D_STRING,
@@ -149,6 +172,9 @@ StatusCode MmkvDb::SetStr(String k, String v) {
   if (!kv) return S_NONEXISTS; \
   if (kv->value.type != D_STRLIST) return S_EXISITS_DIFF_TYPE
 
+#define CHECK_EXPIRE_ROUTINE(key) \
+  if (CheckExpire(key)) return S_NONEXISTS
+
 StatusCode MmkvDb::ListAdd(String k, StrValues& elems) {
   MmkvData data = {
     .type = D_STRLIST,
@@ -169,6 +195,7 @@ StatusCode MmkvDb::ListAdd(String k, StrValues& elems) {
 }
 
 StatusCode MmkvDb::ListAppend(String const& k, StrValues& elems) {
+  if (CheckExpire(k)) return S_NONEXISTS;
   LIST_ERROR_ROUTINE;
 
   auto lst = (StrList*)(kv->value.any_data);
@@ -181,6 +208,7 @@ StatusCode MmkvDb::ListAppend(String const& k, StrValues& elems) {
 
 
 StatusCode MmkvDb::ListPrepend(String const& k, StrValues& elems) {
+  if (CheckExpire(k)) return S_NONEXISTS;
   LIST_ERROR_ROUTINE;
 
   auto lst = (StrList*)(kv->value.any_data);
@@ -192,6 +220,7 @@ StatusCode MmkvDb::ListPrepend(String const& k, StrValues& elems) {
 }
 
 StatusCode MmkvDb::ListGetSize(String const& k, size_t& size) {
+  if (CheckExpire(k)) return S_NONEXISTS;
   LIST_ERROR_ROUTINE;
 
   auto lst = (StrList*)kv->value.any_data;
@@ -201,6 +230,7 @@ StatusCode MmkvDb::ListGetSize(String const& k, size_t& size) {
 
 
 StatusCode MmkvDb::ListGetAll(String const& k, StrValues& values) {
+  if (CheckExpire(k)) return S_NONEXISTS;
   LIST_ERROR_ROUTINE;
   auto lst = (StrList*)kv->value.any_data;
   values.resize(lst->size());
@@ -216,6 +246,7 @@ StatusCode MmkvDb::ListGetAll(String const& k, StrValues& values) {
 
 
 StatusCode MmkvDb::ListGetRange(String const& k, StrValues& values, size_t l, size_t r) {
+  if (CheckExpire(k)) return S_NONEXISTS;
   LIST_ERROR_ROUTINE;
   
   auto lst = (StrList*)kv->value.any_data;
@@ -242,6 +273,7 @@ StatusCode MmkvDb::ListGetRange(String const& k, StrValues& values, size_t l, si
 
 
 StatusCode MmkvDb::ListPopFront(String const& k, uint32_t count) {
+  CHECK_EXPIRE_ROUTINE(k);
   LIST_ERROR_ROUTINE;
 
   auto lst = (StrList*)kv->value.any_data;
@@ -257,6 +289,7 @@ StatusCode MmkvDb::ListPopFront(String const& k, uint32_t count) {
 
 
 StatusCode MmkvDb::ListPopBack(String const& k, uint32_t count) {
+  CHECK_EXPIRE_ROUTINE(k);
   LIST_ERROR_ROUTINE;
 
   auto lst = (StrList*)kv->value.any_data;
@@ -284,6 +317,7 @@ StatusCode MmkvDb::ListDel(String const& k) {
     }
   }
 
+  exp_dict_.Erase(k);
   return S_NONEXISTS;
 }
 
@@ -328,6 +362,7 @@ StatusCode MmkvDb::VsetAdd(String&& key, WeightValues&& wms, size_t& count) {
   if (kv->value.type != (_type)) return S_EXISITS_DIFF_TYPE
 
 StatusCode MmkvDb::VsetDel(String const& key, String const& member) {
+  CHECK_EXPIRE_ROUTINE(key);
   ERROR_ROUTINE_KV(D_SORTED_SET);
   if (TO_VSET(kv)->Erase(member)) {
     return S_OK;
@@ -336,66 +371,77 @@ StatusCode MmkvDb::VsetDel(String const& key, String const& member) {
 }
 
 StatusCode MmkvDb::VsetDelRange(String const& key, OrderRange range, size_t& count) {
+  CHECK_EXPIRE_ROUTINE(key);
   ERROR_ROUTINE_KV(D_SORTED_SET);
   count = TO_VSET(kv)->EraseRange(range.left, range.right);
   return S_OK;
 }
 
 StatusCode MmkvDb::VsetDelRangeByWeight(String const& key, WeightRange range, size_t& count) {
+  CHECK_EXPIRE_ROUTINE(key);
   ERROR_ROUTINE_KV(D_SORTED_SET);
   count = TO_VSET(kv)->EraseRangeByWeight(range.left, range.right);
   return S_OK;
 }
 
 StatusCode MmkvDb::VsetSize(String const& key, size_t& count) {
+  CHECK_EXPIRE_ROUTINE(key);
   ERROR_ROUTINE_KV(D_SORTED_SET);
   count = TO_VSET(kv)->GetSize();
   return S_OK;
 }
 
 StatusCode MmkvDb::VsetSizeByWeight(String const& key, WeightRange range, size_t& count) {
+  CHECK_EXPIRE_ROUTINE(key);
   ERROR_ROUTINE_KV(D_SORTED_SET);
   count = TO_VSET(kv)->GetSizeByWeight(range.left, range.right);
   return S_OK;
 }
 
 StatusCode MmkvDb::VsetWeight(String const& key, String const& member, Weight& w) {
+  CHECK_EXPIRE_ROUTINE(key);
   ERROR_ROUTINE_KV(D_SORTED_SET);
   if (TO_VSET(kv)->GetWeight(member, w)) return S_OK;
   else return S_VMEMBER_NONEXISTS;
 }
 
 StatusCode MmkvDb::VsetOrder(String const& key, String const& member, size_t& order) {
+  CHECK_EXPIRE_ROUTINE(key);
   ERROR_ROUTINE_KV(D_SORTED_SET);
   if (TO_VSET(kv)->GetOrder(member, order)) return S_OK;
   else return S_VMEMBER_NONEXISTS;
 }
 
 StatusCode MmkvDb::VsetROrder(String const& key, String const& member, size_t& order) {
+  CHECK_EXPIRE_ROUTINE(key);
   ERROR_ROUTINE_KV(D_SORTED_SET);
   if (TO_VSET(kv)->GetROrder(member, order)) return S_OK;
   else return S_VMEMBER_NONEXISTS;
 }
 
 StatusCode MmkvDb::VsetAll(String const& key, WeightValues& wms) {
+  CHECK_EXPIRE_ROUTINE(key);
   ERROR_ROUTINE_KV(D_SORTED_SET);
   TO_VSET(kv)->GetAll(wms); 
   return S_OK;
 }
 
 StatusCode MmkvDb::VsetRange(String const& key, OrderRange range, WeightValues& wms) {
+  CHECK_EXPIRE_ROUTINE(key);
   ERROR_ROUTINE_KV(D_SORTED_SET);
   TO_VSET(kv)->GetRange(range.left, range.right, wms); 
   return S_OK;
 }
 
 StatusCode MmkvDb::VsetRangeByWeight(String const& key, WeightRange range, WeightValues& wms) {
+  CHECK_EXPIRE_ROUTINE(key);
   ERROR_ROUTINE_KV(D_SORTED_SET);
   TO_VSET(kv)->GetRangeByWeight(range.left, range.right, wms); 
   return S_OK;
 }
 
 StatusCode MmkvDb::VsetRRange(String const& key, OrderRange range, WeightValues& wms) {
+  CHECK_EXPIRE_ROUTINE(key);
   ERROR_ROUTINE_KV(D_SORTED_SET);
   
   TO_VSET(kv)->GetRRange(range.left, range.right, wms); 
@@ -403,6 +449,7 @@ StatusCode MmkvDb::VsetRRange(String const& key, OrderRange range, WeightValues&
 }
 
 StatusCode MmkvDb::VsetRRangeByWeight(String const& key, WeightRange range, WeightValues& wms) {
+  CHECK_EXPIRE_ROUTINE(key);
   ERROR_ROUTINE_KV(D_SORTED_SET); 
   TO_VSET(kv)->GetRRangeByWeight(range.left, range.right, wms); 
   return S_OK;
@@ -439,6 +486,7 @@ StatusCode MmkvDb::MapAdd(String&& key, StrKvs&& kvs, size_t& count) {
 #define TO_MAP ((Map*)(kv->value.any_data))
 
 StatusCode MmkvDb::MapGet(String const& key, String const& field, String& value) {
+  CHECK_EXPIRE_ROUTINE(key);
   ERROR_ROUTINE_KV(D_MAP);
   
   auto map = TO_MAP;
@@ -453,6 +501,7 @@ StatusCode MmkvDb::MapGet(String const& key, String const& field, String& value)
 }
 
 StatusCode MmkvDb::MapGets(String const& key, StrValues const& fields, StrValues& values) {
+  CHECK_EXPIRE_ROUTINE(key);
   ERROR_ROUTINE_KV(D_MAP);
   
   auto map = TO_MAP;
@@ -471,6 +520,7 @@ StatusCode MmkvDb::MapGets(String const& key, StrValues const& fields, StrValues
 }
 
 StatusCode MmkvDb::MapSet(String const& key, String&& field, String&& value) {
+  CHECK_EXPIRE_ROUTINE(key);
   ERROR_ROUTINE_KV(D_MAP);
 
   auto map = TO_MAP;
@@ -488,6 +538,7 @@ StatusCode MmkvDb::MapSet(String const& key, String&& field, String&& value) {
 }
 
 StatusCode MmkvDb::MapDel(String const& key, String const& field) {
+  CHECK_EXPIRE_ROUTINE(key);
   ERROR_ROUTINE_KV(D_MAP);
 
   if (TO_MAP->Erase(field)) {
@@ -498,12 +549,14 @@ StatusCode MmkvDb::MapDel(String const& key, String const& field) {
 }
 
 StatusCode MmkvDb::MapSize(String const& key, size_t& count) {
+  CHECK_EXPIRE_ROUTINE(key);
   ERROR_ROUTINE_KV(D_MAP);
   count = TO_MAP->size(); 
   return S_OK;
 }
 
 StatusCode MmkvDb::MapExists(String const& key, String const& field) {
+  CHECK_EXPIRE_ROUTINE(key);
   ERROR_ROUTINE_KV(D_MAP);
   if (TO_MAP->Find(field)) {
     return S_OK;
@@ -513,6 +566,7 @@ StatusCode MmkvDb::MapExists(String const& key, String const& field) {
 }
 
 StatusCode MmkvDb::MapFields(String const& key, StrValues& fields) {
+  CHECK_EXPIRE_ROUTINE(key);
   ERROR_ROUTINE_KV(D_MAP);
   auto& m = *TO_MAP;
 
@@ -524,6 +578,7 @@ StatusCode MmkvDb::MapFields(String const& key, StrValues& fields) {
 }
 
 StatusCode MmkvDb::MapValues(String const& key, StrValues& values) {
+  CHECK_EXPIRE_ROUTINE(key);
   ERROR_ROUTINE_KV(D_MAP);
   auto& m = *TO_MAP;
 
@@ -535,6 +590,7 @@ StatusCode MmkvDb::MapValues(String const& key, StrValues& values) {
 }
 
 StatusCode MmkvDb::MapAll(String const& key, StrKvs& kvs) {
+  CHECK_EXPIRE_ROUTINE(key);
   ERROR_ROUTINE_KV(D_MAP);
   auto& m = *TO_MAP;
 
@@ -576,6 +632,7 @@ StatusCode MmkvDb::SetAdd(String&& key, StrValues& members, size_t& count) {
 #define TO_SET(_data) ((Set*)((_data).any_data))
 
 StatusCode MmkvDb::SetDelm(const String &key, const String &member) {
+  CHECK_EXPIRE_ROUTINE(key);
   ERROR_ROUTINE_KV(D_SET);
   auto set = TO_SET(kv->value); 
   
@@ -584,18 +641,21 @@ StatusCode MmkvDb::SetDelm(const String &key, const String &member) {
 }
 
 StatusCode MmkvDb::SetSize(String const& key, size_t& count) {
+  CHECK_EXPIRE_ROUTINE(key);
   ERROR_ROUTINE_KV(D_SET);
   count = TO_SET(kv->value)->size();
   return S_OK;
 }
 
 StatusCode MmkvDb::SetExists(String const& key, String const& member) {
+  CHECK_EXPIRE_ROUTINE(key);
   ERROR_ROUTINE_KV(D_SET);
   if (TO_SET(kv->value)->Find(member)) return S_OK;
   else return S_SET_MEMBER_NONEXISTS;
 }
 
 StatusCode MmkvDb::SetAll(String const& key, StrValues& members) {
+  CHECK_EXPIRE_ROUTINE(key);
   ERROR_ROUTINE_KV(D_SET);
   auto set = TO_SET(kv->value);
 
@@ -615,6 +675,10 @@ StatusCode MmkvDb::SetAll(String const& key, StrValues& members) {
   auto set2 = TO_SET(kv2->value)
 
 StatusCode MmkvDb::SetAnd(String const& key1, String const& key2, StrValues& members) {
+  // FIXME
+  CHECK_EXPIRE_ROUTINE(key1);
+  CHECK_EXPIRE_ROUTINE(key2);
+
   SET_OP_ROUTINE;
   set1->Intersection(*set2, [&members](String const& m) {
       members.push_back(m);
@@ -641,6 +705,8 @@ StatusCode MmkvDb::SetAnd(String const& key1, String const& key2, StrValues& mem
   }
 
 StatusCode MmkvDb::SetAndTo(String const& key1, String const& key2, String&& dest) {
+  CHECK_EXPIRE_ROUTINE(key1);
+  CHECK_EXPIRE_ROUTINE(key2);
   SET_OP_ROUTINE;
   SET_OP_TO_ROUTINE  
   
@@ -652,6 +718,8 @@ StatusCode MmkvDb::SetAndTo(String const& key1, String const& key2, String&& des
 }
 
 StatusCode MmkvDb::SetSub(String const& key1, String const& key2, StrValues& members) {
+  CHECK_EXPIRE_ROUTINE(key1);
+  CHECK_EXPIRE_ROUTINE(key2);
   SET_OP_ROUTINE;
 
   set1->Difference(*set2, [&members](String const& m) {
@@ -662,6 +730,8 @@ StatusCode MmkvDb::SetSub(String const& key1, String const& key2, StrValues& mem
 }
 
 StatusCode MmkvDb::SetSubTo(String const& key1, String const& key2, String&& dest) {
+  CHECK_EXPIRE_ROUTINE(key1);
+  CHECK_EXPIRE_ROUTINE(key2);
   SET_OP_ROUTINE;
   SET_OP_TO_ROUTINE
   
@@ -673,6 +743,8 @@ StatusCode MmkvDb::SetSubTo(String const& key1, String const& key2, String&& des
 }
 
 StatusCode MmkvDb::SetOr(String const& key1, String const& key2, StrValues& members) {
+  CHECK_EXPIRE_ROUTINE(key1);
+  CHECK_EXPIRE_ROUTINE(key2);
   SET_OP_ROUTINE;
 
   set1->Union(*set2, [&members](String const& m) {
@@ -683,6 +755,8 @@ StatusCode MmkvDb::SetOr(String const& key1, String const& key2, StrValues& memb
 }
 
 StatusCode MmkvDb::SetOrTo(String const& key1, String const& key2, String&& dest) {
+  CHECK_EXPIRE_ROUTINE(key1);
+  CHECK_EXPIRE_ROUTINE(key2);
   SET_OP_ROUTINE;
   SET_OP_TO_ROUTINE;
 
@@ -694,6 +768,8 @@ StatusCode MmkvDb::SetOrTo(String const& key1, String const& key2, String&& dest
 }
 
 StatusCode MmkvDb::SetAndSize(String const& key1, String const& key2, size_t& count) {
+  CHECK_EXPIRE_ROUTINE(key1);
+  CHECK_EXPIRE_ROUTINE(key2);
   SET_OP_ROUTINE;
   count = 0;
   set1->Intersection(*set2, [&count](String const& m) {
@@ -704,6 +780,8 @@ StatusCode MmkvDb::SetAndSize(String const& key1, String const& key2, size_t& co
 }
 
 StatusCode MmkvDb::SetOrSize(String const& key1, String const& key2, size_t& count) {
+  CHECK_EXPIRE_ROUTINE(key1);
+  CHECK_EXPIRE_ROUTINE(key2);
   SET_OP_ROUTINE;
   count = 0;
   set1->Union(*set2, [&count](String const& m) {
@@ -714,6 +792,8 @@ StatusCode MmkvDb::SetOrSize(String const& key1, String const& key2, size_t& cou
 }
 
 StatusCode MmkvDb::SetSubSize(String const& key1, String const& key2, size_t& count) {
+  CHECK_EXPIRE_ROUTINE(key1);
+  CHECK_EXPIRE_ROUTINE(key2);
   SET_OP_ROUTINE;
   count = 0;
   set1->Difference(*set2, [&count](String const& m) {
@@ -721,4 +801,94 @@ StatusCode MmkvDb::SetSubSize(String const& key1, String const& key2, size_t& co
       });
 
   return S_OK;
+}
+
+void MmkvDb::SetExpire(String &&key, uint64_t expire) {
+  ExDict::value_type *duplicate = nullptr;
+  const uint64_t cur_ms = util::GetTimeMs();
+
+  LOG_DEBUG << "current ms: " << cur_ms;
+  LOG_DEBUG << "expire: " << expire;
+  LOG_DEBUG << "diff: " << expire - cur_ms;
+  if (cur_ms < expire) {
+    const auto success = exp_dict_.InsertKvWithDuplicate(std::move(key), expire, duplicate);
+    if (!success)
+      duplicate->value = expire;
+  }
+}
+
+StatusCode MmkvDb::ExpireAtMs(String &&key, uint64_t expire) {
+  auto kv = dict_.Find(key);
+  if (!kv) return S_NONEXISTS;
+
+  SetExpire(std::move(key), expire);
+  return S_OK;
+}
+
+void MmkvDb::CheckExpireCycle() {
+  std::vector<String> expire_keys;
+  const uint64_t cur_ms = util::GetTimeMs();
+  Dict::Node *node = nullptr;
+
+  for (auto const &k_exp : exp_dict_) {
+    if (k_exp.value <= cur_ms) {
+      node = dict_.Extract(k_exp.key);
+      DeleteData(node->value.value);
+      dict_.DropNode(node); 
+
+      expire_keys.emplace_back(k_exp.key);
+    }
+  }
+
+  for (auto const &key : expire_keys) {
+    exp_dict_.Erase(key);
+  }
+
+  if (g_config.log_method == LM_REQUEST) {
+    MmbpRequest request;
+    Buffer buffer;
+    for (auto &key : expire_keys) {
+      request.SetKey();
+      request.key = std::move(key);
+      request.command = DEL;
+      request.SerializeTo(buffer);
+      buffer.Prepend32(buffer.GetReadableSize());
+      g_rlog.Append(buffer.GetReadBegin(), buffer.GetReadableSize());
+      buffer.AdvanceAll();
+      request.Reset();
+    }
+  }
+}
+
+bool MmkvDb::CheckExpire(String const &key) {
+  ExDict::Bucket *bucket = nullptr;
+  const auto node = exp_dict_.FindNode(key, &bucket);
+  if (!node) return false;
+  assert(bucket);
+
+  const uint64_t cur_ms = util::GetTimeMs();
+  LOG_DEBUG << "current ms: " << cur_ms;
+  if (cur_ms >= node->value.value) {
+    exp_dict_.EraseNode(bucket, node);
+    auto node2 = dict_.Extract(key);
+    DeleteData(node2->value.value);
+    dict_.DropNode(node2);
+
+    if (g_config.log_method == LM_REQUEST) {
+      Buffer buffer;
+      // buffer.ReserveWriteSpace(sizeof(CommandField)+key.size()+sizeof(uint32_t));
+      MmbpRequest req;
+      req.command = DEL;
+      req.key = key; /* FIXME move string instead of copy */
+      req.SetKey();
+      req.DebugPrint();
+      req.SerializeTo(buffer);
+      LOG_DEBUG << "request length = " << buffer.GetReadableSize();
+      buffer.Prepend32(buffer.GetReadableSize());
+      g_rlog.Append(buffer.GetReadBegin(), buffer.GetReadableSize());
+    }
+    return true;
+  }
+
+  return false;
 }

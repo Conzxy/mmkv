@@ -1,7 +1,6 @@
 #include "translator.h"
 
 #include <cstdint>
-#include <iostream>
 
 #include "mmkv/client/information.h"
 
@@ -9,6 +8,7 @@
 #include "mmkv/protocol/mmbp_request.h"
 #include "mmkv/protocol/mmbp_response.h"
 #include "mmkv/util/tokenizer.h"
+#include "mmkv/util/print_util.h"
 
 using namespace mmkv::protocol;
 using namespace mmkv::util;
@@ -59,9 +59,9 @@ using namespace std;
   ::memcpy(buf, token.data(), token.size()); \
   buf[token.size()] = 0; \
   char* end; \
-  (var) = ::strtol(buf, &end, 10); \
+  (var) = ::strtoull(buf, &end, 10); \
   if ((var) == 0 && buf == end) { \
-    std::cout << (msg) << "\n"; \
+    ErrorPrintf(msg); \
     return E_SYNTAX_ERROR; \
   } } while (0)
 
@@ -73,11 +73,18 @@ using namespace std;
   char* end; \
   (var) = ::strtod(buf, &end); \
   if ((var) == 0 && end == buf) { \
-    std::cout << (msg) << "\n"; \
+    ErrorPrintf(msg); \
     return E_SYNTAX_ERROR; \
   } } while (0)
 
 Translator::ErrorCode Translator::Parse(MmbpRequest* request, StringView statement) {
+  if (statement.size() > 0 && statement[0] == '!') {
+    if (::system(statement.substr(1).data()) == 0)
+      return E_SHELL_CMD;
+    else
+      return E_INVALID_COMMAND;
+  }
+
   Tokenizer tokenizer(statement);
   
   auto token_iter = tokenizer.begin();
@@ -85,13 +92,12 @@ Translator::ErrorCode Translator::Parse(MmbpRequest* request, StringView stateme
   if (token_iter == tokenizer.end()) {
     return E_NO_COMMAND;
   }
-  
-  auto cmd = *token_iter;
 
+  auto cmd = *token_iter;
   const auto valid_cmd = GetCommand(cmd, request->command);
 
   if (!valid_cmd) {
-    std::cout << "ERROR: invalid command: " << cmd.ToString() << "\n";
+    ErrorPrintf("ERROR: invalid command: %s\n", cmd.ToString().c_str());
     // std::cout << GetHelp();
     return E_INVALID_COMMAND;
   }
@@ -192,7 +198,7 @@ Translator::ErrorCode Translator::Parse(MmbpRequest* request, StringView stateme
     }
       break;
     case F_HELP: {
-      std::cout << GetHelp();
+      ::fputs(GetHelp().c_str(), stdout);
       return E_INVALID_COMMAND;
     }
       break;
@@ -211,7 +217,13 @@ Translator::ErrorCode Translator::Parse(MmbpRequest* request, StringView stateme
       request->SetKvs();
     }
       break;
-      
+    case F_EXPIRE: {
+      SET_KEY;
+      SET_INTEGER(request->expire_time, "ERROR: expiration time is invalid");
+      request->SetExpireTime();
+      SYNTAX_ERROR_ROUTINE_END;
+    } 
+      break;
     default:
       assert(false && "This must be a valid command");
   } 

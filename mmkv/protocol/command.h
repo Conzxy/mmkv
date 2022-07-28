@@ -71,6 +71,8 @@ enum Command : uint16_t {
   MEM_STAT,
   EXPIRE_AT,
   EXPIRE_AFTER,
+  EXPIREM_AT,
+  EXPIREM_AFTER,
   DEL,
   RENAME,
   TYPE,

@@ -3,12 +3,14 @@
 #include "mmkv/protocol/status_code.h"
 #include "mmkv/protocol/command.h"
 #include "mmkv/util/memory_footprint.h"
+#include "mmkv/util/time_util.h"
 
 namespace storage = mmkv::storage;
 using namespace mmkv::storage;
 using namespace mmkv::protocol;
 
 MmkvDb storage::g_db;
+uint64_t storage::g_recv_time = 0;
 
 #define DB g_db
 
@@ -510,6 +512,39 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
     case MEM_STAT: {
       MMKV_ASSERT(request.HasNone(), "memorystat");
       SET_OK_VALUE(util::GetMemoryStat());
+    }
+      break;
+
+    case EXPIRE_AT: {
+      MMKV_ASSERT(request.HasExpireTime(), "expireat");
+      const auto code = DB.ExpireAt(std::move(request.key),  request.expire_time);
+      if (response)
+        response->status_code = code;
+    }
+      break;
+
+    case EXPIRE_AFTER: {
+      MMKV_ASSERT(request.HasExpireTime(), "expireafter");
+      const auto code = DB.ExpireAfter(std::move(request.key), g_recv_time, request.expire_time);
+      if (response)
+        response->status_code = code;
+    }
+      break;
+
+    case EXPIREM_AT: {
+      MMKV_ASSERT(request.HasExpireTime(), "expiremat");
+      const auto code = DB.ExpireAtMs(std::move(request.key),  request.expire_time);
+      if (response)
+        response->status_code = code;
+
+    }
+      break;
+
+    case EXPIREM_AFTER: {
+      MMKV_ASSERT(request.HasExpireTime(), "expiremafter");
+      const auto code = DB.ExpireAfterMs(std::move(request.key),  g_recv_time, request.expire_time);
+      if (response)
+        response->status_code = code;
     }
       break;
 

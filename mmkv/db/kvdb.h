@@ -46,11 +46,24 @@ class MmkvDb {
   DISABLE_EVIL_COPYABLE(MmkvDb)
 
   using Dict = AvlDictionary<String, MmkvData, Comparator<String>>;
-
+  using ExDict = AvlDictionary<String, uint64_t, Comparator<String>>;
  public:
-  MmkvDb();
-  ~MmkvDb() noexcept;
-  
+  explicit MmkvDb(std::string name)
+    : name_(std::move(name))
+  {
+    LOG_INFO << "Database " << name_ << " created";
+  }
+
+  MmkvDb()
+    : MmkvDb("MMKV")
+  {
+
+  }
+
+  ~MmkvDb() noexcept {
+    LOG_INFO << "Database " << name_ << " removed";
+  }
+
   bool Delete(String const& k);
   bool Type(String const& key, DataType& type) noexcept;
   void GetAllKeys(StrValues& keys);
@@ -115,9 +128,35 @@ class MmkvDb {
   StatusCode SetOrSize(String const& key1, String const& key2, size_t& count);
   StatusCode SetSubSize(String const& key1, String const& key2, size_t& count);
 
- private:
-  Dict dict_;
+  /**
+   * \brief Set expiration time in milliseconds
+   * \return 
+   *  S_OK -- success
+   *  S_NONEXISTS -- key does not exists 
+   */
+  StatusCode ExpireAtMs(String &&key, uint64_t expire);
 
+  StatusCode ExpireAt(String &&key, uint64_t expire) {
+    return ExpireAtMs(std::move(key), expire * 1000);
+  }
+
+  StatusCode ExpireAfterMs(String &&key, uint64_t ms, uint64_t interval) {
+    return ExpireAtMs(std::move(key), ms + interval);
+  }
+
+  StatusCode ExpireAfter(String &&key, uint64_t ms, uint64_t interval) {
+    return ExpireAtMs(std::move(key), ms + interval * 1000);
+  }
+
+  void CheckExpireCycle();
+ private:
+  void SetExpire(String &&key, uint64_t expire);
+  bool CheckExpire(String const &key);
+  void DeleteData(MmkvData &data);
+
+  std::string name_;
+  Dict dict_;
+  ExDict exp_dict_; /** expire dictionary */
 };
 
 } // db

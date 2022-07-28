@@ -7,8 +7,8 @@ namespace mmkv {
 namespace db {
 
 struct MmkvData {
-  DataType type;
-  void* any_data;
+  DataType type;  /** Explain the any_data */
+  void* any_data; /** Store any data type */
 };
 
 } // db 

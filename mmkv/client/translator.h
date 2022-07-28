@@ -17,6 +17,7 @@ class Translator {
     E_SYNTAX_ERROR,
     E_EXIT,
     E_NO_COMMAND,
+    E_SHELL_CMD,
   };
 
   Translator() = default;
