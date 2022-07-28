@@ -30,8 +30,12 @@ class MmbpRequest : public MmbpMessage {
   ~MmbpRequest() noexcept override;
 
   void SerializeTo(ChunkList& buffer) const override;
+  void SerializeTo(Buffer &buffer) const override;
+
   void ParseFrom(Buffer& buffer) override;
-  
+
+  void Reset();
+
   MmbpMessage *New() const override {
     return new MmbpRequest();
   }
@@ -124,7 +128,7 @@ class MmbpRequest : public MmbpMessage {
   uint8_t has_bits_[1];
 
  public: 
-  uint16_t command; // required
+  uint16_t command = Command::COMMAND_NUM; // required
 
 
   String key; // optional

@@ -16,6 +16,8 @@ class MmbpResponse : public MmbpMessage {
   ~MmbpResponse() noexcept override;
 
   void SerializeTo(ChunkList& buffer) const override;
+  void SerializeTo(Buffer &buffer) const override;
+
   void ParseFrom(Buffer& buffer) override;
 
   MmbpMessage *New() const override {

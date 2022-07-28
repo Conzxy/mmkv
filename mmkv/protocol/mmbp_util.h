@@ -88,12 +88,14 @@ inline void SetField(int64_t& i, Buffer& buffer) {
   i = (int64_t)buffer.Read64();
 }
 
-inline void SerializeField(String const& str, ChunkList& buffer, bool is_16=false) {
+template<typename BT>
+inline void SerializeField(String const& str, BT &buffer, bool is_16=false) {
   is_16 ? buffer.Append16(str.size()) : buffer.Append32(str.size());
   buffer.Append(str.data(), str.size());
 }
 
-inline void SerializeField(StrValues const& values, ChunkList& buffer) {
+template<typename BT>
+inline void SerializeField(StrValues const& values, BT& buffer) {
   buffer.Append32(values.size());
   
   for (size_t i = 0; i < values.size(); ++i) {
@@ -102,7 +104,8 @@ inline void SerializeField(StrValues const& values, ChunkList& buffer) {
   }
 }
 
-inline void SerializeField(StrKvs const& values, ChunkList& buffer) {
+template<typename BT>
+inline void SerializeField(StrKvs const& values, BT& buffer) {
   buffer.Append32(values.size());
   
   for (size_t i = 0; i < values.size(); ++i) {
@@ -113,7 +116,8 @@ inline void SerializeField(StrKvs const& values, ChunkList& buffer) {
   }
 }
 
-inline void SerializeField(WeightValues const& values, ChunkList& buffer) {
+template<typename BT>
+inline void SerializeField(WeightValues const& values, BT& buffer) {
   buffer.Append32(values.size());
 
   for (size_t i = 0; i < values.size(); ++i) {
@@ -123,19 +127,23 @@ inline void SerializeField(WeightValues const& values, ChunkList& buffer) {
   }
 }
 
-inline void SerializeField(uint8_t i, ChunkList& buffer) {
+template<typename BT>
+inline void SerializeField(uint8_t i, BT& buffer) {
   buffer.Append8(i);
 }
 
-inline void SerializeField(uint64_t i, ChunkList& buffer) {
+template<typename BT>
+inline void SerializeField(uint64_t i, BT& buffer) {
   buffer.Append64(i); 
 }
 
-inline void SerializeField(uint32_t i, ChunkList& buffer) {
+template<typename BT>
+inline void SerializeField(uint32_t i, BT& buffer) {
   buffer.Append32(i);
 }
 
-inline void SerializeField(uint16_t i, ChunkList& buffer) {
+template<typename BT>
+inline void SerializeField(uint16_t i, BT& buffer) {
   buffer.Append16(i);
 }
 

@@ -18,6 +18,35 @@ MmbpRequest::~MmbpRequest() noexcept {
 
 }
 
+void MmbpRequest::SerializeTo(Buffer &buffer) const {
+  SerializeField(command, buffer);
+  SerializeField(has_bits_[0], buffer);
+  
+  if (HasKey()) {
+    SerializeField(key, buffer, true);
+  }
+
+  if (HasValue()) {
+    SerializeField(value, buffer);
+  } else if (HasValues()) {
+    SerializeField(values, buffer);
+  } else if (HasKvs()) {
+    SerializeField(kvs, buffer);
+  } else if (HasCount()) {
+    SerializeField(count, buffer);
+  } else if (HasRange()) {
+    SerializeField((uint64_t)range.left, buffer);
+    SerializeField((uint64_t)range.right, buffer);
+  } else if (HasVmembers()) {
+    SerializeField(vmembers, buffer);
+  }
+
+  if (HasExpireTime()) {
+    SerializeField(expire_time, buffer);
+  }
+  
+}
+
 void MmbpRequest::SerializeTo(ChunkList& buffer) const {
   SerializeField(command, buffer);
   SerializeField(has_bits_[0], buffer);
@@ -48,8 +77,13 @@ void MmbpRequest::SerializeTo(ChunkList& buffer) const {
 }
 
 void MmbpRequest::ParseFrom(Buffer& buffer) {
-  SetField(command, buffer);  
-  SetField(has_bits_[0], buffer); 
+  if (buffer.GetReadableSize() >= sizeof(command)) 
+    SetField(command, buffer);
+  else return;
+
+  if (buffer.GetReadableSize() >= sizeof(has_bits_))
+    SetField(has_bits_[0], buffer); 
+  else return;
 
   if (HasKey()) {
     SetField(key, buffer, true);
@@ -76,7 +110,10 @@ void MmbpRequest::ParseFrom(Buffer& buffer) {
 }
 
 void MmbpRequest::DebugPrint() const noexcept {
-  LOG_DEBUG << "Command: " << GetCommandString((Command)command);
+  if (command <= COMMAND_NUM) {
+    LOG_DEBUG << "Command: " << GetCommandString((Command)command);
+  } else return;
+
   if (HasKey()) {
     LOG_DEBUG << "Key: " << key;
   }
@@ -105,4 +142,15 @@ void MmbpRequest::DebugPrint() const noexcept {
   if (HasExpireTime()) {
     LOG_DEBUG << "ExpireTime: " << expire_time;
   }
+}
+
+void MmbpRequest::Reset() {
+  memset(has_bits_, 0, sizeof has_bits_);
+  // Don't to call shrink_to_fit()
+  // to reuse the old memory space
+  key.clear();
+  kvs.clear();
+  values.clear();
+  value.clear();
+  vmembers.clear();
 }

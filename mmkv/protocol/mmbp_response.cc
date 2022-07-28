@@ -18,6 +18,23 @@ MmbpResponse::~MmbpResponse() noexcept {
 
 }
 
+void MmbpResponse::SerializeTo(Buffer &buffer) const {
+  SerializeField(status_code, buffer);
+  SerializeField(has_bits_[0], buffer);
+
+  if (HasValue()) {
+    SerializeField(value, buffer);
+  } else if (HasValues()) {
+    SerializeField(values, buffer);
+  } else if (HasKvs()) {
+    SerializeField(kvs, buffer);
+  } else if (HasCount()) {
+    SerializeField(count, buffer);
+  } else if (HasVmembers()) {
+    SerializeField(vmembers, buffer);
+  }
+}
+
 void MmbpResponse::SerializeTo(ChunkList& buffer) const {
   SerializeField(status_code, buffer);
   SerializeField(has_bits_[0], buffer);
