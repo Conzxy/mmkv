@@ -4,18 +4,19 @@
 
 #include "mmkv/storage/db.h"
 #include "mmkv/protocol/mmbp_request.h"
+#include "mmkv/server/config.h"
 
-#include "common.h"
 #include "log_command.h"
 
 using namespace mmkv::disk;
 using namespace mmkv::protocol;
 using namespace mmkv::storage;
+using namespace mmkv::server;
 
 static constexpr int BUFFER_SIZE = 1 << 16;
 
 Recover::Recover()
-  : file_(REQUEST_LOG_LOCALTION, File::READ)
+  : file_(g_config.request_log_location, File::READ)
 {
 }
 

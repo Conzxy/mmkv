@@ -11,6 +11,7 @@
 #include <kanon/thread/mutex_lock.h>
 #include <kanon/thread/condition.h>
 #include <kanon/thread/count_down_latch.h>
+#include <kanon/net/endian_api.h>
 
 #include "mmkv/server/config.h"
 
@@ -34,8 +35,6 @@ class RequestLog {
   ~RequestLog() noexcept;
   
   void Append(void const* data, size_t len) noexcept {
-    if (server::g_config.log_method != server::LM_REQUEST) return;
-
     MutexGuard g(empty_lock_);
 
     if (len <= cur_blk_.avali()) {
@@ -48,6 +47,21 @@ class RequestLog {
       cur_blk_.reset();
       cur_blk_.Append((char const*)data+writable, len-writable);
     }
+  }
+
+  void Append16(uint16_t i) {
+    auto ni = kanon::sock::ToNetworkByteOrder16(i);
+    Append(&ni, sizeof ni);
+  }
+
+  void Append32(uint32_t i) {
+    auto ni = kanon::sock::ToNetworkByteOrder32(i);
+    Append(&ni, sizeof ni);
+  }
+
+  void Append64(uint64_t i) {
+    auto ni = kanon::sock::ToNetworkByteOrder64(i);
+    Append(&ni, sizeof ni);
   }
 
   void Start();  
