@@ -17,6 +17,12 @@ namespace algo {
  */
 template<typename K, typename V, typename Compare, typename GK = GetKey<V>, typename Alloc=LibcAllocatorWithRealloc<V>>
 class AvlList : public AvlTreeBase<K, V, Compare, GK, Alloc, AvlList<K, V, Compare, GK, Alloc>> {
+ public:
+  using Base = AvlTreeBase<K, V, Compare, GK, Alloc, AvlList<K, V, Compare, GK, Alloc>>;
+  AvlList() noexcept
+    : Base()
+  {}
+
 };
 
 template<typename V, typename Compare, typename GK = GetKey<V>, typename Alloc=LibcAllocatorWithRealloc<V>>

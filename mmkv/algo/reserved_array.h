@@ -283,18 +283,22 @@ class ReservedArray : protected Alloc {
 
   template<typename U, zstl::enable_if_t<!can_reallocate<U>::value, int> =0>
   void Shrink_impl(size_type n) {
-    auto new_data = AllocTraits::allocate(*this, n);
-    if (new_data == NULL) {
-      throw std::bad_alloc{};
-    } 
+    pointer new_data = nullptr;
+    pointer new_end = nullptr;
+    if (n != 0) {
+      new_data = AllocTraits::allocate(*this, n);
+      if (new_data == NULL) {
+        throw std::bad_alloc{};
+      } 
 
-    auto new_end = new_data;
+      new_end = new_data;
 
-    try {
-      new_end = zstl::UninitializedMoveIfNoexcept(data_, data_+n, new_end);
-    } catch (...) {
-      AllocTraits::deallocate(*this, new_data, n);
-      throw;
+      try {
+        new_end = zstl::UninitializedMoveIfNoexcept(data_, data_+n, new_end);
+      } catch (...) {
+        AllocTraits::deallocate(*this, new_data, n);
+        throw;
+      }
     }
 
     for (auto beg = data_ + n; beg != end_; ++beg) {

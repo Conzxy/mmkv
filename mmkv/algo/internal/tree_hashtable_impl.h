@@ -185,13 +185,17 @@ inline void TREE_HASH_TABLE_CLASS::IncrementalRehash() {
 
   auto& bucket1 = table1().table[rehash_move_bucket_index_];
 
-  uint64_t hash_val = 0;
-  typename Bucket::Node* slot = nullptr;
-  while (!bucket1.empty()) {
-    slot = bucket1.Extract();
-    hash_val = HASH_FUNC(GET_KEY(slot->value));
-    table2()[bucket_index(1, hash_val)].Push(slot);
-  }
+  // typename Bucket::Node* slot = nullptr;
+  // uint64_t hash_val = 0;
+  // while (!bucket1.empty()) {
+  //   slot = bucket1.Extract();
+  //   hash_val = HASH_FUNC(GET_KEY(slot->value));
+  //   table2()[bucket_index(1, hash_val)].Push(slot);
+  // }
+
+  bucket1.ReuseAllNodes([this](Node *node) {
+    table2()[bucket_index(1, HASH_FUNC(GET_KEY(node->value)))].Push(node);
+  });
 
   rehash_move_bucket_index_++;
 

@@ -283,7 +283,15 @@ bool AVL_CLASS::Erase(K const& key, Pred pred) {
 }
 
 AVL_TEMPLATE
-void AVL_CLASS::Clear() {
+inline void AVL_CLASS::Clear() {
+  ReuseAllNodes([this](Node *node) {
+    DropNode(node);
+  });
+}
+
+AVL_TEMPLATE
+template<typename NodeCb>
+void AVL_CLASS::ReuseAllNodes(NodeCb node_cb) {
   auto node = root_;
   BaseNode* parent = nullptr;
   
@@ -297,20 +305,26 @@ void AVL_CLASS::Clear() {
     } else {
       parent = node->parent;
       
-      if (!parent) break;
-      else if (parent->left == node)
+      node->left = node->parent = node->right = nullptr;
+      node->height = 0;
+
+      if (!parent) {
+        node_cb((Node*)node);
+        break;
+      } else if (parent->left == node)
         parent->left = nullptr;
       else
         parent->right = nullptr;
 
-      parent->left = nullptr;
-      DropNode((Node*)node);
+      // parent->left = nullptr;
+      node_cb((Node*)node);
       node = parent;
     }
   }
 
   root_ = nullptr;
   SetCount(0);
+
 }
 
 AVL_TEMPLATE

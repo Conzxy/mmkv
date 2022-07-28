@@ -166,7 +166,7 @@ class TreeHashTable : protected Alloc::template rebind<typename Tree::Node>::oth
   /**
    * \brief Erase the node in the bucket
    * \return
-   *   The unmber of erased entry
+   *   The number of erased entry
    *   In fact, if node is not null pointer and is valid node returned by another interface
    *   it must return 1 instead of 0(former case) or undefined(latter case)
    */

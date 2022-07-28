@@ -51,7 +51,7 @@ class AvlTreeBase : protected avl::AvlNodeAllocator<V, Alloc>
 
   static constexpr bool can_reallocate = true;
 
-  AvlTreeBase()
+  AvlTreeBase() noexcept
     : root_(nullptr)
   {
   }
@@ -149,6 +149,14 @@ class AvlTreeBase : protected avl::AvlNodeAllocator<V, Alloc>
   bool EraseNode(Node* node);
 
   void Clear();
+
+  /**
+   * \brief Remove all nodes and call \p node_cb to reuse them
+   * 
+   * For example, used for move nodes in the bucket of hash table
+   */
+  template<typename NodeCb>
+  void ReuseAllNodes(NodeCb node_cb);
 
   /**
    * \brief Extract the node from avl tree
