@@ -1,8 +1,8 @@
-#include "mmkv/protocol/mmbp.h"
 #include <random>
 #include <string>
 #define _AVL_TREE_DEBUG_
 #include "mmkv/algo/avl_tree.h"
+#include "mmkv/algo/reserved_array.h"
 
 #include <gtest/gtest.h>
 #include <assert.h>
@@ -40,15 +40,15 @@ static void AvlTest(int mode) {
     ASSERT_TRUE(*val == (mode == 0 ? i : nums[i]));
   }
   
-  for (auto x : tree) {
-    std::cout << x << " ";
-  }
+  // for (auto x : tree) {
+  //   std::cout << x << " ";
+  // }
 
   std::cout << "\n";
   std::cout << "height = " << tree.Height() << std::endl;
 
   tree.VerifyAvlProperties();
-  tree.Print(std::cout);
+  // tree.Print(std::cout);
 
   for (int i = 0; i < N; ++i) {
     auto success = tree.Erase(mode == 0 ? i : nums[i]); (void)success;
@@ -85,18 +85,18 @@ TEST(avl_tree_test, eq) {
     tree.InsertEq({num, num});
   }
 
-  for (auto kv : tree) {
-    std::cout << kv.key << ", " << kv.value << "\n";
-  }
+  // for (auto kv : tree) {
+  //   std::cout << kv.key << ", " << kv.value << "\n";
+  // }
 
   auto first = tree.LowerBound(74);
   auto second = tree.UpperBound(901);
   
   std::cout << "first = " << first->key << "\n";
   std::cout << "second = " << second->key << "\n";
-  for (; first != second; ++first) {
-    std::cout << first->key << "\n";
-  }
+  // for (; first != second; ++first) {
+  //   std::cout << first->key << "\n";
+  // }
 
 }
 
@@ -112,13 +112,14 @@ class AvlTreeTest : public testing::Test {
 };
 
 TEST_F(AvlTreeTest, doinall) {
-  set.DoInAll([](int x) {
-      std::cout << x << " ";
-  });
+  // set.DoInAll([](int x) {
+  //     std::cout << x << " ";
+  // });
 
   std::cout << "\n";
 }
 
 TEST_F(AvlTreeTest, size) {
   std::cout << "sizeof set = " << sizeof set << std::endl;
+  static_assert(mmkv::algo::can_reallocate<decltype(set)>::value, "");
 }
