@@ -24,16 +24,17 @@
 ## Schedule
 现在该项目还处于初级阶段，只是个单纯支持多个数据结构的单机单线程服务器，
 尽管要支持多线程是较为简单的（因为kanon支持mutilthread-reactor），但是现在我暂时不关注这方面。
-* 支持string并实现其相关命令
-* 支持list并实现其相关命令
-* 支持sorted set并实现其相关命令
-* 支持map并实现其相关命令
-* 支持hash set并实现其相关命令
-* 支持Recovery
-* 支持Expire并实现其管理 <--
-* 支持分布式存储(distributed system)
-* 支持Raft容错
-* 支持多线程
+- [x] 支持string并实现其相关命令
+- [x] 支持list并实现其相关命令
+- [x] 支持sorted set并实现其相关命令
+- [x] 支持map并实现其相关命令
+- [x] 支持hash set并实现其相关命令
+- [x] 支持Recovery
+- [x] 支持Expire并实现其管理
+- [ ] 支持分布式存储(distributed system)
+- [ ] 支持Replacement
+- [ ] 支持Raft容错
+- [ ] 支持多线程
 
 ## Build
 该项目需要额外安装[kanon](https://github.com/Conzxy/kanon)，是我个人编写的网络库，为该项目提供网络模块的支持。安装方式参考其github页面。
@@ -70,9 +71,3 @@ chmod u+x release_build.sh
 
 #### sorted set
 ![vset_mmkv.gif](https://s2.loli.net/2022/07/07/EpM1YRKg4GVNZky.gif)
-
-## TODO
-* 分布式支持
-* Raft容错支持
-* 实现expire_time管理
-* 实现replacement管理
