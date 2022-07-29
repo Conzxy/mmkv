@@ -1,28 +1,10 @@
-macro (GenApplication app_name src_list lib_list)
-  set(SRC_LIST ${${src_list}})
-  set(LIB_LIST ${${lib_list}})
-  message(STATUS "application: ${app_name}")
-  message(STATUS "Source list: ${SRC_LIST}")
-
-  add_executable(${app_name} EXCLUDE_FROM_ALL ${SRC_LIST})
-  list (LENGTH LIB_LIST lib_list_len)
-  if (NOT ${lib_list_len} EQUAL 0)
-    message(STATUS "Lib list: ${LIB_LIST}")
-    target_link_libraries(${app_name} ${LIB_LIST})
-  endif ()
-
-  set_target_properties(${app_name}
-    PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin"
-  )
-endmacro()
-
 file(GLOB_RECURSE MMKV_SRC
-  util/*.cc
-  protocol/*.cc
-  disk/*.cc
-  storage/*.cc
   db/*.cc
+  disk/*.cc
+  protocol/*.cc
+  server/config.cc
+  storage/*.cc
+  util/*.cc
 )
 
 file(GLOB_RECURSE MMKV_SERVER_SRC
@@ -31,8 +13,8 @@ file(GLOB_RECURSE MMKV_SERVER_SRC
   util/*.cc
   protocol/*.cc
   disk/*.cc
-  storage/*.cc
   db/*.cc
+  storage/*.cc
 )
 
 message(STATUS "LINENOISE_DIR = ${LINENOISE_DIR}")
