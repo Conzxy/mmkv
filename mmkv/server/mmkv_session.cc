@@ -28,7 +28,7 @@ static void LogRequestToFile(Buffer &buffer, uint32_t request_len) {
   if (GetCommandType((Command)cmd) == CT_WRITE) {
     LOG_DEBUG << "Log request to file: " << GetCommandString((Command)cmd);
     LOG_DEBUG << "Log bytes = " << sizeof request_len + request_len;
-    g_rlog.Append32(request_len);
+    g_rlog->Append32(request_len);
 
     ExpireTimeField exp = 0;
     if (buffer.GetReadableSize() >= 8) {
@@ -66,10 +66,10 @@ expire_log:
         // in the buffer to avoid repeated calculation
         cmd = EXPIREM_AT;
 
-        // disk::g_rlog.Append16(cmd);
-        // disk::g_rlog.Append(buffer.GetReadBegin()+sizeof(MmbpRequest::command), 
+        // disk::g_rlog->Append16(cmd);
+        // disk::g_rlog->Append(buffer.GetReadBegin()+sizeof(MmbpRequest::command), 
         //                 request_len-sizeof(MmbpRequest::expire_time)-sizeof(MmbpRequest::command));
-        // disk::g_rlog.Append64(exp);
+        // disk::g_rlog->Append64(exp);
         cmd = sock::ToNetworkByteOrder16(cmd);
         exp = sock::ToNetworkByteOrder64(exp);
         memcpy(buffer.GetReadBegin(), &cmd, sizeof cmd);
@@ -79,7 +79,7 @@ expire_log:
         ;
     }
 
-    g_rlog.Append(buffer.GetReadBegin(), request_len);
+    g_rlog->Append(buffer.GetReadBegin(), request_len);
   }
 }
 

@@ -37,6 +37,12 @@ MmkvServer::~MmkvServer() noexcept {
 }
 
 void MmkvServer::Start() {
+  static MmkvDb db;
+  g_db = &db;
+
+  static RequestLog rlog;
+  g_rlog = &rlog;
+
   if (g_config.log_method == LM_REQUEST) {
     LOG_INFO << "Recover from request log";
     try { 
@@ -45,7 +51,7 @@ void MmkvServer::Start() {
       LOG_INFO << "Recover complete";
     } catch (FileException const &ex) {
       LOG_ERROR << ex.what();
-      LOG_ERROR << "Don't recover database from log";
+      LOG_ERROR << "Can't recover database from log";
     }
   }
 
@@ -60,6 +66,6 @@ void MmkvServer::Start() {
     }, g_config.expiration_check_cycle);
   }
 
-  g_rlog.Start();
+  g_rlog->Start();
   Listen();
 }

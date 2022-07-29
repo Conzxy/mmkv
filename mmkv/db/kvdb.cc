@@ -853,7 +853,7 @@ void MmkvDb::CheckExpireCycle() {
       request.command = DEL;
       request.SerializeTo(buffer);
       buffer.Prepend32(buffer.GetReadableSize());
-      g_rlog.Append(buffer.GetReadBegin(), buffer.GetReadableSize());
+      g_rlog->Append(buffer.GetReadBegin(), buffer.GetReadableSize());
       buffer.AdvanceAll();
       request.Reset();
     }
@@ -885,7 +885,7 @@ bool MmkvDb::CheckExpire(String const &key) {
       req.SerializeTo(buffer);
       LOG_DEBUG << "request length = " << buffer.GetReadableSize();
       buffer.Prepend32(buffer.GetReadableSize());
-      g_rlog.Append(buffer.GetReadBegin(), buffer.GetReadableSize());
+      g_rlog->Append(buffer.GetReadBegin(), buffer.GetReadableSize());
     }
     return true;
   }

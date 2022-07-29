@@ -2,7 +2,6 @@
 #define _MMKV_DISK_REQUEST_LOG_H_
 
 #include <unistd.h>
-#include <memory>
 
 #include <kanon/thread/condition.h>
 #include <kanon/log/append_file.h>
@@ -75,7 +74,7 @@ class RequestLog {
 
  private:
   void Flush() noexcept {
-    file_->Flush();
+    file_.Flush();
     ::fsync(fd_);
   }
 
@@ -83,7 +82,7 @@ class RequestLog {
   Condition empty_cond_; 
 
   Thread io_thread_;
-  std::unique_ptr<AppendFile> file_;
+  AppendFile file_;
   int fd_; 
   CountDownLatch latch_;
 
@@ -92,7 +91,13 @@ class RequestLog {
   bool running_;
 };
 
-extern RequestLog g_rlog;
+/* Declare pointer to avoid
+ * undefined initailzation sequence
+ * e.g.
+ * g_rlog initialize before g_config parsed,
+ * the location of file is undefined
+ */
+extern RequestLog *g_rlog;
 
 } // disk
 } // mmkv
