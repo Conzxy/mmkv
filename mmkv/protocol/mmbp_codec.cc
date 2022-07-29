@@ -16,15 +16,59 @@ using namespace mmkv::protocol;
 MmbpCodec::MmbpCodec(MmbpMessage* prototype)
   : prototype_(prototype)
 {
-  SetErrorCallback(std::bind(&MmbpCodec::ErrorHandle, _1, _2));
+  SetErrorCallback([](TcpConnectionPtr const &conn, ErrorCode error_code) {
+    String error_msg = GetErrorString(error_code);
+    LOG_DEBUG << "Error message: " << error_msg;
+    
+    MmbpResponse error_response;
+    error_response.status_code = S_INVALID_MESSAGE;
+
+    OutputBuffer buffer;
+    error_response.SerializeTo(buffer);
+
+    conn->Send(buffer);
+    conn->ShutdownWrite();
+  });
 }
 
 void MmbpCodec::SetUpConnection(TcpConnectionPtr const& conn) {
-  conn->SetMessageCallback(std::bind(&MmbpCodec::OnMessage, this, _1, _2, _3));
+  conn->SetMessageCallback([this](TcpConnectionPtr const& conn, Buffer& buffer, TimeStamp recv_time) {
+    while (buffer.GetReadableSize() >= SIZE_LENGTH) {
+      const auto size_header = buffer.GetReadBegin32();
+      
+      LOG_DEBUG << "Size header = " << size_header;
+      LOG_DEBUG << "Current readable size = " << buffer.GetReadableSize(); 
+
+      if (buffer.GetReadableSize() - SIZE_LENGTH >= size_header) {
+        buffer.AdvanceRead32();
+        if (buffer.GetReadableSize() < size_t(MMBP_TAG_SIZE + CHECKSUM_LENGTH) || 
+            buffer.GetReadableSize() >= MAX_SIZE) {
+          error_cb_(conn, E_INVALID_SIZE_HEADER);
+          break;
+        } else {
+          if (VerifyCheckSum(buffer, size_header)) {
+            if (::memcmp(buffer.GetReadBegin(), MMBP_TAG, MMBP_TAG_SIZE) != 0) {
+              error_cb_(conn, E_INVALID_MESSAGE);
+              break;
+            }
+          
+            buffer.AdvanceRead(MMBP_TAG_SIZE);
+
+            message_cb_(conn, buffer, size_header-MMBP_TAG_SIZE-CHECKSUM_LENGTH, recv_time);
+            buffer.AdvanceRead32();  // checksum
+          } else {
+            error_cb_(conn, E_INVALID_CHECKSUM);
+            break;
+          }
+        }
+      }
+    }
+
+  });
 }
 
-void MmbpCodec::OnMessage(TcpConnectionPtr const& conn, Buffer& buffer, TimeStamp recv_time) {
-  while (buffer.GetReadableSize() >= SIZE_LENGTH) {
+MmbpCodec::ErrorCode MmbpCodec::Parse(Buffer &buffer, MmbpMessage *message) {
+  if (buffer.GetReadableSize() >= SIZE_LENGTH) {
     const auto size_header = buffer.GetReadBegin32();
     
     LOG_DEBUG << "Size header = " << size_header;
@@ -34,26 +78,29 @@ void MmbpCodec::OnMessage(TcpConnectionPtr const& conn, Buffer& buffer, TimeStam
       buffer.AdvanceRead32();
       if (buffer.GetReadableSize() < size_t(MMBP_TAG_SIZE + CHECKSUM_LENGTH) || 
           buffer.GetReadableSize() >= MAX_SIZE) {
-        error_cb_(conn, E_INVALID_SIZE_HEADER);
-        break;
+        return E_INVALID_SIZE_HEADER;
       } else {
+
         if (VerifyCheckSum(buffer, size_header)) {
           if (::memcmp(buffer.GetReadBegin(), MMBP_TAG, MMBP_TAG_SIZE) != 0) {
-            error_cb_(conn, E_INVALID_MESSAGE);
-            break;
+            return E_INVALID_MESSAGE;
           }
         
           buffer.AdvanceRead(MMBP_TAG_SIZE);
+          message = prototype_->New();
 
-          message_cb_(conn, buffer, size_header-MMBP_TAG_SIZE-CHECKSUM_LENGTH, recv_time);
+          message->ParseFrom(buffer);
+          
           buffer.AdvanceRead32();  // checksum
+          return E_NOERROR;
         } else {
-          error_cb_(conn, E_INVALID_CHECKSUM);
-          break;
+          return E_INVALID_CHECKSUM;
         }
       }
     }
   }
+  
+  return E_NO_COMPLETE_MESSAGE; 
 }
 
 void MmbpCodec::Send(TcpConnectionPtr const& conn, MmbpMessage const* message) {
@@ -117,17 +164,4 @@ char const* MmbpCodec::GetErrorString(ErrorCode code) noexcept {
   }
 
   return "FATAL: Unknown error";
-}
-
-void MmbpCodec::ErrorHandle(TcpConnectionPtr const& conn, ErrorCode error_code) {
-  String error_msg = GetErrorString(error_code);
-  LOG_DEBUG << "Error message: " << error_msg;
-  
-  MmbpResponse error_response;
-  error_response.status_code = S_INVALID_MESSAGE;
-
-  OutputBuffer buffer;
-  error_response.SerializeTo(buffer);
-
-  conn->Send(buffer);
 }

@@ -53,15 +53,18 @@ class MmbpCodec {
 
   void Send(TcpConnectionPtr const& conn, MmbpMessage const* message);
 
+  /* Deprecated
+   * In the old version, this is a implementation detail of message callback of connection.
+   * Now, just for debugging and test.
+   * Don't call this in mmkv.
+   */
+  ErrorCode Parse(Buffer &buffer, MmbpMessage *message);
   void SerializeTo(MmbpMessage const* message, OutputBuffer& buffer);
 
   static char const* GetErrorString(ErrorCode code) noexcept;
 
  private:
-  void OnMessage(TcpConnectionPtr const& conn, Buffer& buffer, TimeStamp recv_time);
-
   static bool VerifyCheckSum(Buffer& buffer, SizeHeaderType size_header);
-  static void ErrorHandle(TcpConnectionPtr const& conn, ErrorCode code);
 
   // Member data:
   MmbpMessage* prototype_;
