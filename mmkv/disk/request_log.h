@@ -2,6 +2,7 @@
 #define _MMKV_DISK_REQUEST_LOG_H_
 
 #include <unistd.h>
+#include <memory>
 
 #include <kanon/thread/condition.h>
 #include <kanon/log/append_file.h>
@@ -74,7 +75,7 @@ class RequestLog {
 
  private:
   void Flush() noexcept {
-    file_.Flush();
+    file_->Flush();
     ::fsync(fd_);
   }
 
@@ -82,7 +83,7 @@ class RequestLog {
   Condition empty_cond_; 
 
   Thread io_thread_;
-  AppendFile file_;
+  std::unique_ptr<AppendFile> file_;
   int fd_; 
   CountDownLatch latch_;
 

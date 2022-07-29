@@ -70,9 +70,9 @@ inline bool ParseConfig(std::string &errmsg) {
   auto res = util::str2u64(exp_cycle.c_str(), g_config.expiration_check_cycle);
   if (!res) return false;
 
-  auto request_log_loc = chisato::GetField("RequestLogLocation");
+  g_config.request_log_location = chisato::GetField("RequestLogLocation");
 
-  if (request_log_loc.empty()) {
+  if (g_config.request_log_location.empty()) {
     LOG_ERROR << "The RequestLogLocation field in the config file is missing";
     return false;
   }

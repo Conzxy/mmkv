@@ -13,8 +13,6 @@ RequestLog mmkv::disk::g_rlog;
 RequestLog::RequestLog() 
   : empty_cond_(empty_lock_) 
   , io_thread_("RequestLogBackground")
-  , file_(g_config.request_log_location) 
-  , fd_(::fileno(file_.fp()))
   , latch_(1)
   , running_(false)
 {
@@ -25,6 +23,9 @@ RequestLog::~RequestLog() noexcept {
 }
 
 void RequestLog::Start() {
+  file_.reset(new AppendFile(g_config.request_log_location));
+  fd_ = ::fileno(file_->fp());
+
   io_thread_.StartRun([this]() {
     // Wait the first log
     latch_.Countdown(); 
@@ -44,7 +45,7 @@ void RequestLog::Start() {
       }
 
       for (auto const& blk : blks) {
-        file_.Append(blk.data(), blk.len());
+        file_->Append(blk.data(), blk.len());
       }
 
       Flush();
