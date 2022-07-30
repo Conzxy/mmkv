@@ -2,7 +2,7 @@
 #include "mmkv/client/information.h"
 
 #include "mmkv/client/option.h"
-#include "mmkv/option/takina.h"
+#include "takina.h"
 
 using namespace mmkv::client;
 using namespace kanon;

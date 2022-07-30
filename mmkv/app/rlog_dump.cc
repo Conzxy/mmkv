@@ -3,7 +3,7 @@
 #include "mmkv/disk/file.h"
 #include "mmkv/disk/log_command.h"
 
-#include "mmkv/option/takina.h"
+#include "takina.h"
 #include "mmkv/disk/stat.h"
 
 #include "mmkv/util/conv.h"

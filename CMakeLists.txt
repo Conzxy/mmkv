@@ -56,10 +56,14 @@ set(MMKV_SOURCE_DIR ${PROJECT_SOURCE_DIR}/mmkv)
 set(THIRD_PARTY_DIR ${PROJECT_SOURCE_DIR}/third-party)
 set(LINENOISE_DIR ${THIRD_PARTY_DIR}/linenoise)
 set(XXHASH_DIR ${THIRD_PARTY_DIR}/xxHash)
+set(TAKINA_DIR ${THIRD_PARTY_DIR}/takina)
+set(CHISATO_DIR ${THIRD_PARTY_DIR}/chisato)
+set(TERNARY_DIR ${THIRD_PARTY_DIR}/ternary-tree)
 
 include_directories(${PROJECT_SOURCE_DIR})
 include_directories(${LINENOISE_DIR})
 include_directories(${XXHASH_DIR})
+
 link_directories(${XXHASH_DIR})
 
 # I don't want to use the builtin variable ${BUILD_SHARED_LIBS}

@@ -1,9 +1,9 @@
 #include "mmkv/server/mmkv_server.h"
 
-#include "mmkv/option/takina.h"
+#include "takina.h"
 #include "mmkv/server/option.h"
 #include "mmkv/server/config.h"
-#include "mmkv/config/chisato.h"
+#include "chisato.h"
 
 #include "mmkv/util/conv.h"
 
