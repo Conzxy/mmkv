@@ -1,8 +1,9 @@
 #ifndef _MMKV_ALGO_INTERNAL_HASH_SET_IMPL_H_
 #define _MMKV_ALGO_INTERNAL_HASH_SET_IMPL_H_
 
-#include "hash_set.h"
-#include "mmkv/algo/internal/hash_table_impl.h"
+#ifndef _MMKV_ALGO_HASH_SET_H_
+#include "../hash_set.h"
+#endif
 
 namespace mmkv {
 namespace algo {
@@ -13,7 +14,7 @@ namespace algo {
 
 HASH_SET_TEMPLATE
 CALLBACK_TEMPLATE
-void HASH_SET_CLASS::Union(HashSet const& hs, Cb cb) {
+inline void HASH_SET_CLASS::Union(HashSet const& hs, Cb cb) {
   HashSet const* less_set = hs.size() > this->size() ? this : &hs;
   HashSet const* more_set = hs.size() > this->size() ? &hs : this;
 
@@ -30,7 +31,7 @@ void HASH_SET_CLASS::Union(HashSet const& hs, Cb cb) {
 
 HASH_SET_TEMPLATE
 CALLBACK_TEMPLATE
-void HASH_SET_CLASS::Intersection(HashSet const& hs, Cb cb) {
+inline void HASH_SET_CLASS::Intersection(HashSet const& hs, Cb cb) {
   HashSet const* less_set = hs.size() > this->size() ? this : &hs;
   HashSet const* more_set = hs.size() > this->size() ? &hs : this; 
 
@@ -43,7 +44,7 @@ void HASH_SET_CLASS::Intersection(HashSet const& hs, Cb cb) {
 
 HASH_SET_TEMPLATE
 CALLBACK_TEMPLATE
-void HASH_SET_CLASS::Difference(HashSet const& hs, Cb cb) {
+inline void HASH_SET_CLASS::Difference(HashSet const& hs, Cb cb) {
   for (auto const& m : *this) {
     if (!hs.Find(m)) {
       cb(m);

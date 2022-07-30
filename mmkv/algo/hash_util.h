@@ -22,6 +22,13 @@ struct Hash<std::basic_string<char, std::char_traits<char>, Alloc>> {
   }
 };
 
+template<typename T>
+struct Hash<T*> {
+  uint64_t operator()(T *ptr) const noexcept {
+    return XXH64(&ptr, sizeof ptr, 0);
+  }
+};
+
 #define BASIC_TYPE_SPECILIZATION(type) \
 template<> \
 struct Hash<type> { \

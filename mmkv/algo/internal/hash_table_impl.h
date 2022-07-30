@@ -1,7 +1,9 @@
 #ifndef _MMKV_ALGO_INTERNAL_HASH_TABLE_IMPL_H_
 #define _MMKV_ALGO_INTERNAL_HASH_TABLE_IMPL_H_
 
-#include "hash_table.h"
+#ifndef _MMKV_ALGO_HASH_TABLE_H_
+#include "../hash_table.h"
+#endif
 
 #include <assert.h>
 #include <memory>

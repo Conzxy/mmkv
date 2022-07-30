@@ -129,9 +129,14 @@ class Blist : protected blist::BNodeAllocator<T, Alloc>
   T& Front() noexcept { assert(!empty()); return header_->value; }
   T const& Front() const noexcept { assert(!empty()); return header_->value; }
 
+  Node *FrontNode() noexcept { return header_; }
+  Node const *FrontNode() const noexcept { return header_; }
+  Node *BackNode() noexcept { return header_->prev; }
+  Node const *BackNode() const noexcept { return header_->prev; }
+
 #define PRE_PUSH do {\
     if (empty()) { \
-      SetHeader(CreateNode(std::forward<Args>(args)...)); \
+      SetHeader(node); \
       return 1; \
     } \
      \
@@ -139,8 +144,7 @@ class Blist : protected blist::BNodeAllocator<T, Alloc>
       return 0; \
     } } while (0)
 
-  template<typename... Args>  
-  int PushFront(Args&&... args) {
+  int PushFront(Node *node) noexcept {
     PRE_PUSH;
 
     /*
@@ -152,7 +156,7 @@ class Blist : protected blist::BNodeAllocator<T, Alloc>
      * then set header->prev
      * Last, set header_ to new node
      */  
-    auto new_node = CreateNode(std::forward<Args>(args)...);
+    auto new_node = node;
     new_node->next = header_;
     new_node->prev = header_->prev;
     // header_->prev->next = new_node;
@@ -160,10 +164,15 @@ class Blist : protected blist::BNodeAllocator<T, Alloc>
     header_ = new_node;
 
     return 1;
+
   }
 
-  template<typename... Args>
-  int PushBack(Args&&... args) {
+  template<typename... Args>  
+  int PushFront(Args&&... args) {
+    return PushFront(CreateNode(std::forward<Args>(args)...));
+  }
+
+  int PushBack(Node *node) noexcept {
     PRE_PUSH;
 
     /*
@@ -174,13 +183,18 @@ class Blist : protected blist::BNodeAllocator<T, Alloc>
      * First, set node2->next and new_node->prev
      * then, set header->prev
      */
-    auto new_node = CreateNode(std::forward<Args>(args)...);
+    auto new_node = node;
     new_node->prev = header_->prev;
     // new_node->next = header_;
     header_->prev->next = new_node;
     header_->prev = new_node;
 
     return 1;
+  }
+
+  template<typename... Args>
+  int PushBack(Args&&... args) {
+    return PushBack(CreateNode(std::forward<Args>(args)...));
   }
   
   #define PRE_POP do {\
@@ -229,6 +243,18 @@ class Blist : protected blist::BNodeAllocator<T, Alloc>
     header_->prev = old_end->prev;
     DropNode(old_end);
     return 1;
+  }
+
+  void Extract(Node *node) {
+    node->next->prev = node->prev;
+    node->prev->next = node->next;
+    if (node == header_)
+      header_ = node->next;
+    node->next = node->prev = nullptr;
+  }
+
+  void Erase(Node *node) {
+    DropNode(node);
   }
 
  private:
