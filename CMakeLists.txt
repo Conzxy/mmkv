@@ -76,6 +76,7 @@ set(BUILD_STATIC_LIBS OFF CACHE BOOL "Build static libraries")
 
 macro (GenLib lib)
   #if (NOT ${BUILD_SHARED_LIBS})
+  message(STATUS "Source list: ${ARGN}")
   if (${BUILD_STATIC_LIBS})
     message(STATUS "Build static library: ${lib}")
     add_library(${lib} STATIC ${ARGN})

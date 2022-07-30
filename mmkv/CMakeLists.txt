@@ -5,6 +5,7 @@ file(GLOB_RECURSE MMKV_SRC
   server/config.cc
   storage/*.cc
   util/*.cc
+  replacement/*.cc
 )
 
 file(GLOB_RECURSE MMKV_SERVER_SRC
