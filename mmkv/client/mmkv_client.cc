@@ -16,6 +16,7 @@
 #include "information.h"
 
 #include "linenoise.h"
+#include "ternary_tree.h"
 
 #include <kanon/net/callback.h>
 #include <kanon/util/ptr.h>
@@ -32,6 +33,48 @@ static bool is_exit = false;
 #define COMMAND_HISTORY_LOCATION "/tmp/.mmkv-command.history"
 
 static int64_t start_time = 0;
+
+static TernaryNode *command_tst = nullptr;
+
+static inline char *InstallCommandHints(char const *line, int *color, int *bold) {
+  *color = 36;
+  *bold = 0;
+  for (int i = 0; i < COMMAND_NUM; ++i) {
+    if (!strcasecmp(line, GetCommandString((Command)i).c_str())) {
+      return (char*)GetCommandHint((Command)i).c_str();
+    }
+  }
+
+  return NULL;
+}
+
+static inline void AddCompletion(char const *cmd, void *args) {
+  linenoiseCompletions *lc = (linenoiseCompletions*)args;
+  linenoiseAddCompletion(lc, cmd);
+}
+
+static inline void InstallCommandCompletion(char const *line, linenoiseCompletions *lc) {
+#if 0
+#define _REGISTER_COMMAND_COMPLETION_CH2(_ch, _cmd) \
+  if (line[0] == _ch) \
+    ::linenoiseAddCompletion(lc, _cmd);
+  
+  const auto len = ::strlen(line); 
+  for (int i = 0; i < COMMAND_NUM; ++i) {
+    StringView command(GetCommandString((Command)i));
+
+    if (!::strncasecmp(line, command.data(), len)) {
+      ::linenoiseAddCompletion(lc, command.data());
+    }
+  }
+
+  _REGISTER_COMMAND_COMPLETION_CH2('h', "help")
+  _REGISTER_COMMAND_COMPLETION_CH2('q', "quit")
+  _REGISTER_COMMAND_COMPLETION_CH2('e', "exit")
+#else
+  ternary_search_prefix(command_tst, line, &AddCompletion, lc);
+#endif
+}
 
 MmkvClient::MmkvClient(EventLoop* loop, InetAddr const& server_addr) 
   : client_(loop, server_addr, "Mmkv console client") 
@@ -78,40 +121,18 @@ MmkvClient::MmkvClient(EventLoop* loop, InetAddr const& server_addr)
 }
 
 MmkvClient::~MmkvClient() noexcept {
-}
-
-static char *InstallCommandHints(char const *line, int *color, int *bold) {
-  *color = 36;
-  *bold = 0;
-  for (int i = 0; i < COMMAND_NUM; ++i) {
-    if (!strcasecmp(line, GetCommandString((Command)i).c_str())) {
-      return (char*)GetCommandHint((Command)i).c_str();
-    }
-  }
-
-  return NULL;
-}
-
-static void InstallCommandCompletion(char const *line, linenoiseCompletions *lc) {
-#define _REGISTER_COMMAND_COMPLETION_CH2(_ch, _cmd) \
-  if (line[0] == _ch) \
-    ::linenoiseAddCompletion(lc, _cmd);
-  
-  const auto len = ::strlen(line); 
-  for (int i = 0; i < COMMAND_NUM; ++i) {
-    StringView command(GetCommandString((Command)i));
-
-    if (!::strncasecmp(line, command.data(), len)) {
-      ::linenoiseAddCompletion(lc, command.data());
-    }
-  }
-
-  _REGISTER_COMMAND_COMPLETION_CH2('h', "help")
-  _REGISTER_COMMAND_COMPLETION_CH2('q', "quit")
-  _REGISTER_COMMAND_COMPLETION_CH2('e', "exit")
+  ternary_free(&command_tst);
 }
 
 void MmkvClient::InstallLinenoise() {
+  for (uint16_t i = 0; i < COMMAND_NUM; ++i) {
+    ternary_add(&command_tst, GetCommandString((Command)i).c_str(), false);
+  }
+
+  ternary_add(&command_tst, "exit", false);
+  ternary_add(&command_tst, "quit", false);
+  ternary_add(&command_tst, "help", false);
+
   if (::linenoiseHistoryLoad(COMMAND_HISTORY_LOCATION) < 0) {
     ::fprintf(stderr, "Failed to load the command history\n");
     ::exit(0);
