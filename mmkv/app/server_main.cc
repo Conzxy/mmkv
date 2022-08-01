@@ -14,14 +14,13 @@ using namespace mmkv;
 using namespace mmkv::server;
 
 void RegisterOptions();
-bool ParseConfig(std::string& path);
 
 int main(int argc, char* argv[]) {
   RegisterOptions();
   std::string errmsg;
   const auto success = takina::Parse(argc, argv, &errmsg);
   if (!success) {
-    ::fprintf(stderr, "Failed to parse the options: %s\n", errmsg.c_str());
+    ::fprintf(stderr, "Failed to parse the options: \n%s\n", errmsg.c_str());
     return 0;
   }
   
@@ -31,13 +30,13 @@ int main(int argc, char* argv[]) {
 
   LOG_INFO << "Options has parsed successfully";
 
-  errmsg.clear(); 
   if (!ParseConfig(errmsg)) {
-    ::fprintf(stderr, "Failed to parse the config file\n");
+    ::fprintf(stderr, "Failed to parse the config file: \n%s\n", errmsg.c_str());
     return 0;
   }
-
+  
   LOG_INFO << "Config has parsed successfully";
+  PrintMmkvConfig(g_config);
 
   EventLoop loop;
   MmkvServer server(&loop);
@@ -54,28 +53,3 @@ inline void RegisterOptions() {
   takina::AddOption({"d", "log-dir", "The directory of log(default: ./log)", "DIR"}, &g_option.log_dir);
 }
 
-inline bool ParseConfig(std::string &errmsg) {
-  auto success = chisato::Parse(g_option.config_name, errmsg); 
-
-  if (!success) return false;
-
-  auto log_method = chisato::GetField("LogMethod");
-
-  if (log_method == "request") {
-    g_config.log_method = LM_REQUEST;
-  } 
-
-  auto exp_cycle = chisato::GetField("ExpirationCheckCycle");
-
-  auto res = util::str2u64(exp_cycle.c_str(), g_config.expiration_check_cycle);
-  if (!res) return false;
-
-  g_config.request_log_location = chisato::GetField("RequestLogLocation");
-
-  if (g_config.request_log_location.empty()) {
-    LOG_ERROR << "The RequestLogLocation field in the config file is missing";
-    return false;
-  }
-
-  return true;
-}
