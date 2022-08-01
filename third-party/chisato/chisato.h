@@ -1,124 +1,67 @@
 #ifndef _CHISATO_CHISATO_H_
 #define _CHISATO_CHISATO_H_
 
-#include <stdio.h>
-#include <string.h>
+#include <string.h>         // memcmp
 #include <assert.h>
+#include <stdint.h>
 
+#include <functional>       // std::function
 #include <string>
 #include <unordered_map>
 
+#include "str_slice.h"
+
 namespace chisato {
 
-template<typename K, typename V>
-using Map = std::unordered_map<K, V>;
+/* Handle user-defined config type field
+ * void* is the generic parameter */
+typedef bool(*ConfigCallback)(StrSlice, void*);
+/* lambda or std::bind can capture arguments */
+typedef std::function<bool(StrSlice)> ConfigFunction;
 
-static Map<std::string, std::string> field_value_map;
+/** Add string config field */
+void AddConfig(char const *field, std::string *str);
+/** Add int config field */
+void AddConfig(char const *field, int *i);
+/** Add long config field */
+void AddConfig(char const *field, long *l);
+/** Add floating-point config field */
+void AddConfig(char const *field, double *d);
+/** Add boolean config field */
+void AddConfig(char const *field, bool *b);
 
-#define MAX_LINE_LEN 4096
+/**
+ * User-defined config type 
+ * Callback is C style 
+ * \param field Config field name
+ * \param args Generic arguments of \p cb
+ * \param cb Callback to handle \p field
+ */
+void AddConfig(char const *field, void *args, ConfigCallback cb);
 
-inline bool ReadLine(FILE* file, std::string& line, const bool need_newline=true) {
-  char buf[MAX_LINE_LEN];
-  char* ret = NULL;
-  size_t n = 0;
+/* User-defined config type
+ * Callback style is std::function<>
+ */
+void AddConfig(char const *field, ConfigFunction cb);
 
-  line.clear();
-
-  do {
-    ret = ::fgets(buf, sizeof buf, file);
-
-    if (ret == NULL) {
-      if (::ferror(file)) {
-        if (errno == EINTR) {
-          continue;
-        }
-      }
-
-      return false;
-    }
-
-    assert(ret == buf);
-    n = strlen(buf);
-
-    if (n >= 1 && buf[n-1] == '\n') {
-      if (!need_newline) {
-        if (n >= 2 && buf[n-2] == '\r') {
-          line.append(buf, n - 2);
-        }
-        else {
-          line.append(buf, n - 1);
-        }
-      } else {
-        line.append(buf, n);
-      }
-      break;
-    }
-
-    line.append(buf, n);
-
-  } while (n == (sizeof(buf) - 1));
-
-  return true;
-}
-
-inline bool Parse(char const* path, std::string &errmsg) {
-  FILE* file = ::fopen(path, "r");
-
-  if (!file) {
-    errmsg += "Failed to open the config file: ";
-    errmsg += path;
-    errmsg += "\nError message: ";
-    errmsg += ::strerror(errno);
-    return false;
-  }
-
-  std::string line;
-
-  while (ReadLine(file, line, false)) {;
-    auto colon_pos = line.find(':');
-    auto comment_pos = line.find('#');
-
-    if (comment_pos != std::string::npos) {
-      continue;
-    }
-
-    if (colon_pos != std::string::npos) {
-      // Read config field
-      auto space_pos = line.find(' ', colon_pos+2);
-
-      if (space_pos != std::string::npos) {
-        field_value_map.emplace(line.substr(0, colon_pos), line.substr(colon_pos+2, space_pos));
-      }
-      else {
-        field_value_map.emplace(line.substr(0, colon_pos), line.substr(colon_pos+2));
-      }
-    }
-  }
-
-  if (::feof(file) == 0) {
-    errmsg += "Failed to read one line from ";
-    errmsg += path;
-    errmsg += "\n";
-    return false;
-  }
-
-  return true;
-}
+/**
+ * \brief Parse the config file
+ * \param path Path of config file
+ * \param errmsg Error message store
+ * \return 
+ *  indicates sucess or failure
+ */
+bool Parse(char const *path, std::string &errmsg);
 
 inline bool Parse(std::string const& path, std::string &errmsg) {
   return Parse(path.c_str(), errmsg);
 }
 
-inline std::string GetField(std::string const& field) {
-  auto iter = field_value_map.find(field);
+/** Free all resources used for parsing config */
+void Teardown();
 
-  if (iter == field_value_map.end()) {
-    return "";
-  }
-
-  return std::move(iter->second);
-}
+void DebugPrint();
 
 } // namespace chisato
 
-#endif
+#endif // _CHISATO_CHISATO_H_
