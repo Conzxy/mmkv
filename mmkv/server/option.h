@@ -14,6 +14,9 @@ struct MmkvOption {
 
 extern MmkvOption g_option;
 
+void RegisterOptions();
+bool ParseOptions(int argc, char **argv, std::string &errmsg);
+
 } // option
 } // mmkv
 

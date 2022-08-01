@@ -6,7 +6,6 @@
 #include <chisato.h>
 #include <kanon/log/logger.h>
 
-using namespace mmkv::server;
 using namespace kanon;
 using namespace mmkv::util;
 
@@ -21,14 +20,16 @@ static StringView replace_policy2str(ReplacePolicy rp) noexcept;
 static bool set_log_method(StrSlice value, void *args) noexcept;
 static bool set_replace_policy(StrSlice value, void *args) noexcept;
 
-bool ParseConfig(std::string &errmsg) {
-  auto start_time = GetTimeMs();
+void RegisterConfig() {
   chisato::AddConfig("LogMethod", &g_config.log_method, &set_log_method);
   chisato::AddConfig("ExpirationCheckCycle", &g_config.expiration_check_cycle); 
   chisato::AddConfig("RequestLogLocation", &g_config.request_log_location);
   chisato::AddConfig("LazyExpiration", &g_config.lazy_expiration);
   chisato::AddConfig("ReplacePolicy", &g_config.replace_policy, &set_replace_policy);
+}
 
+bool ParseConfig(std::string &errmsg) {
+  auto start_time = GetTimeMs();
   auto success = chisato::Parse(g_option.config_name, errmsg); 
 
   if (!success) return false;

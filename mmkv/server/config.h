@@ -32,7 +32,8 @@ struct MmkvConfig {
 
 extern MmkvConfig g_config;
 
-bool ParseConfig(std::string& path);
+void RegisterConfig();
+bool ParseConfig(std::string &errmsg);
 void PrintMmkvConfig(MmkvConfig const &config);
 
 } // namespace server
