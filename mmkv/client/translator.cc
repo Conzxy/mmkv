@@ -94,6 +94,22 @@ Translator::ErrorCode Translator::Parse(MmbpRequest* request, StringView stateme
   }
 
   auto cmd = *token_iter;
+  
+  /* The type of `cmd` is StringView, so data() return char const*.
+   * Force convert it to char* and transform the upper case character
+   * to lower case.
+   * That's unsafe but also OK in this case.
+   */
+  char *cmd_data = (char*)cmd.data();
+  for (size_t i = 0; i < cmd.size(); ++i) {
+    if (cmd[i] >= 'A' && cmd[i] <= 'Z') {
+      /* A-Z: starts with 0x41
+       * a-z: starts with 0x61
+       */
+      cmd_data[i] += 0x20;
+    }
+  }
+
   const auto valid_cmd = GetCommand(cmd, request->command);
 
   if (!valid_cmd) {

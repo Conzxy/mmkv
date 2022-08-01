@@ -11,13 +11,6 @@
 
 using mmkv::protocol::Command;
 
-
-struct StringViewHash {
-  uint64_t operator()(kanon::StringView const& view) const noexcept {
-    return XXH64(view.data(), view.size(), 0);
-  }
-};
-
 enum CommandFormat : uint8_t {
   F_ONLY_KEY = 0, // command key
   F_VALUE,        // command key value
@@ -49,6 +42,12 @@ enum CommandFormat : uint8_t {
   "Type help to check all the supported commands\n"
 
 namespace detail {
+
+struct StringViewHash {
+  uint64_t operator()(kanon::StringView const& view) const noexcept {
+    return XXH64(view.data(), view.size(), 0);
+  }
+};
 
 extern std::string help;
 extern std::string command_hints[];

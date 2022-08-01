@@ -204,3 +204,4 @@ void InstallInformation() noexcept {
   GenHelp();
   GenCommandMap();
 }
+
