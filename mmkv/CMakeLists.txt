@@ -16,6 +16,8 @@ file(GLOB_RECURSE MMKV_SERVER_SRC
   disk/*.cc
   db/*.cc
   storage/*.cc
+  ${TAKINA_DIR}/takina.cc
+  ${CHISATO_DIR}/chisato.cc
 )
 
 file(GLOB_RECURSE MMKV_CLIENT_SRC
@@ -23,6 +25,7 @@ file(GLOB_RECURSE MMKV_CLIENT_SRC
   protocol/*.cc
   client/*.cc
   util/*.cc
+  ${TAKINA_DIR}/takina.cc
   ${TERNARY_DIR}/ternary_tree.c
 )
 
@@ -35,6 +38,7 @@ file(GLOB_RECURSE RLOG_DUMP_SRC
   disk/file.cc
   disk/log_command.cc
   util/*.cc
+  ${TAKINA_DIR}/takina.cc
 )
 
 if (${CMAKE_BUILD_TYPE} STREQUAL "Release")

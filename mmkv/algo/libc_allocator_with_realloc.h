@@ -1,17 +1,10 @@
 #ifndef _MMKV_ALGO_LIBC_ALLOCATOR_WITH_REALLOC_H_
 #define _MMKV_ALGO_LIBC_ALLOCATOR_WITH_REALLOC_H_
 
-#include <algorithm>
-#include <atomic>
-#include <stdlib.h>
-#include <type_traits>
-#include <utility>
-
 #include "mmkv/zstl/type_traits.h"
 #include "mmkv/util/memory_util.h"
 
 namespace mmkv {
-
 namespace algo {
 
 /**
