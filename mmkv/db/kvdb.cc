@@ -861,6 +861,7 @@ void MmkvDb::CheckExpireCycle() {
 }
 
 bool MmkvDb::CheckExpire(String const &key) {
+  if (g_config.lazy_expiration) return false;
   ExDict::Bucket *bucket = nullptr;
   const auto node = exp_dict_.FindNode(key, &bucket);
   if (!node) return false;
