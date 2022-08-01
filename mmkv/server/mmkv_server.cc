@@ -5,6 +5,7 @@
 
 #include "mmkv/disk/recover.h"
 #include "mmkv/disk/request_log.h"
+#include "mmkv/util/time_util.h"
 
 #include "mmkv/storage/db.h"
 #include "mmkv/server/config.h"
@@ -14,6 +15,7 @@ using namespace mmkv::server;
 using namespace mmkv::disk;
 using namespace mmkv::server;
 using namespace mmkv::storage;
+using namespace mmkv::util;
 
 MmkvServer::MmkvServer(EventLoop* loop, InetAddr const& addr)
   : server_(loop, addr, "In-Memory Key-Value database server")
@@ -44,6 +46,7 @@ void MmkvServer::Start() {
   g_rlog = &rlog;
 
   if (g_config.log_method == LM_REQUEST) {
+    auto stime = GetTimeMs();
     LOG_INFO << "Recover from request log";
     try { 
       Recover recover;
@@ -53,10 +56,11 @@ void MmkvServer::Start() {
       LOG_ERROR << ex.what();
       LOG_ERROR << "Can't recover database from log";
     }
+    LOG_INFO << "Recover cost: " << (GetTimeMs() - stime) << "ms";
   }
 
   if (g_config.expiration_check_cycle > 0) {
-    LOG_INFO << "The mmkv will check all expired entries";
+    LOG_INFO << "The mmkv will check all expired entries actively";
     LOG_INFO << "The cycle is " << g_config.expiration_check_cycle << " seconds";
 
     server_.GetLoop()->RunEvery([]() {
