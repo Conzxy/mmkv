@@ -27,7 +27,7 @@ K *LRU_CACHE_CLASS::updateEntry(U &&entry) {
     cache_.Extract(node);
     cache_.PushFront(node);
   } else {
-  // set the node of new inserted entry
+    // set the node of new inserted entry
     cache_.PushFront(&duplicate->key);
     duplicate->value = cache_.FrontNode();
 
@@ -40,6 +40,7 @@ K *LRU_CACHE_CLASS::updateEntry(U &&entry) {
       cache_.PopBack();
     }
     assert(cache_.size() <= max_size_);
+
   }
 
   return cache_.Front();

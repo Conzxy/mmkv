@@ -45,6 +45,16 @@ class LruCache {
    * \brief Check a entry if exists
    */
   bool exists(K const &key);
+   
+  K *victim() noexcept {
+    return (cache_.empty()) ? nullptr : cache_.Back();
+  }
+  
+  void delVictim() {
+    if (cache_.empty()) return;
+    dict_.Erase(*cache_.Back());
+    cache.PopBack();
+  }
 
   size_t size() const noexcept { return cache_.size(); }
   size_t max_size() const noexcept { return max_size_; }
