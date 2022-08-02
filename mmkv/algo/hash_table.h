@@ -218,8 +218,8 @@ class HashTable : protected BucketAllocator<T, Alloc>
 
   // For debugging
   void DebugPrint();
-
- private:
+  
+ protected:
 
   struct Table {
     ReservedArray<Bucket> table;
@@ -250,7 +250,7 @@ class HashTable : protected BucketAllocator<T, Alloc>
   };
 
   void Rehash();
-  void IncremetalRehash(); 
+  void IncrementalRehash(); 
 
   bool InRehashing() const noexcept {
     // If rehash_move_bucket_index == -1, indicates the

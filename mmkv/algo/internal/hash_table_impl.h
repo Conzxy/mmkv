@@ -94,7 +94,7 @@ HASH_TABLE_TEMPLATE
 template<typename U>
 bool HASH_TABLE_CLASS::InsertWithDuplicate_impl(U&& elem, value_type*& duplicate) {
   Rehash();
-  IncremetalRehash();
+  IncrementalRehash();
 
   // Not in rehashing: 
   //   insert to table1
@@ -167,7 +167,7 @@ HASH_TABLE_TEMPLATE
 typename HASH_TABLE_CLASS::Slot**
 HASH_TABLE_CLASS::FindSlot(K const& key) {
   // No need to call Rehash()
-  IncremetalRehash();
+  IncrementalRehash();
   
   // 采用最robust的方法（simple is best)
   Bucket* bucket = nullptr;
@@ -215,7 +215,7 @@ HASH_TABLE_CLASS::Erase(K const& key) {
 HASH_TABLE_TEMPLATE
 typename HASH_TABLE_CLASS::Node* HASH_TABLE_CLASS::Extract(K const& key) noexcept {
   // WARNING Don't support shrink temporarily
-  IncremetalRehash();
+  IncrementalRehash();
   
   Bucket* bucket = nullptr;
   Node* node = nullptr;
@@ -247,7 +247,7 @@ void HASH_TABLE_CLASS::Rehash() {
 }
 
 HASH_TABLE_TEMPLATE
-void HASH_TABLE_CLASS::IncremetalRehash() {
+void HASH_TABLE_CLASS::IncrementalRehash() {
   if (!InRehashing()) {
     return;
   }

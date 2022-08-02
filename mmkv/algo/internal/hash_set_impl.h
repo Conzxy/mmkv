@@ -51,6 +51,26 @@ inline void HASH_SET_CLASS::Difference(HashSet const& hs, Cb cb) {
     }
   }
 }
+
+HASH_SET_TEMPLATE
+inline int HASH_SET_CLASS::EraseRandom() {
+  IncrementalRehash();
+  
+  int table_num = InRehashing() ? 2 : 1;
+  size_t j = rehash_move_bucket_index_;
+  for (int i = 0; i < table_num; ++i) {
+    for (; j < table(i).size(); ++j) {
+      if (!table(i)[j].empty()) {
+        table(i)[j].PopFront();
+        return 1;
+      }
+    }
+    j = 0;
+  }
+
+  return 0;
+}
+
 } // algo
 } // mmkv
 
