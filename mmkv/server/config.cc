@@ -20,12 +20,14 @@ static StringView replace_policy2str(ReplacePolicy rp) noexcept;
 static bool set_log_method(StrSlice value, void *args) noexcept;
 static bool set_replace_policy(StrSlice value, void *args) noexcept;
 
-void RegisterConfig() {
-  chisato::AddConfig("LogMethod", &g_config.log_method, &set_log_method);
-  chisato::AddConfig("ExpirationCheckCycle", &g_config.expiration_check_cycle); 
-  chisato::AddConfig("RequestLogLocation", &g_config.request_log_location);
-  chisato::AddConfig("LazyExpiration", &g_config.lazy_expiration);
-  chisato::AddConfig("ReplacePolicy", &g_config.replace_policy, &set_replace_policy);
+void RegisterConfig(MmkvConfig &config) {
+  chisato::AddConfig("LogMethod", &config.log_method, &set_log_method);
+  chisato::AddConfig("ExpirationCheckCycle", &config.expiration_check_cycle); 
+  chisato::AddConfig("RequestLogLocation", &config.request_log_location);
+  chisato::AddConfig("LazyExpiration", &config.lazy_expiration);
+  chisato::AddConfig("ReplacePolicy", &config.replace_policy, &set_replace_policy);
+  chisato::AddConfig("DiagnosticLogDirectory", &config.diagnostic_log_dir);
+  chisato::AddConfig("MaxMemoryUsage", &config.max_memory_usage);
 }
 
 bool ParseConfig(std::string &errmsg) {
@@ -49,7 +51,9 @@ void PrintMmkvConfig(MmkvConfig const &config) {
     << "\nExpirationCheckCycle=" << config.expiration_check_cycle
     << "\nLazyExpiration=" << config.lazy_expiration
     << "\nRequestLogLocation=" << config.request_log_location
-    << "\nReplacePolicy=" << replace_policy2str(config.replace_policy);
+    << "\nReplacePolicy=" << replace_policy2str(config.replace_policy)
+    << "\nDiagnosticLogDirectory=" << config.diagnostic_log_dir
+    << "\nMaxMemoryUsage=" << config.max_memory_usage;
 }
 
 #define LM_REQUEST_STR "request"

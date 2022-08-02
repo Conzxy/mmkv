@@ -7,9 +7,9 @@ namespace mmkv {
 namespace server {
 
 struct MmkvOption {
-  std::string config_name = "./.mmkv.conf";
-  bool log_to_file = false;
-  std::string log_dir = "./log";
+  std::string config_name = "./mmkv.conf";
+  int port = 9998;
+  std::string ip = "127.0.0.1";
 };
 
 extern MmkvOption g_option;

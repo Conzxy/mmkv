@@ -10,9 +10,9 @@ MmkvOption g_option;
 void RegisterOptions() {
   takina::AddUsage("./mmkv_server [OPTIONS]");
   takina::AddDescription("The server of mmkv(memory key-value)");
-  takina::AddOption({"c", "config", "The filename of config(default : ./.mmkv.conf)", "CONFIG_NAME"}, &g_option.config_name);
-  takina::AddOption({"f", "log-file", "Log to the file"}, &g_option.log_to_file);
-  takina::AddOption({"d", "log-dir", "The directory of log(default: ./log)", "DIR"}, &g_option.log_dir);
+  takina::AddOption({"c", "config", "The filename of config(default : ./mmkv.conf)", "CONFIG_NAME"}, &g_option.config_name);
+  takina::AddOption({"p", "port", "Port number(default: 9998)", "PORT"}, &g_option.port);
+  takina::AddOption({"i", "ip", "Ip address(default: 127.0.0.1)", "IP-ADDRESS"}, &g_option.ip);
 }
 
 bool ParseOptions(int argc, char **argv, std::string &errmsg) {

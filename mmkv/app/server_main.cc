@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) {
   takina::Teardown();
   LOG_INFO << "Options has parsed successfully";
   
-  RegisterConfig();
+  RegisterConfig(g_config);
   if (!ParseConfig(errmsg)) {
     ::fprintf(stderr, "Failed to parse the config file: \n%s\n", errmsg.c_str());
     return 0;
@@ -31,12 +31,12 @@ int main(int argc, char* argv[]) {
   LOG_INFO << "Config has parsed successfully";
   PrintMmkvConfig(g_config);
 
-  if (g_option.log_to_file) {
-    kanon::SetupAsyncLog("mmkv-server", 1 << 21, g_option.log_dir);
+  if (!g_config.diagnostic_log_dir.empty()) {
+    kanon::SetupAsyncLog("mmkv-server", 1 << 21, g_config.diagnostic_log_dir);
   }
 
   EventLoop loop;
-  MmkvServer server(&loop);
+  MmkvServer server(&loop, InetAddr(g_option.ip, g_option.port));
   
   server.Start();
   loop.StartLoop();

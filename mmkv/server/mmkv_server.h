@@ -16,7 +16,7 @@ class MmkvServer {
   friend class MmkvSession;
   
  public:
-  explicit MmkvServer(EventLoop* loop, InetAddr const& addr=InetAddr("127.0.0.1:9998"));
+  explicit MmkvServer(EventLoop* loop, InetAddr const& addr);
   ~MmkvServer() noexcept;
 
   void Listen() {
