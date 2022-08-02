@@ -245,27 +245,48 @@ StatusCode MmkvDb::ListGetAll(String const& k, StrValues& values) {
 }
 
 
-StatusCode MmkvDb::ListGetRange(String const& k, StrValues& values, size_t l, size_t r) {
+StatusCode MmkvDb::ListGetRange(String const& k, StrValues& values, int64_t l, int64_t r) {
   if (CheckExpire(k)) return S_NONEXISTS;
   LIST_ERROR_ROUTINE;
   
+  LOG_DEBUG << "l = " << l << "; r = " << r;
+
   auto lst = (StrList*)kv->value.any_data;
 
-  if (l >= lst->size()) {
-    return S_INVALID_RANGE;
-  }
+  l = (l < 0) ? (lst->size() + l) : l;
+  r = (r < 0) ? (lst->size() + r + 1) : r;
+  if ((size_t)l >= lst->size() || l > r) return S_INVALID_RANGE;
 
-  const auto size = DB_MIN(r, lst->size()) - l;
-  values.resize(r-l);
+  LOG_DEBUG << "l = " << l << "; r = " << r;
 
-  auto beg = lst->begin();
-  while (l--) {
-    ++beg;
-  }
-  
-  for (size_t i = 0; i < size; ++i) {
-    values[i] = *beg;
-    ++beg;
+  const auto size = DB_MIN((size_t)r, lst->size()) - l;
+  values.resize(size);
+
+  size_t right_diff = lst->size() - r;
+
+  if ((size_t)l <= right_diff) {
+    auto beg = lst->begin();
+    while (l--) {
+      ++beg;
+    }
+    
+    for (size_t i = 0; i < size; ++i) {
+      values[i] = *beg;
+      ++beg;
+    }
+  } else {
+    auto last = lst->before_end();
+    // last not end iterator instead of the last node with data
+    // ==> decrease first
+    while (--right_diff) {
+      --last;
+    }
+    
+    for (size_t i = 0; i < size; ++i) {
+      values[i] = *last;
+      --last;
+    }
+
   }
 
   return S_OK;
@@ -634,10 +655,15 @@ StatusCode MmkvDb::SetAdd(String&& key, StrValues& members, size_t& count) {
 StatusCode MmkvDb::SetDelm(const String &key, const String &member) {
   CHECK_EXPIRE_ROUTINE(key);
   ERROR_ROUTINE_KV(D_SET);
-  auto set = TO_SET(kv->value); 
-  
-  if (set->Erase(member)) return S_OK;
+  if (TO_SET(kv->value)->Erase(member)) return S_OK;
   return S_SET_MEMBER_NONEXISTS;
+}
+
+StatusCode MmkvDb::SetRandDelm(String const &key) {
+  CHECK_EXPIRE_ROUTINE(key);
+  ERROR_ROUTINE_KV(D_SET);
+  TO_SET(kv->value)->EraseRandom();
+  return S_OK;
 }
 
 StatusCode MmkvDb::SetSize(String const& key, size_t& count) {

@@ -79,7 +79,7 @@ class MmkvDb {
   StatusCode ListPrepend(String const& k, StrValues& elems); 
   StatusCode ListGetSize(String const& k, size_t& size); 
   StatusCode ListGetAll(String const& k, StrValues& values); 
-  StatusCode ListGetRange(String const& k, StrValues& values,  size_t l, size_t r); 
+  StatusCode ListGetRange(String const& k, StrValues& values,  int64_t l, int64_t r); 
   StatusCode ListPopFront(String const& k, uint32_t count); 
   StatusCode ListPopBack(String const& k, uint32_t count); 
   StatusCode ListDel(String const& k); 
@@ -115,6 +115,7 @@ class MmkvDb {
 
   StatusCode SetAdd(String&& key, StrValues& members, size_t& count);
   StatusCode SetDelm(String const& key, String const& member);
+  StatusCode SetRandDelm(String const &key);
   StatusCode SetSize(String const& key, size_t& count);
   StatusCode SetExists(String const& key, String const& member);
   StatusCode SetAll(String const& key, StrValues& members);
