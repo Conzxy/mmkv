@@ -9,9 +9,12 @@ namespace client {
 struct Option {
   std::string host = "127.0.0.1";
   int port = 9998;
+  bool reconnect = false;
 };
 
 extern Option g_option;
+
+void RegisterOptions();
 
 } // client  
 } // mmkv

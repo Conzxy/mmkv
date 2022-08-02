@@ -14,9 +14,10 @@
 #include "response_printer.h"
 #include "translator.h"
 #include "information.h"
+#include "option.h"
 
-#include "linenoise.h"
-#include "ternary_tree.h"
+#include <linenoise.h>
+#include <ternary_tree.h>
 
 #include <kanon/net/callback.h>
 #include <kanon/util/ptr.h>
@@ -72,7 +73,15 @@ static inline void InstallCommandCompletion(char const *line, linenoiseCompletio
   _REGISTER_COMMAND_COMPLETION_CH2('q', "quit")
   _REGISTER_COMMAND_COMPLETION_CH2('e', "exit")
 #else
-  ternary_search_prefix(command_tst, line, &AddCompletion, lc);
+  // std::string line_lower = line;
+  static char line_lower[4096];
+  strcpy(line_lower, line);
+  for (auto &c : line_lower) {
+    if (c >= 'a' && c <= 'z')
+      c -= 0x20;
+  }
+  
+  ternary_search_prefix(command_tst, line_lower, &AddCompletion, lc);
 #endif
 }
 
@@ -95,6 +104,8 @@ MmkvClient::MmkvClient(EventLoop* loop, InetAddr const& server_addr)
         ::exit(0);
       } else {
         puts("\nConnection is closed by peer server");
+        if (!g_option.reconnect)
+          ::exit(0);
       }
 
     }
@@ -109,15 +120,16 @@ MmkvClient::MmkvClient(EventLoop* loop, InetAddr const& server_addr)
     MmbpResponse response;
     response.ParseFrom(buffer);
     // std::cout << response->GetContent() << "\n";
-    ::printf("(%.3lf sec)", (double)(recv_time.GetMicrosecondsSinceEpoch() - start_time) / 1000000);
     response_printer_.Printf(current_cmd_, &response);
+    ::printf("(%.3lf sec)\n", (double)(recv_time.GetMicrosecondsSinceEpoch() - start_time) / 1000000);
     
     // ConsoleIoProcess();
     io_cond_.Notify();
   });
 
   InstallLinenoise();
-  client_.EnableRetry();
+  if (g_option.reconnect)
+    client_.EnableRetry();
 }
 
 MmkvClient::~MmkvClient() noexcept {
@@ -129,9 +141,9 @@ void MmkvClient::InstallLinenoise() {
     ternary_add(&command_tst, GetCommandString((Command)i).c_str(), false);
   }
 
-  ternary_add(&command_tst, "exit", false);
-  ternary_add(&command_tst, "quit", false);
-  ternary_add(&command_tst, "help", false);
+  ternary_add(&command_tst, "EXIT", false);
+  ternary_add(&command_tst, "QUIT", false);
+  ternary_add(&command_tst, "HELP", false);
 
   if (::linenoiseHistoryLoad(COMMAND_HISTORY_LOCATION) < 0) {
     ::fprintf(stderr, "Failed to load the command history\n");
