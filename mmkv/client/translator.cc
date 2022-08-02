@@ -9,6 +9,7 @@
 #include "mmkv/protocol/mmbp_response.h"
 #include "mmkv/util/tokenizer.h"
 #include "mmkv/util/print_util.h"
+#include "mmkv/util/conv.h"
 
 using namespace mmkv::protocol;
 using namespace mmkv::util;
@@ -58,8 +59,21 @@ using namespace std;
   auto token = *token_iter; \
   ::memcpy(buf, token.data(), token.size()); \
   buf[token.size()] = 0; \
-  char* end; \
+  char* end = NULL; \
   (var) = ::strtoull(buf, &end, 10); \
+  if ((var) == 0 && buf == end) { \
+    ErrorPrintf(msg); \
+    return E_SYNTAX_ERROR; \
+  } } while (0)
+
+#define SET_SIGN_INTEGER(var, msg) do { \
+  SYNTAX_ERROR_ROUTINE; \
+  char buf[64]; \
+  auto token = *token_iter; \
+  ::memcpy(buf, token.data(), token.size()); \
+  buf[token.size()] = 0; \
+  char* end = NULL; \
+  (var) = ::strtol(buf, &end, 10); \
   if ((var) == 0 && buf == end) { \
     ErrorPrintf(msg); \
     return E_SYNTAX_ERROR; \
@@ -102,11 +116,11 @@ Translator::ErrorCode Translator::Parse(MmbpRequest* request, StringView stateme
    */
   char *cmd_data = (char*)cmd.data();
   for (size_t i = 0; i < cmd.size(); ++i) {
-    if (cmd[i] >= 'A' && cmd[i] <= 'Z') {
+    if (cmd[i] >= 'a' && cmd[i] <= 'z') {
       /* A-Z: starts with 0x41
        * a-z: starts with 0x61
        */
-      cmd_data[i] += 0x20;
+      cmd_data[i] -= 0x20;
     }
   }
 
@@ -169,11 +183,9 @@ Translator::ErrorCode Translator::Parse(MmbpRequest* request, StringView stateme
 
     case F_RANGE: {
       SET_KEY;
-      uint32_t range[2];
-      SET_INTEGER(range[0], "ERROR: left bound of range is invalid");
-      SET_INTEGER(range[1], "ERROR: right bound of range is invalid"); 
+      SET_SIGN_INTEGER(request->range.left, "ERROR: left bound of range is invalid");
+      SET_SIGN_INTEGER(request->range.right, "ERROR: right bound of range is invalid");
       request->SetRange();
-      request->range = Range{range[0], range[1]};
       SYNTAX_ERROR_ROUTINE_END;
     }
       break;

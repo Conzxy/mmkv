@@ -23,9 +23,9 @@ std::unordered_map<StringView, CommandFormat, StringViewHash> command_formats;
 
 
 static inline int GenCommandMetadata() {
-  command_formats["exit"] = F_EXIT;
-  command_formats["quit"] = F_EXIT;
-  command_formats["help"] = F_HELP;
+  command_formats["EXIT"] = F_EXIT;
+  command_formats["QUIT"] = F_EXIT;
+  command_formats["HELP"] = F_HELP;
 
   for (size_t i = 0; i < COMMAND_NUM; ++i) {
     command_hints[i].clear();
@@ -190,9 +190,9 @@ static int GenCommandMap() {
   }
 
   // COMMAND_NUM as the invalid indicator
-  command_map["quit"] = COMMAND_NUM;
-  command_map["exit"] = COMMAND_NUM;
-  command_map["help"] = COMMAND_NUM;
+  command_map["QUIT"] = COMMAND_NUM;
+  command_map["EXIT"] = COMMAND_NUM;
+  command_map["HELP"] = COMMAND_NUM;
 
   return 0;
 }
