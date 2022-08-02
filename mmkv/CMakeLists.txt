@@ -42,12 +42,13 @@ file(GLOB_RECURSE RLOG_DUMP_SRC
 )
 
 if (${CMAKE_BUILD_TYPE} STREQUAL "Release")
-  GenLib(mmkv ${MMKV_SRC})
   set(MMKV_LIB mmkv)
 else ()
-  GenLib(mmkv_debug ${MMKV_SRC})
   set(MMKV_LIB mmkv_debug)
 endif ()
+
+GenLib(${MMKV_LIB} ${MMKV_SRC})
+target_include_directories(${MMKV_LIB} PRIVATE ${CHISATO_DIR} PRIVATE ${TAKINA_DIR})
 
 set(MMKV_LIB_LIST kanon_net kanon_base xxhash)
 
