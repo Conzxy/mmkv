@@ -109,6 +109,7 @@ Translator::ErrorCode Translator::Parse(MmbpRequest* request, StringView stateme
 
   auto cmd = *token_iter;
   
+  std::string ori_cmd = cmd.ToString();
   /* The type of `cmd` is StringView, so data() return char const*.
    * Force convert it to char* and transform the upper case character
    * to lower case.
@@ -127,7 +128,7 @@ Translator::ErrorCode Translator::Parse(MmbpRequest* request, StringView stateme
   const auto valid_cmd = GetCommand(cmd, request->command);
 
   if (!valid_cmd) {
-    ErrorPrintf("ERROR: invalid command: %s\n", cmd.ToString().c_str());
+    ErrorPrintf("ERROR: invalid command: %s\n", ori_cmd.c_str());
     // std::cout << GetHelp();
     return E_INVALID_COMMAND;
   }
@@ -252,6 +253,7 @@ Translator::ErrorCode Translator::Parse(MmbpRequest* request, StringView stateme
       SYNTAX_ERROR_ROUTINE_END;
     } 
       break;
+    case F_INVALID:
     default:
       assert(false && "This must be a valid command");
   } 

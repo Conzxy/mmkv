@@ -23,6 +23,10 @@ char const* mmkv::protocol::GetStatusMessage(mmkv::protocol::StatusCode code) no
     return "ERROR: Field doesn't exists";
   case S_SET_MEMBER_NONEXISTS:
     return "ERROR: Member doesn't exists in set";
+  case S_INVALID_REQUEST:
+    return "ERROR: Invalid request(client error)";
+  case S_SET_NO_MEMBER:
+    return "ERROR: No member in the set";
   }
   
   return "ERROR: Unknown error";

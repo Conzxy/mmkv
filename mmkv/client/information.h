@@ -27,6 +27,7 @@ enum CommandFormat : uint8_t {
   F_EXIT,         // exit/quit
   F_EXPIRE,       // expirexxx expiration
   F_NONE,         // command
+  F_INVALID,      // Invalid command
 };
 
 #define APPLICATION_INFORMATION \
@@ -68,7 +69,9 @@ inline std::string const &GetHelp() {
 }
 
 inline CommandFormat GetCommandFormat(kanon::StringView command) {
-  return detail::command_formats[command];
+  auto iter = detail::command_formats.find(command);
+  if (iter == detail::command_formats.end()) return F_INVALID;
+  return iter->second;
 }
 
 inline bool GetCommand(kanon::StringView command, uint16_t &cmd) {

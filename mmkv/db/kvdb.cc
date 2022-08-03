@@ -631,7 +631,7 @@ StatusCode MmkvDb::SetAdd(String&& key, StrValues& members, size_t& count) {
   Dict::value_type* duplicate = nullptr; 
 
   auto success = dict_.InsertKvWithDuplicate(std::move(key), std::move(data), duplicate);
-  if (success || duplicate->value.type == D_MAP) {
+  if (success || duplicate->value.type == D_SET) {
     Set* set = nullptr;
     if (success) {
       set = new Set();
@@ -662,8 +662,8 @@ StatusCode MmkvDb::SetDelm(const String &key, const String &member) {
 StatusCode MmkvDb::SetRandDelm(String const &key) {
   CHECK_EXPIRE_ROUTINE(key);
   ERROR_ROUTINE_KV(D_SET);
-  TO_SET(kv->value)->EraseRandom();
-  return S_OK;
+  if (TO_SET(kv->value)->EraseRandom()) return S_OK;
+  return S_SET_NO_MEMBER;
 }
 
 StatusCode MmkvDb::SetSize(String const& key, size_t& count) {
@@ -887,7 +887,7 @@ void MmkvDb::CheckExpireCycle() {
 }
 
 bool MmkvDb::CheckExpire(String const &key) {
-  if (g_config.lazy_expiration) return false;
+  if (!g_config.lazy_expiration) return false;
   ExDict::Bucket *bucket = nullptr;
   const auto node = exp_dict_.FindNode(key, &bucket);
   if (!node) return false;
@@ -918,4 +918,11 @@ bool MmkvDb::CheckExpire(String const &key) {
   }
 
   return false;
+}
+
+StatusCode MmkvDb::Persist(String const &key) {
+  if (!dict_.Find(key)) return S_NONEXISTS;
+  // Though there is no key in the exp_dict_, it is also ok.
+  exp_dict_.Erase(key);
+  return S_OK;
 }

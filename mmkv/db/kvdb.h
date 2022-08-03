@@ -148,6 +148,8 @@ class MmkvDb {
   StatusCode ExpireAfter(String &&key, uint64_t ms, uint64_t interval) {
     return ExpireAtMs(std::move(key), ms + interval * 1000);
   }
+  
+  StatusCode Persist(String const &key);
 
   void CheckExpireCycle();
  private:

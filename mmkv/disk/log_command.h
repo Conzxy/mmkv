@@ -9,6 +9,7 @@ namespace disk {
 enum CommandType : uint8_t {
   CT_READ = 0,
   CT_WRITE,
+  CT_INVALID,
 };
 
 namespace detail {
@@ -18,7 +19,9 @@ extern CommandType g_command_type[protocol::COMMAND_NUM];
 } // detail
 
 inline CommandType GetCommandType(protocol::Command cmd) noexcept {
-  return detail::g_command_type[cmd];
+  if (cmd < protocol::Command::COMMAND_NUM)
+    return detail::g_command_type[cmd];
+  return CT_INVALID;
 }
 
 } // disk

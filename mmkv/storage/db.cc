@@ -66,11 +66,19 @@ uint64_t storage::g_recv_time = 0;
     response->status_code = code; \
   }
 
+#define CHECK_INVALID_REQUEST(cond, msg) do { \
+  if (response && !(cond)) { \
+    response->status_code = S_INVALID_REQUEST; \
+    response->value = msg; \
+    response->SetValue(); \
+    return; \
+  } } while (0)
+
 void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
   switch (request.command) {
 
     case STR_ADD: {
-      MMKV_ASSERT(request.HasKey() && request.HasValue(), "stradd");
+      CHECK_INVALID_REQUEST(request.HasKey() && request.HasValue(), "stradd");
       
       auto code = DB->InsertStr(std::move(request.key), std::move(request.value));
       if (response) {
@@ -79,7 +87,7 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
     }
       break;
     case STR_GET: {
-      MMKV_ASSERT(request.HasKey(), "strget");
+      CHECK_INVALID_REQUEST(request.HasKey(), "strget");
 
       String* str = nullptr;
       auto code = DB->GetStr(request.key, str);
@@ -87,7 +95,7 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
     }
       break;
     case STR_DEL: {
-      MMKV_ASSERT(request.HasKey(), "strdel");
+      CHECK_INVALID_REQUEST(request.HasKey(), "strdel");
 
       auto code = DB->EraseStr(request.key);
       if (response) response->status_code = code;
@@ -95,14 +103,14 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       break;
 
     case STR_SET: {
-      MMKV_ASSERT(request.HasKey() && request.HasValue(), "strset");
+      CHECK_INVALID_REQUEST(request.HasKey() && request.HasValue(), "strset");
       auto code = DB->SetStr(std::move(request.key), std::move(request.value));
       if (response) response->status_code = code;
     }
       break;
 
     case STRLEN: {
-      MMKV_ASSERT(request.HasKey(), "strlen");
+      CHECK_INVALID_REQUEST(request.HasKey(), "strlen");
       String* str = nullptr;
       auto code = DB->GetStr(request.key, str);
       SET_XX_ELSE_CODE(SET_OK_COUNT(str->size()));
@@ -110,7 +118,7 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       break;
 
     case STRAPPEND: {
-      MMKV_ASSERT(request.HasKey() && request.HasValue(), "strappend");
+      CHECK_INVALID_REQUEST(request.HasKey() && request.HasValue(), "strappend");
       String* str = nullptr;
       auto code = DB->GetStr(request.key, str);
       if (code == S_OK) {
@@ -121,7 +129,7 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       break;
 
     case STRPOPBACK: {
-      MMKV_ASSERT(request.HasKey() && request.HasCount(), "strpopback");
+      CHECK_INVALID_REQUEST(request.HasKey() && request.HasCount(), "strpopback");
       String* str = nullptr;
       auto code = DB->GetStr(request.key, str);
       if (code == S_OK) {
@@ -132,7 +140,7 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       break;
 
     case LADD: {
-      MMKV_ASSERT(request.HasKey() && request.HasValues(), "ladd");
+      CHECK_INVALID_REQUEST(request.HasKey() && request.HasValues(), "ladd");
       auto code = DB->ListAdd(std::move(request.key), request.values);
       if (response) response->status_code = code;
     }
@@ -140,7 +148,7 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
 
     case LAPPEND:
     case LPREPEND: {
-      MMKV_ASSERT(request.HasKey() && request.HasValues(), "lappend/lprepend");
+      CHECK_INVALID_REQUEST(request.HasKey() && request.HasValues(), "lappend/lprepend");
 
       StatusCode code;
       switch (request.command) {
@@ -158,7 +166,7 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
     
     case LPOPFRONT:
     case LPOPBACK: {
-      MMKV_ASSERT(request.HasKey() && request.HasCount(), "lpopback/popfront");
+      CHECK_INVALID_REQUEST(request.HasKey() && request.HasCount(), "lpopback/popfront");
 
       StatusCode code;
       switch (request.command) {
@@ -177,7 +185,7 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       break;
 
     case LGETSIZE: {
-      MMKV_ASSERT(request.HasKey(), "lgetsize");
+      CHECK_INVALID_REQUEST(request.HasKey(), "lgetsize");
       size_t count = 0;
       if ( (response->status_code = DB->ListGetSize(request.key, count)) == S_OK) {
         response->SetCount();
@@ -187,7 +195,7 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       break;
 
     case LGETRANGE: {
-      MMKV_ASSERT(request.HasRange(), "lgetrange");
+      CHECK_INVALID_REQUEST(request.HasRange(), "lgetrange");
 
       if ( (response->status_code = DB->ListGetRange(request.key, response->values, request.range.left, request.range.right)) == S_OK) {
         response->SetValues();
@@ -196,7 +204,7 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       break;
 
     case LGETALL: {
-      MMKV_ASSERT(request.HasKey(), "lgetrange/getall");
+      CHECK_INVALID_REQUEST(request.HasKey(), "lgetrange/getall");
       
       if ( (response->status_code = DB->ListGetAll(request.key, response->values)) == S_OK) {
         response->SetValues();
@@ -205,14 +213,14 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       break;
 
     case LDEL: {
-      MMKV_ASSERT(request.HasKey(), "ldel");
+      CHECK_INVALID_REQUEST(request.HasKey(), "ldel");
       auto code = DB->ListDel(request.key);
       if (response) response->status_code = code;
     }
       break;
 
     case VADD: {
-      MMKV_ASSERT(request.HasKey() && request.HasVmembers(), "vadd");
+      CHECK_INVALID_REQUEST(request.HasKey() && request.HasVmembers(), "vadd");
       size_t count = 0;
       auto code = DB->VsetAdd(std::move(request.key), std::move(request.vmembers), count);
       if (response) {
@@ -222,7 +230,7 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       break;
 
     case VALL: {
-      MMKV_ASSERT(request.HasKey(), "vall");
+      CHECK_INVALID_REQUEST(request.HasKey(), "vall");
       WeightValues values;
       if ( (response->status_code = DB->VsetAll(request.key, response->vmembers)) == S_OK) {
         response->SetVmembers();
@@ -231,14 +239,14 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       break;
     
     case VDELM: {
-      MMKV_ASSERT(request.HasKey(), "vdelm");
+      CHECK_INVALID_REQUEST(request.HasKey(), "vdelm");
       auto code = DB->VsetDel(request.key, request.value);
       if (response) response->status_code = code;
     }
       break;
     
     case VDELMRANGE: {
-      MMKV_ASSERT(request.HasKey() && request.HasRange(), "vdelmrange");
+      CHECK_INVALID_REQUEST(request.HasKey() && request.HasRange(), "vdelmrange");
       size_t count = 0;
       auto code = DB->VsetDelRange(request.key, request.range, count);
       if (response) { 
@@ -248,7 +256,7 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       break;
 
     case VDELMRANGEBYWEIGHT: {
-      MMKV_ASSERT(request.HasKey() && request.HasRange(), "vdelmrangebyweight");
+      CHECK_INVALID_REQUEST(request.HasKey() && request.HasRange(), "vdelmrangebyweight");
       size_t count = 0;
       auto code = DB->VsetDelRangeByWeight(request.key, request.GetWeightRange(), count);
       if (response) { 
@@ -258,7 +266,7 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       break;
     
     case VSIZE: {
-      MMKV_ASSERT(request.HasKey(), "vsize");
+      CHECK_INVALID_REQUEST(request.HasKey(), "vsize");
       size_t size;
       auto code = DB->VsetSize(request.key, size);
       SET_XX_ELSE_CODE(SET_OK_COUNT(size))
@@ -266,7 +274,7 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       break;
 
     case VSIZEBYWEIGHT: {
-      MMKV_ASSERT(request.HasKey() && request.HasRange(), "vsizebyweight");
+      CHECK_INVALID_REQUEST(request.HasKey() && request.HasRange(), "vsizebyweight");
       size_t size;
       auto code = DB->VsetSizeByWeight(request.key, request.GetWeightRange(), size);
       SET_XX_ELSE_CODE(SET_OK_COUNT(size))
@@ -274,7 +282,7 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       break;
     
     case VWEIGHT: {
-      MMKV_ASSERT(request.HasKey() && request.HasValue(), "vweight");
+      CHECK_INVALID_REQUEST(request.HasKey() && request.HasValue(), "vweight");
       Weight weight;
       auto code = DB->VsetWeight(request.key, request.value, weight);
       SET_XX_ELSE_CODE(SET_OK_COUNT(util::double2u64(weight)))
@@ -282,7 +290,7 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       break;
 
     case VORDER: {
-      MMKV_ASSERT(request.HasKey() && request.HasValue(), "vorder");
+      CHECK_INVALID_REQUEST(request.HasKey() && request.HasValue(), "vorder");
       size_t order = 0;
       auto code = DB->VsetOrder(request.key, request.value, order);
       SET_XX_ELSE_CODE(SET_OK_COUNT(order))
@@ -290,7 +298,7 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       break;
 
     case VRORDER: {
-      MMKV_ASSERT(request.HasKey() && request.HasValue(), "vrorder");
+      CHECK_INVALID_REQUEST(request.HasKey() && request.HasValue(), "vrorder");
       size_t order = 0;
       auto code = DB->VsetROrder(request.key, request.value, order);
       SET_XX_ELSE_CODE(SET_OK_COUNT(order))
@@ -298,7 +306,7 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       break;
 
     case VRANGE: {
-      MMKV_ASSERT(request.HasKey() && request.HasRange(), "vrange");
+      CHECK_INVALID_REQUEST(request.HasKey() && request.HasRange(), "vrange");
       auto code = DB->VsetRange(request.key, request.range, response->vmembers);
 
       SET_XX_ELSE_CODE(SET_OK_VMEMBERS_)
@@ -306,7 +314,7 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       break;
 
     case VRRANGE: {
-      MMKV_ASSERT(request.HasKey() && request.HasRange(), "vrrange");
+      CHECK_INVALID_REQUEST(request.HasKey() && request.HasRange(), "vrrange");
       auto code = DB->VsetRRange(request.key, request.range, response->vmembers);
 
       SET_XX_ELSE_CODE(SET_OK_VMEMBERS_)
@@ -314,7 +322,7 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       break;
 
     case VRANGEBYWEIGHT: {
-      MMKV_ASSERT(request.HasKey() && request.HasRange(), "vrangebyweight");
+      CHECK_INVALID_REQUEST(request.HasKey() && request.HasRange(), "vrangebyweight");
       auto code = DB->VsetRangeByWeight(request.key, request.GetWeightRange(), response->vmembers);
 
       SET_XX_ELSE_CODE(SET_OK_VMEMBERS_)     
@@ -322,7 +330,7 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       break;
 
     case VRRANGEBYWEIGHT: {
-      MMKV_ASSERT(request.HasKey() && request.HasRange(), "vrrangebyweight");
+      CHECK_INVALID_REQUEST(request.HasKey() && request.HasRange(), "vrrangebyweight");
       auto code = DB->VsetRRangeByWeight(request.key, request.GetWeightRange(), response->vmembers);
 
       SET_XX_ELSE_CODE(SET_OK_VMEMBERS_)
@@ -330,7 +338,7 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       break;
 
     case MADD: {
-      MMKV_ASSERT(request.HasKey() && request.HasKvs(), "madd");
+      CHECK_INVALID_REQUEST(request.HasKey() && request.HasKvs(), "madd");
       size_t count = 0;
       auto code = DB->MapAdd(std::move(request.key), std::move(request.kvs), count);
 
@@ -341,33 +349,33 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       break;
 
     case MGET: {
-      MMKV_ASSERT(request.HasKey() && request.HasValue(), "mget");
+      CHECK_INVALID_REQUEST(request.HasKey() && request.HasValue(), "mget");
       auto code = DB->MapGet(request.key, request.value, response->value);
       SET_XX_ELSE_CODE(SET_OK_VALUE_);
     }
       break;
 
     case MGETS: {
-      MMKV_ASSERT(request.HasKey() && request.HasValues(), "mgets");
+      CHECK_INVALID_REQUEST(request.HasKey() && request.HasValues(), "mgets");
       auto code = DB->MapGets(request.key, request.values, response->values);
       SET_XX_ELSE_CODE(SET_OK_VALUES_);
     }
 
     case MSET: {
-      MMKV_ASSERT(request.HasKey() && request.HasValues(), "mset");
+      CHECK_INVALID_REQUEST(request.HasKey() && request.HasValues(), "mset");
       response->status_code = DB->MapSet(request.key, std::move(request.values[0]), std::move(request.values[1]));
     }
       break;
 
     case MDEL: {
-      MMKV_ASSERT(request.HasKey() && request.HasValue(), "mdel");
+      CHECK_INVALID_REQUEST(request.HasKey() && request.HasValue(), "mdel");
       auto code = DB->MapDel(request.key, request.value);
       if (response) response->status_code = code;
     }
       break;
 
     case MALL: {
-      MMKV_ASSERT(request.HasKey(), "mall");
+      CHECK_INVALID_REQUEST(request.HasKey(), "mall");
       auto code = DB->MapAll(request.key, response->kvs);
 
       SET_XX_ELSE_CODE(SET_OK_KVS_);
@@ -375,21 +383,21 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       break;
 
     case MFIELDS: {
-      MMKV_ASSERT(request.HasKey(), "mfields");
+      CHECK_INVALID_REQUEST(request.HasKey(), "mfields");
       auto code = DB->MapFields(request.key, response->values);
       SET_XX_ELSE_CODE(SET_OK_VALUES_);
     }
       break;
 
     case MVALUES: {
-      MMKV_ASSERT(request.HasKey(), "mvalues");
+      CHECK_INVALID_REQUEST(request.HasKey(), "mvalues");
       auto code = DB->MapValues(request.key, response->values);
       SET_XX_ELSE_CODE(SET_OK_VALUES_);
     }
       break;
 
     case MSIZE: {
-      MMKV_ASSERT(request.HasKey(), "msize");
+      CHECK_INVALID_REQUEST(request.HasKey(), "msize");
       size_t count = 0;
       auto code = DB->MapSize(request.key, count);
       SET_XX_ELSE_CODE(SET_OK_COUNT(count));
@@ -397,13 +405,13 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       break;
 
     case MEXISTS: {
-      MMKV_ASSERT(request.HasKey() && request.HasValue(), "mexists");
+      CHECK_INVALID_REQUEST(request.HasKey() && request.HasValue(), "mexists");
       response->status_code = DB->MapExists(request.key, request.value);
     }
       break;
   
     case SADD: {
-      MMKV_ASSERT(request.HasKey() && request.HasValues(), "sadd");
+      CHECK_INVALID_REQUEST(request.HasKey() && request.HasValues(), "sadd");
       size_t count = 0;
       auto code = DB->SetAdd(std::move(request.key), request.values, count);
       if (response) {
@@ -413,20 +421,20 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       break;
     
     case SDELM: {
-      MMKV_ASSERT(request.HasKey() && request.HasValue(), "sdelm");
+      CHECK_INVALID_REQUEST(request.HasKey() && request.HasValue(), "sdelm");
       auto code = DB->SetDelm(request.key, request.value);
       if (response) response->status_code = code;
     }
       break;
 
     case SEXISTS: {
-      MMKV_ASSERT(request.HasKey() && request.HasValue(), "sexists");
+      CHECK_INVALID_REQUEST(request.HasKey() && request.HasValue(), "sexists");
       response->status_code = DB->SetExists(request.key, request.value);
     }
       break;
     
     case SSIZE: {
-      MMKV_ASSERT(request.HasKey(), "ssize");
+      CHECK_INVALID_REQUEST(request.HasKey(), "ssize");
       size_t count = 0;
       response->status_code = DB->SetSize(request.key, count);
       if (response->status_code == S_OK) {
@@ -437,7 +445,7 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       break;
     
     case SALL: {
-      MMKV_ASSERT(request.HasKey(), "sall");
+      CHECK_INVALID_REQUEST(request.HasKey(), "sall");
       response->status_code = DB->SetAll(request.key, response->values);
       if (response->status_code == S_OK)
         response->SetValues();
@@ -445,7 +453,7 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       break;
     
     case SAND: {
-      MMKV_ASSERT(request.HasKey() && request.HasValue(), "sand");
+      CHECK_INVALID_REQUEST(request.HasKey() && request.HasValue(), "sand");
       response->status_code = DB->SetAnd(request.key, request.value, response->values);
       if (response->status_code == S_OK)
         response->SetValues();
@@ -453,7 +461,7 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       break;
 
     case SOR: {
-      MMKV_ASSERT(request.HasKey() && request.HasValue(), "sor");
+      CHECK_INVALID_REQUEST(request.HasKey() && request.HasValue(), "sor");
       response->status_code = DB->SetOr(request.key, request.value, response->values);
       if (response->status_code == S_OK)
         response->SetValues();
@@ -461,7 +469,7 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       break;
 
     case SSUB: {
-      MMKV_ASSERT(request.HasKey() && request.HasValue(), "ssub");
+      CHECK_INVALID_REQUEST(request.HasKey() && request.HasValue(), "ssub");
       response->status_code = DB->SetSub(request.key, request.value, response->values);
       if (response->status_code == S_OK)
         response->SetValues();
@@ -469,25 +477,25 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       break;
 
     case SANDTO: {
-      MMKV_ASSERT(request.HasValues(), "sandto");
+      CHECK_INVALID_REQUEST(request.HasValues(), "sandto");
       response->status_code = DB->SetAndTo(request.values[1], request.values[2], std::move(request.values[0]));
     }
       break;
 
     case SORTO: {
-      MMKV_ASSERT(request.HasValues(), "sorto");
+      CHECK_INVALID_REQUEST(request.HasValues(), "sorto");
       response->status_code = DB->SetOrTo(request.values[1], request.values[2], std::move(request.values[0]));
     }
       break;
 
     case SSUBTO: {
-      MMKV_ASSERT(request.HasValues(), "ssubto");
+      CHECK_INVALID_REQUEST(request.HasValues(), "ssubto");
       response->status_code = DB->SetSubTo(request.values[1], request.values[2], std::move(request.values[0]));
     }
       break;
 
     case SANDSIZE: {
-      MMKV_ASSERT(request.HasKey() && request.HasValue(), "sandsize");
+      CHECK_INVALID_REQUEST(request.HasKey() && request.HasValue(), "sandsize");
       size_t count = 0;
       auto code = DB->SetAndSize(request.key, request.value, count);
       SET_XX_ELSE_CODE(SET_OK_COUNT(count));
@@ -495,7 +503,7 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       break;
 
     case SORSIZE: {
-      MMKV_ASSERT(request.HasKey() && request.HasValue(), "sorsize");
+      CHECK_INVALID_REQUEST(request.HasKey() && request.HasValue(), "sorsize");
       size_t count = 0;
       auto code = DB->SetOrSize(request.key, request.value, count);
       SET_XX_ELSE_CODE(SET_OK_COUNT(count));
@@ -503,20 +511,27 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       break;
 
     case SSUBSIZE: {
-      MMKV_ASSERT(request.HasKey() && request.HasValue(), "ssubsize");
+      CHECK_INVALID_REQUEST(request.HasKey() && request.HasValue(), "ssubsize");
       size_t count = 0;
       auto code = DB->SetSubSize(request.key, request.value, count);
       SET_XX_ELSE_CODE(SET_OK_COUNT(count));
     }
       break;
+    case SRANDDELM: {
+      CHECK_INVALID_REQUEST(request.HasKey(), "sranddelm");
+      const auto code = DB->SetRandDelm(request.key);
+      if (response)
+        response->status_code = code;
+    }
+      break;
     case MEM_STAT: {
-      MMKV_ASSERT(request.HasNone(), "memorystat");
+      CHECK_INVALID_REQUEST(request.HasNone(), "memorystat");
       SET_OK_VALUE(util::GetMemoryStat());
     }
       break;
 
     case EXPIRE_AT: {
-      MMKV_ASSERT(request.HasExpireTime(), "expireat");
+      CHECK_INVALID_REQUEST(request.HasKey() && request.HasExpireTime(), "expireat");
       const auto code = DB->ExpireAt(std::move(request.key),  request.expire_time);
       if (response)
         response->status_code = code;
@@ -524,7 +539,7 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       break;
 
     case EXPIRE_AFTER: {
-      MMKV_ASSERT(request.HasExpireTime(), "expireafter");
+      CHECK_INVALID_REQUEST(request.HasKey() && request.HasExpireTime(), "expireafter");
       const auto code = DB->ExpireAfter(std::move(request.key), g_recv_time, request.expire_time);
       if (response)
         response->status_code = code;
@@ -532,7 +547,7 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       break;
 
     case EXPIREM_AT: {
-      MMKV_ASSERT(request.HasExpireTime(), "expiremat");
+      CHECK_INVALID_REQUEST(request.HasKey() && request.HasExpireTime(), "expiremat");
       const auto code = DB->ExpireAtMs(std::move(request.key),  request.expire_time);
       if (response)
         response->status_code = code;
@@ -541,15 +556,23 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       break;
 
     case EXPIREM_AFTER: {
-      MMKV_ASSERT(request.HasExpireTime(), "expiremafter");
+      CHECK_INVALID_REQUEST(request.HasKey() && request.HasExpireTime(), "expiremafter");
       const auto code = DB->ExpireAfterMs(std::move(request.key),  g_recv_time, request.expire_time);
       if (response)
         response->status_code = code;
     }
       break;
 
+    case PERSIST: {
+      CHECK_INVALID_REQUEST(request.HasKey(), "persist");
+      const auto code = DB->Persist(request.key);
+      if (response)
+        response->status_code = code;
+    }
+      break;
+
     case TYPE: {
-      MMKV_ASSERT(request.HasKey(), "type");
+      CHECK_INVALID_REQUEST(request.HasKey(), "type");
       db::DataType type;
       if (DB->Type(request.key, type)) {
         SET_OK_VALUE(GetDataTypeString(type));
@@ -560,14 +583,14 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       break;
 
     case DEL: {
-      MMKV_ASSERT(request.HasKey(), "del");
+      CHECK_INVALID_REQUEST(request.HasKey(), "del");
       auto success = DB->Delete(request.key);
       if (response) response->status_code = success ? S_OK : S_NONEXISTS;
     }
       break;
 
     case RENAME: {
-      MMKV_ASSERT(request.HasKey() && request.HasValue(), "rename");
+      CHECK_INVALID_REQUEST(request.HasKey() && request.HasValue(), "rename");
       auto code = DB->Rename(request.key, std::move(request.value));
       if (response) response->status_code = code;
     }
