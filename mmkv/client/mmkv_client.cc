@@ -29,61 +29,21 @@ using namespace mmkv::util;
 using namespace std;
 using namespace kanon;
 
+/* Command is "quit/exit" ==> true */
 static bool is_exit = false;
 
 #define COMMAND_HISTORY_LOCATION "/tmp/.mmkv-command.history"
-
-static int64_t start_time = 0;
-
-static TernaryNode *command_tst = nullptr;
-
-static inline char *InstallCommandHints(char const *line, int *color, int *bold) {
-  *color = 36;
-  *bold = 0;
-  for (int i = 0; i < COMMAND_NUM; ++i) {
-    if (!strcasecmp(line, GetCommandString((Command)i).c_str())) {
-      return (char*)GetCommandHint((Command)i).c_str();
-    }
-  }
-
-  return NULL;
-}
-
-static inline void AddCompletion(char const *cmd, void *args) {
-  linenoiseCompletions *lc = (linenoiseCompletions*)args;
-  linenoiseAddCompletion(lc, cmd);
-}
-
-static inline void InstallCommandCompletion(char const *line, linenoiseCompletions *lc) {
-#if 0
-#define _REGISTER_COMMAND_COMPLETION_CH2(_ch, _cmd) \
-  if (line[0] == _ch) \
-    ::linenoiseAddCompletion(lc, _cmd);
-  
-  const auto len = ::strlen(line); 
-  for (int i = 0; i < COMMAND_NUM; ++i) {
-    StringView command(GetCommandString((Command)i));
-
-    if (!::strncasecmp(line, command.data(), len)) {
-      ::linenoiseAddCompletion(lc, command.data());
-    }
-  }
-
-  _REGISTER_COMMAND_COMPLETION_CH2('h', "help")
-  _REGISTER_COMMAND_COMPLETION_CH2('q', "quit")
-  _REGISTER_COMMAND_COMPLETION_CH2('e', "exit")
-#else
-  // std::string line_lower = line;
-  static char line_lower[4096];
-  strcpy(line_lower, line);
-  for (auto &c : line_lower) {
-    if (c >= 'a' && c <= 'z')
-      c -= 0x20;
-  }
-  
-  ternary_search_prefix(command_tst, line_lower, &AddCompletion, lc);
+#ifdef MAX_LINE
+#undef MAX_LINE
 #endif
-}
+#define MAX_LINE 4096
+
+/* Record the start time when send request */
+static int64_t start_time = 0;
+/* Store the commands and support fast prefix search */
+static TernaryNode *command_tst = nullptr;
+/* Set config of linenoise */
+static void InstallLinenoise();
 
 MmkvClient::MmkvClient(EventLoop* loop, InetAddr const& server_addr) 
   : client_(loop, server_addr, "Mmkv console client") 
@@ -134,26 +94,6 @@ MmkvClient::MmkvClient(EventLoop* loop, InetAddr const& server_addr)
 
 MmkvClient::~MmkvClient() noexcept {
   ternary_free(&command_tst);
-}
-
-void MmkvClient::InstallLinenoise() {
-  for (uint16_t i = 0; i < COMMAND_NUM; ++i) {
-    ternary_add(&command_tst, GetCommandString((Command)i).c_str(), false);
-  }
-
-  ternary_add(&command_tst, "EXIT", false);
-  ternary_add(&command_tst, "QUIT", false);
-  ternary_add(&command_tst, "HELP", false);
-
-  if (::linenoiseHistoryLoad(COMMAND_HISTORY_LOCATION) < 0) {
-    ::fprintf(stderr, "Failed to load the command history\n");
-    ::exit(0);
-  }
-
-  ::linenoiseSetMultiLine(1); 
-  ::linenoiseHistorySetMaxLen(10);
-  ::linenoiseSetCompletionCallback(&InstallCommandCompletion);
-  ::linenoiseSetHintsCallback(&InstallCommandHints);
 }
 
 bool MmkvClient::ConsoleIoProcess() {
@@ -231,4 +171,60 @@ void MmkvClient::Start() {
   printf("Connecting %s...\n", client_.GetServerAddr().ToIpPort().c_str());
   
   client_.Connect();
+}
+
+/* Callback of command hint */
+static inline char *OnCommandHint(char const *line, int *color, int *bold) {
+  *color = 35;
+  *bold = 0;
+  const size_t len = strlen(line);
+  char command_buf[MAX_LINE];
+  Command cmd;
+
+  for (size_t i = 0; i < len; ++i) {
+    command_buf[i] = (line[i] <= 'z' && line[i] >= 'a') ? line[i] - 0x20 : line[i];
+  } 
+  command_buf[len] = 0;
+  if ((cmd = GetCommand({command_buf, len})) != Command::COMMAND_NUM) {
+    return (char*)GetCommandHint(cmd).c_str();
+  }
+  return NULL;
+}
+
+/* Callback of ternary_search_prefix */
+static inline void AddCompletion(char const *cmd, void *args) {
+  linenoiseCompletions *lc = (linenoiseCompletions*)args;
+  linenoiseAddCompletion(lc, cmd);
+}
+
+/* Callback of command completion */
+static void OnCommandCompletion(char const *line, linenoiseCompletions *lc) {
+  static char line_lower[4096];
+  strcpy(line_lower, line);
+  for (auto &c : line_lower) {
+    if (c >= 'a' && c <= 'z')
+      c -= 0x20;
+  }
+  
+  ternary_search_prefix(command_tst, line_lower, &AddCompletion, lc);
+}
+
+static inline void InstallLinenoise() {
+  for (uint16_t i = 0; i < COMMAND_NUM; ++i) {
+    ternary_add(&command_tst, GetCommandString((Command)i).c_str(), false);
+  }
+
+  ternary_add(&command_tst, "EXIT", false);
+  ternary_add(&command_tst, "QUIT", false);
+  ternary_add(&command_tst, "HELP", false);
+
+  if (::linenoiseHistoryLoad(COMMAND_HISTORY_LOCATION) < 0) {
+    ::fprintf(stderr, "Failed to load the command history\n");
+    ::exit(0);
+  }
+
+  ::linenoiseSetMultiLine(1); 
+  ::linenoiseHistorySetMaxLen(10);
+  ::linenoiseSetCompletionCallback(&OnCommandCompletion);
+  ::linenoiseSetHintsCallback(&OnCommandHint);
 }

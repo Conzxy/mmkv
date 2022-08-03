@@ -74,11 +74,26 @@ inline CommandFormat GetCommandFormat(kanon::StringView command) {
   return iter->second;
 }
 
+/** 
+ * (deprecated) Only used for set the command of mmbp request
+ * \brief Set the \p cmd from \p command
+ * \return 
+ *  true -- command is a valid command
+ */
 inline bool GetCommand(kanon::StringView command, uint16_t &cmd) {
   auto iter = detail::command_map.find(command);
   if (iter == detail::command_map.end()) return false;
   cmd = iter->second;
   return true;
+}
+
+/**
+ * \brief Convert the command string to command enumeration
+ */
+inline Command GetCommand(kanon::StringView command) {
+  auto iter = detail::command_map.find(command);
+  if (iter == detail::command_map.end()) return Command::COMMAND_NUM;
+  return iter->second;
 }
 
 void InstallInformation() noexcept;
