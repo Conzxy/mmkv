@@ -24,17 +24,29 @@
 ## Schedule
 现在该项目还处于初级阶段，只是个单纯支持多个数据结构的单机单线程服务器，
 尽管要支持多线程是较为简单的（因为kanon支持mutilthread-reactor），但是现在我暂时不关注这方面。
-- [x] 支持string并实现其相关命令
-- [x] 支持list并实现其相关命令
-- [x] 支持sorted set并实现其相关命令
-- [x] 支持map并实现其相关命令
-- [x] 支持hash set并实现其相关命令
-- [x] 支持Recovery
-- [x] 支持Expire并实现其管理
+### Server
+- [x] 支持`string`并实现其相关命令
+- [x] 支持`list`并实现其相关命令
+- [x] 支持`sorted set`并实现其相关命令
+- [x] 支持`map`并实现其相关命令
+- [x] 支持`hash set`并实现其相关命令
+- [x] 支持`Log`和`Recovery`
+- [x] 实现key的`expiration`管理（包括是否启用过期键，过期检测的配置）
+- [x] 实现key的`replacement`管理（包括是否有最大内存占用，达到最大内存占用时的替换策略）
 - [ ] 支持分布式存储(distributed system)
-- [ ] 支持Replacement
 - [ ] 支持Raft容错
 - [ ] 支持多线程
+
+### CLI
+- [x] 实现`translator`将输入行翻译成MMBP request
+- [x] 能够输入`命令`(command)和`参数`(arguments)与`mmkv server`进行交互
+- [x] 能够对用户输入的命令的`提示`(hint)，`历史`(history)浏览，以及`补全`(completion)
+- [x] 实现[ternary-tree](https://github.com/Conzxy/ternary-tree)以优化自动补全
+- [x] 支持通过`!command arguments`执行`shell`命令
+- [x] 对于输入的命令大小写不敏感（可以识别，提示，补全）
+
+### Client API
+开发中
 
 ## Build
 该项目需要额外安装[kanon](https://github.com/Conzxy/kanon)，是我个人编写的网络库，为该项目提供网络模块的支持。安装方式参考其github页面。
@@ -47,11 +59,11 @@ cd mmkv/bin
 export MMKV_BUILD_PATH=... # build目录的路径
 # 或在~/.bash_profile中加上该句
 chmod u+x release_build.sh
-./release_build.sh mmkv-client
+./release_build.sh mmkv-cli
 ./release_build.sh mmkv-server
 # Debug mode by following:
 # chmod u+x build.sh
-# ./build.sh mmkv-client
+# ./build.sh mmkv-cli
 # ./build.sh mmkv-server
 ```
 
@@ -60,14 +72,3 @@ chmod u+x release_build.sh
 
 ### FAQ
 * 如果`mmkv-cli`输出了日志信息，可以通过设置环境变量关闭`KANON_DEBUG=0`，server的日志信息也可以通过相同的方法关闭。
-* 最终运行时若提示`xxHash`的动态库找不到，你可能需要输入`ldconfig`更新动态库缓存，以找到刚安装的`xxHash`(see [戳](https://stackoverflow.com/questions/480764/linux-error-while-loading-shared-libraries-cannot-open-shared-object-file-no-s))
-* 基于[linenoise](https://github.com/antirez/linenoise)，`mmkv-cli`可以提供**补全**(completion)，**提示**(hint)，**历史命令**(history)，**清屏**(clear screen)。
-
-#### string
-![str_mmkv.gif](https://s2.loli.net/2022/07/07/5Zx69JDHMOzg3WF.gif)
-
-#### list
-![list_mmkv.gif](https://s2.loli.net/2022/07/07/XYLk8cp24OQzlDH.gif)
-
-#### sorted set
-![vset_mmkv.gif](https://s2.loli.net/2022/07/07/EpM1YRKg4GVNZky.gif)
