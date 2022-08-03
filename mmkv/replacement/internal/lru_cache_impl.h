@@ -15,7 +15,7 @@ namespace replacement {
 
 LRU_CACHE_TEMPLATE
 template<typename U>
-K *LRU_CACHE_CLASS::updateEntry(U &&entry) {
+K *LRU_CACHE_CLASS::UpdateEntry(U &&entry) {
   if (max_size_ == 0) return nullptr;
 
   typename Dict::value_type *duplicate = nullptr;
@@ -47,12 +47,12 @@ K *LRU_CACHE_CLASS::updateEntry(U &&entry) {
 }
 
 LRU_CACHE_TEMPLATE
-bool LRU_CACHE_CLASS::exists(K const &key) {
+bool LRU_CACHE_CLASS::Exists(K const &key) {
   return dict_.Find(key) != nullptr;
 }
 
 LRU_CACHE_TEMPLATE
-bool LRU_CACHE_CLASS::delEntry(K const &key) {
+bool LRU_CACHE_CLASS::DelEntry(K const &key) {
   auto entry = dict_.Extract(key);
   if (entry) {
     cache_.Erase(entry->value.value);

@@ -10,7 +10,7 @@ TEST(lru_cache, update) {
   LruCache<int> cache(max_size);
 
   for (int i = 0; i < max_size; ++i) {
-    cache.updateEntry(i);
+    cache.UpdateEntry(i);
   }
 
   ASSERT_EQ(cache.size(), 10);
@@ -27,13 +27,13 @@ TEST(lru_cache, exists) {
   LruCache<int> cache(max_size);
 
   for (int i = 0; i < max_size - 1; ++i) {
-    cache.updateEntry(i);
+    cache.UpdateEntry(i);
   }
 
   for (int i = 0; i < max_size - 1; ++i)
-    EXPECT_TRUE(cache.exists(i));
+    EXPECT_TRUE(cache.Exists(i));
 
-  EXPECT_FALSE(cache.exists(max_size-1));
+  EXPECT_FALSE(cache.Exists(max_size-1));
 
   auto &enties = cache.entries();
 
@@ -43,15 +43,15 @@ TEST(lru_cache, exists) {
 
   puts("");
   for (int i = max_size-1; i < 12; ++i) {
-    cache.updateEntry(i);
+    cache.UpdateEntry(i);
   }
 
   for (int i = max_size-1; i < 12; ++i) {
-    EXPECT_TRUE(cache.exists(i));
+    EXPECT_TRUE(cache.Exists(i));
   }
 
   for (int i = 0; i < 2; ++i) {
-    EXPECT_FALSE(cache.exists(i));
+    EXPECT_FALSE(cache.Exists(i));
   }
 
   for (auto i : enties) {

@@ -32,28 +32,28 @@ class LruCache {
    *  existed or new Entry
    */
   template<typename U>
-  K *updateEntry(U &&entry);
+  K *UpdateEntry(U &&entry);
 
   /**
    * \brief Remove a entry from cache
    * \return
    *  indicates success or not
    */
-  bool delEntry(K const & key);
+  bool DelEntry(K const & key);
 
   /**
    * \brief Check a entry if exists
    */
-  bool exists(K const &key);
+  bool Exists(K const &key);
    
-  K *victim() noexcept {
+  K *Victim() noexcept {
     return (cache_.empty()) ? nullptr : cache_.Back();
   }
   
-  void delVictim() {
+  void DelVictim() {
     if (cache_.empty()) return;
     dict_.Erase(*cache_.Back());
-    cache.PopBack();
+    cache_.PopBack();
   }
 
   size_t size() const noexcept { return cache_.size(); }
