@@ -57,7 +57,7 @@ inline int HASH_SET_CLASS::EraseRandom() {
   IncrementalRehash();
   
   int table_num = InRehashing() ? 2 : 1;
-  size_t j = rehash_move_bucket_index_;
+  size_t j = (table_num > 1) ? rehash_move_bucket_index_ : 0;
   for (int i = 0; i < table_num; ++i) {
     for (; j < table(i).size(); ++j) {
       if (!table(i)[j].empty()) {
