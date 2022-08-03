@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
+#include <stddef.h>
 
 #include <kanon/net/endian_api.h>
 #include <kanon/string/string_view.h>
@@ -54,44 +55,45 @@ inline bool str2i64(char const *buf, int64_t &i) noexcept {
   return true;
 }
 
-inline uint64_t str2metric(StringView str) noexcept {
-  char buf[64];
-  uint64_t res = -1;
-  
-  memcpy(buf, str.data(), str.size()-1);
-  buf[str.size()] = 0;
-  if (!str2u64(buf, res))
-    return res;
-    
-  char indicator = str.back();
-  if (indicator >= 'A' && indicator <= 'Z')
-    indicator += 0x20;
+enum MemoryUnit : uint8_t {
+  MU_B = 0,
+  MU_KB,
+  MU_MB,
+  MU_GB,
+  MU_INVALID,
+};
 
-  if (indicator == 'k') {
-    return res << 10;
-  } else if (indicator == 'm') {
-    return res << 20;
-  } else if (indicator == 'g') {
-    return res << 30;
-  } 
+uint64_t str2memory_usage(StringView str) noexcept;
 
-  return res;
+inline char const *memory_unit2str(MemoryUnit mu) noexcept {
+  switch (mu) {
+    case MU_B:
+      return "B";
+    case MU_KB:
+      return "KB";
+    case MU_MB:
+      return "MB";
+    case MU_GB:
+      return "GB";
+  }
+  return "Unknown Unit";
 }
 
-inline void metric2str(uint64_t metric, char *buf,  size_t n) noexcept {
-  char unit = 0;
+struct MemoryUsage {
+  MemoryUnit unit;
+  uint64_t usage;
+};
 
-  if (metric >= 1 << 30) {
-    unit = 'G';
-    metric >>= 30;
-  } else if (metric >= 1 << 20) {
-    unit = 'M';
-    metric >>= 20;
-  } else if (metric >= 1 << 10) {
-    unit = 'K';
-    metric >>= 10;
+inline MemoryUsage format_memory_usage(uint64_t usage) noexcept {
+  if (usage >= (1 << 30)) {
+    return { MU_GB, usage >> 30 };
+  } else if (usage >= (1 << 20)) {
+    return { MU_MB, usage >> 20 };
+  } else if (usage >= (1 << 10)) {
+    return { MU_KB, usage >> 10 };
   }
-  snprintf(buf, n, "%" PRIu64 "%c", metric, unit);
+
+  return { MU_B, usage };
 }
 
 } // util

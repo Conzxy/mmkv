@@ -2,6 +2,7 @@
 
 #include "option.h"
 #include "mmkv/util/time_util.h"
+#include "mmkv/util/conv.h"
 
 #include <chisato.h>
 #include <kanon/log/logger.h>
@@ -19,6 +20,7 @@ static StringView replace_policy2str(ReplacePolicy rp) noexcept;
 
 static bool set_log_method(StrSlice value, void *args) noexcept;
 static bool set_replace_policy(StrSlice value, void *args) noexcept;
+static bool set_max_memoey_usage(StrSlice vlaue, void *args) noexcept;
 
 void RegisterConfig(MmkvConfig &config) {
   chisato::AddConfig("LogMethod", &config.log_method, &set_log_method);
@@ -27,7 +29,7 @@ void RegisterConfig(MmkvConfig &config) {
   chisato::AddConfig("LazyExpiration", &config.lazy_expiration);
   chisato::AddConfig("ReplacePolicy", &config.replace_policy, &set_replace_policy);
   chisato::AddConfig("DiagnosticLogDirectory", &config.diagnostic_log_dir);
-  chisato::AddConfig("MaxMemoryUsage", &config.max_memory_usage);
+  chisato::AddConfig("MaxMemoryUsage", &config.max_memory_usage, &set_max_memoey_usage);
 }
 
 bool ParseConfig(std::string &errmsg) {
@@ -46,6 +48,7 @@ bool ParseConfig(std::string &errmsg) {
 }
 
 void PrintMmkvConfig(MmkvConfig const &config) {
+  const auto usage = format_memory_usage(config.max_memory_usage);
   LOG_DEBUG << "Config information: \n"
     << "LogMethod=" << log_method2str(config.log_method)
     << "\nExpirationCheckCycle=" << config.expiration_check_cycle
@@ -53,7 +56,7 @@ void PrintMmkvConfig(MmkvConfig const &config) {
     << "\nRequestLogLocation=" << config.request_log_location
     << "\nReplacePolicy=" << replace_policy2str(config.replace_policy)
     << "\nDiagnosticLogDirectory=" << config.diagnostic_log_dir
-    << "\nMaxMemoryUsage=" << config.max_memory_usage;
+    << "\nMaxMemoryUsage=" << usage.usage << " " << memory_unit2str(usage.unit);
 }
 
 #define LM_REQUEST_STR "request"
@@ -104,6 +107,14 @@ static inline bool set_replace_policy(StrSlice value, void *args) noexcept {
   } else {
     return false;
   }
+  return true;
+}
+
+static inline bool set_max_memoey_usage(StrSlice value, void *args) noexcept {
+  auto max_memory_usage = (uint64_t*)args;
+  *max_memory_usage = str2memory_usage({value.data(), value.size()});
+  if (*max_memory_usage == (uint64_t)-1)
+    return false;
   return true;
 }
 

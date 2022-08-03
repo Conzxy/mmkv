@@ -26,7 +26,7 @@ struct MmkvConfig {
   LogMethod log_method = LM_NONE;
   ReplacePolicy replace_policy = RP_NONE;
   bool lazy_expiration = false;
-  long max_memory_usage = 0;
+  uint64_t max_memory_usage = 0;
   long expiration_check_cycle = 0;
   std::string request_log_location = "/tmp/.mmkv-request.log";
   std::string diagnostic_log_dir = "";
