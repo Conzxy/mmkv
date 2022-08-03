@@ -1,4 +1,5 @@
 #include <iostream>
+#include <inttypes.h>
 
 #include "mmkv/disk/file.h"
 #include "mmkv/disk/log_command.h"
@@ -12,11 +13,12 @@
 
 using namespace mmkv::disk;
 using namespace mmkv::protocol;
+using namespace mmkv::util;
 using namespace mmkv;
 
 struct Option {
-  bool clear;
-  bool size;
+  bool clear = false;
+  bool size = false;
   std::string file_location = "/tmp/.mmkv-request.log";
 };
 
@@ -40,9 +42,27 @@ int main(int argc, char** argv) {
   }
 
   if (g_option.clear) {
+#if 0
     std::string cmd;
-    util::StrCat(cmd, "cat %a > %a", g_option.file_location.c_str(), g_option.file_location.c_str());
+    util::StrCat(cmd, "cat %a> %a", g_option.file_location.c_str(), g_option.file_location.c_str());
     ::system(cmd.c_str());
+#else
+    char cmd[4096];
+    ::snprintf(cmd, sizeof cmd, "cat %s> %s", g_option.file_location.c_str(), g_option.file_location.c_str());
+    ::system(cmd);
+#endif
+    return 0;
+  }
+
+  if (g_option.size) {
+    Stat stat;
+    if (!stat.Open(g_option.file_location)) {
+      fprintf(stderr, "Failed to open file: %s\n", g_option.file_location.c_str());
+      return 0;
+    }
+
+    const auto usage = format_memory_usage(stat.GetFileSize());
+    printf("The size of request log = %" PRIu64 " %s\n", usage.usage, memory_unit2str(usage.unit));
     return 0;
   }
 
