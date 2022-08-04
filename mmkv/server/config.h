@@ -37,6 +37,9 @@ extern MmkvConfig g_config;
 void RegisterConfig(MmkvConfig &config);
 bool ParseConfig(std::string &errmsg);
 void PrintMmkvConfig(MmkvConfig const &config);
+bool inline IsExpirationDisable() noexcept {
+  return !g_config.lazy_expiration && g_config.expiration_check_cycle <= 0;
+}
 
 } // namespace server
 } // namespace mmkv
