@@ -7,15 +7,15 @@
 
 #include "mmkv/algo/string.h"
 
-#define LRU_CACHE_TEMPLATE template<typename K, typename H>
-#define LRU_CACHE_CLASS LruCache<K, H>
+#define LRU_CACHE_TEMPLATE template<typename K>
+#define LRU_CACHE_CLASS LruCache<K>
 
 namespace mmkv {
 namespace replacement {
 
 LRU_CACHE_TEMPLATE
 template<typename U>
-K *LRU_CACHE_CLASS::UpdateEntry(U &&entry) {
+K *LRU_CACHE_CLASS::UpdateEntry_(U &&entry) {
   if (max_size_ == 0) return nullptr;
 
   typename Dict::value_type *duplicate = nullptr;
