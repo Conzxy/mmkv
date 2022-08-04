@@ -64,6 +64,8 @@ std::string mmkv::protocol::detail::command_strings[] = {
   "EXPIREMAT",
   "EXPIREMAFTER",
   "PERSIST",
+  "EXPIRATION",
+  "TTL",
   "DEL",
   "RENAME",
   "TYPE",

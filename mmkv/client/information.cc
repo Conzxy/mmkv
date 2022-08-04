@@ -94,6 +94,8 @@ static inline int GenCommandMetadata() {
       case SSIZE:
       case SRANDDELM:
       case PERSIST:
+      case EXPIRATION:
+      case TTL:
         command_formats[GetCommandString((Command)i)] = F_ONLY_KEY;
         command_hints[i] = " key";
         break;

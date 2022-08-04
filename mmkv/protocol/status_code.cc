@@ -27,6 +27,10 @@ char const* mmkv::protocol::GetStatusMessage(mmkv::protocol::StatusCode code) no
     return "ERROR: Invalid request(client error)";
   case S_SET_NO_MEMBER:
     return "ERROR: No member in the set";
+  case S_DEST_EXISTS:
+    return "ERROR: The destination set already exists";
+  case S_EXPIRE_DISABLE:
+    return "ERROR: The expiration is disable";
   }
   
   return "ERROR: Unknown error";
@@ -35,23 +39,31 @@ char const* mmkv::protocol::GetStatusMessage(mmkv::protocol::StatusCode code) no
 char const* mmkv::protocol::StatusCode2Str(StatusCode code) noexcept {
   switch (code) {
     case S_OK:
-      return "Ok";
+      return "ok";
     case S_EXISTS:
-      return "EXISTS";
+      return "exists";
     case S_NONEXISTS:
-      return "Nonexists";
+      return "nonexists";
     case S_INVALID_MESSAGE:
-      return "Invalid message";
+      return "invalid message";
     case S_INVALID_RANGE:
-      return "Invalid range";
+      return "invalid range";
     case S_VMEMBER_NONEXISTS:
-      return "Vmember nonexists";
+      return "vmember nonexists";
     case S_EXISITS_DIFF_TYPE:
-      return "exists with diff type";
+      return "exists diff type";
     case S_FIELD_NONEXISTS:
       return "field nonexists";
     case S_SET_MEMBER_NONEXISTS:
       return "set member nonexists";
+    case S_INVALID_REQUEST:
+      return "invalid request";
+    case S_SET_NO_MEMBER:
+      return "set no member";
+    case S_DEST_EXISTS:
+      return "dest exists";
+    case S_EXPIRE_DISABLE:
+      return "expire disable";
     default:
       return "Unknown status code";
   }

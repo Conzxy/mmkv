@@ -119,23 +119,15 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
 
     case STRAPPEND: {
       CHECK_INVALID_REQUEST(request.HasKey() && request.HasValue(), "strappend");
-      String* str = nullptr;
-      auto code = DB->GetStr(request.key, str);
-      if (code == S_OK) {
-        str->append(request.value);
-        if (response) response->status_code = code;
-      }
+      const auto code = DB->StrAppend(request.key, request.value);
+      if (response) response->status_code = code;
     }
       break;
 
     case STRPOPBACK: {
       CHECK_INVALID_REQUEST(request.HasKey() && request.HasCount(), "strpopback");
-      String* str = nullptr;
-      auto code = DB->GetStr(request.key, str);
-      if (code == S_OK) {
-        str->erase(str->size()-request.count, request.count);
-        if (response) response->status_code = code;
-      }
+      const auto code = DB->StrPopBack(request.key, request.count);
+      if (response) response->status_code = code;
     }
       break;
 
@@ -568,6 +560,22 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       const auto code = DB->Persist(request.key);
       if (response)
         response->status_code = code;
+    }
+      break;
+
+    case EXPIRATION: {
+      CHECK_INVALID_REQUEST(request.HasKey(), "expiration");
+      const auto code = DB->GetExpiration(request.key, response->count);
+      response->SetCount();
+      response->status_code = code;
+    }
+      break;
+    
+    case TTL: {
+      CHECK_INVALID_REQUEST(request.HasKey(), "TTL");
+      const auto code = DB->GetTimeToLive(request.key, response->count);
+      response->SetCount();
+      response->status_code = code;
     }
       break;
 

@@ -39,38 +39,13 @@ bool MmkvDb::Type(String const& key, DataType& type) noexcept {
   return true;
 }
 
-void MmkvDb::DeleteData(MmkvData &value) {
-  switch (value.type) {
-    case D_STRING:
-      delete (String*)value.any_data;
-      break;
-    case D_STRLIST:
-      delete (StrList*)value.any_data;
-      break;
-    case D_SORTED_SET:
-      delete (Vset*)value.any_data;
-      break;
-    case D_MAP:
-      delete (Map*)value.any_data;
-      break;
-    case D_SET:
-      delete (Set*)value.any_data;
-      break;
-  }
-}
-
 bool MmkvDb::Delete(String const& k) {
   // Don't call CheckExpire()
   // Delete handle all
 
   auto node = dict_.Extract(k);
-
-  if (!node) {
-    return false;
-  }
-  
-  auto& value = node->value.value;
-  DeleteData(value);
+  if (!node) return false;
+  DeleteMmkvData(node->value.value);
   dict_.DropNode(node);
 
   // It's ok even though k doesn't exists
@@ -142,6 +117,27 @@ StatusCode MmkvDb::GetStr(String const& k, String*& str) noexcept {
     else return S_EXISITS_DIFF_TYPE;
   }
   return S_NONEXISTS;
+}
+
+StatusCode MmkvDb::StrAppend(String const &key, String const &str) {
+  String* pstr = nullptr;
+  const auto code = GetStr(key, pstr);
+  if (code == S_OK) {
+    // Reserve to avoid allocate more space
+    pstr->reserve(str.size()+pstr->size());
+    pstr->append(str);
+  }
+
+  return code;
+}
+
+StatusCode MmkvDb::StrPopBack(String const &key, size_t count) {
+  String* pstr = nullptr;
+  const auto code = GetStr(key, pstr);
+  if (code == S_OK) {
+    pstr->erase(pstr->size()-count, count);
+  }
+  return code;
 }
 
 StatusCode MmkvDb::SetStr(String k, String v) {
@@ -727,6 +723,8 @@ StatusCode MmkvDb::SetAnd(String const& key1, String const& key2, StrValues& mem
     dest_set = new Set(); \
     duplicate->value.any_data = dest_set; \
   } else { \
+    if (duplicate->value.type != D_SET) \
+      return S_DEST_EXISTS; \
     dest_set = TO_SET(duplicate->value); \
   }
 
@@ -829,7 +827,11 @@ StatusCode MmkvDb::SetSubSize(String const& key1, String const& key2, size_t& co
   return S_OK;
 }
 
-void MmkvDb::SetExpire(String &&key, uint64_t expire) {
+StatusCode MmkvDb::ExpireAtMs(String &&key, uint64_t expire) {
+  if (IsExpirationDisable()) return protocol::S_EXPIRE_DISABLE;
+  auto kv = dict_.Find(key);
+  if (!kv) return S_NONEXISTS;
+
   ExDict::value_type *duplicate = nullptr;
   const uint64_t cur_ms = util::GetTimeMs();
 
@@ -841,15 +843,37 @@ void MmkvDb::SetExpire(String &&key, uint64_t expire) {
     if (!success)
       duplicate->value = expire;
   }
-}
 
-StatusCode MmkvDb::ExpireAtMs(String &&key, uint64_t expire) {
-  auto kv = dict_.Find(key);
-  if (!kv) return S_NONEXISTS;
-
-  SetExpire(std::move(key), expire);
   return S_OK;
 }
+
+StatusCode MmkvDb::Persist(String const &key) {
+  if (!dict_.Find(key)) return S_NONEXISTS;
+  // Though there is no key in the exp_dict_, it is also ok.
+  exp_dict_.Erase(key);
+  return S_OK;
+}
+
+StatusCode MmkvDb::GetExpiration(String const &key, uint64_t &exp) {
+  auto exp_key = exp_dict_.Find(key); 
+  if (!exp_key) return protocol::S_NONEXISTS;
+  exp = exp_key->value;
+  return S_OK;
+}
+
+StatusCode MmkvDb::GetTimeToLive(String const &key, uint64_t &ttl) {
+  auto exp_key = exp_dict_.Find(key); 
+  if (!exp_key) return protocol::S_NONEXISTS;
+  const uint64_t cur_ms = util::GetTimeMs();
+  /* Avoid unsigned integer underflow 
+     0 indicates the key is expired */
+  ttl = (cur_ms >= exp_key->value) ? 0 : exp_key->value - cur_ms;
+  return S_OK;
+}
+
+/*--------------------------------*/
+/* Private API                    */
+/*--------------------------------*/
 
 void MmkvDb::CheckExpireCycle() {
   std::vector<String> expire_keys;
@@ -859,7 +883,7 @@ void MmkvDb::CheckExpireCycle() {
   for (auto const &k_exp : exp_dict_) {
     if (k_exp.value <= cur_ms) {
       node = dict_.Extract(k_exp.key);
-      DeleteData(node->value.value);
+      DeleteMmkvData(node->value.value);
       dict_.DropNode(node); 
 
       expire_keys.emplace_back(k_exp.key);
@@ -898,7 +922,8 @@ bool MmkvDb::CheckExpire(String const &key) {
   if (cur_ms >= node->value.value) {
     exp_dict_.EraseNode(bucket, node);
     auto node2 = dict_.Extract(key);
-    DeleteData(node2->value.value);
+    MMKV_ASSERT(node2, "Key must in the dict_ ");
+    DeleteMmkvData(node2->value.value);
     dict_.DropNode(node2);
 
     if (g_config.log_method == LM_REQUEST) {
@@ -918,11 +943,4 @@ bool MmkvDb::CheckExpire(String const &key) {
   }
 
   return false;
-}
-
-StatusCode MmkvDb::Persist(String const &key) {
-  if (!dict_.Find(key)) return S_NONEXISTS;
-  // Though there is no key in the exp_dict_, it is also ok.
-  exp_dict_.Erase(key);
-  return S_OK;
 }

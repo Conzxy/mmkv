@@ -18,6 +18,8 @@ enum StatusCode : uint8_t {
   S_SET_MEMBER_NONEXISTS,          /** The member doesn't exists in the set */
   S_INVALID_REQUEST,               /** Not satisfy the command required fields */
   S_SET_NO_MEMBER,                 /** No member in the set */
+  S_DEST_EXISTS,                   /** Destination set already exists */
+  S_EXPIRE_DISABLE,                /** Expiration is disable */
 };
 
 /**

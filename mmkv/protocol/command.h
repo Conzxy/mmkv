@@ -75,6 +75,8 @@ enum Command : uint16_t {
   EXPIREM_AT,
   EXPIREM_AFTER,
   PERSIST,
+  EXPIRATION,
+  TTL,
   DEL,
   RENAME,
   TYPE,
