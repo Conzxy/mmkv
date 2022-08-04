@@ -14,6 +14,7 @@
 
 #include "mmkv_server.h"
 #include "common.h"
+#include "config.h"
 
 #include <kanon/util/ptr.h>
 
@@ -23,7 +24,45 @@ using namespace mmkv::server;
 using namespace mmkv::disk;
 using namespace mmkv;
 
-static void LogRequestToFile(Buffer &buffer, uint32_t request_len) {
+static void LogRequestToFile(Buffer &buffer, uint32_t request_len);
+
+MmkvSession::MmkvSession(TcpConnectionPtr const& conn, MmkvServer* server)
+  : conn_(conn.get())
+  , codec_(MmbpRequest::GetPrototype())
+  , server_(server)
+{
+  codec_.SetUpConnection(conn);
+  codec_.SetMessageCallback([this](TcpConnectionPtr const& conn, Buffer& buffer, uint32_t request_len, TimeStamp recv_time) {
+    // Set g_recv_time for expireafter and expiremafter
+    storage::g_recv_time = recv_time.GetMicrosecondsSinceEpoch() / 1000;
+    if (g_config.log_method == LM_REQUEST) {
+      LogRequestToFile(buffer, request_len);
+    }
+
+    MmbpRequest request;
+    request.ParseFrom(buffer);
+    request.DebugPrint();
+    if (request.HasKey()) LOG_MMKV(conn) << " " << "key: " << request.key;
+    LOG_MMKV(conn) << " " << GetCommandString((Command)request.command);
+
+    MmbpResponse response; 
+    storage::DbExecute(request, &response);
+    response.DebugPrint();  
+
+    codec_.Send(conn, &response);
+
+    LOG_MMKV(conn) << " " << response.status_code
+      << " " << StatusCode2Str((StatusCode)response.status_code);
+
+  });
+}
+
+MmkvSession::~MmkvSession() noexcept {
+}
+
+static inline void LogRequestToFile(Buffer &buffer, uint32_t request_len) {
+  if (IsExpirationDisable()) return;
+
   auto cmd = buffer.GetReadBegin16();
   if (GetCommandType((Command)cmd) == CT_WRITE) {
     LOG_DEBUG << "Log request to file: " << GetCommandString((Command)cmd);
@@ -81,38 +120,4 @@ expire_log:
 
     g_rlog->Append(buffer.GetReadBegin(), request_len);
   }
-}
-
-MmkvSession::MmkvSession(TcpConnectionPtr const& conn, MmkvServer* server)
-  : conn_(conn.get())
-  , codec_(MmbpRequest::GetPrototype())
-  , server_(server)
-{
-  codec_.SetUpConnection(conn);
-  codec_.SetMessageCallback([this](TcpConnectionPtr const& conn, Buffer& buffer, uint32_t request_len, TimeStamp recv_time) {
-    // Set g_recv_time for expireafter and expiremafter
-    storage::g_recv_time = recv_time.GetMicrosecondsSinceEpoch() / 1000;
-    if (g_config.log_method == LM_REQUEST) {
-      LogRequestToFile(buffer, request_len);
-    }
-
-    MmbpRequest request;
-    request.ParseFrom(buffer);
-    request.DebugPrint();
-    if (request.HasKey()) LOG_MMKV(conn) << " " << "key: " << request.key;
-    LOG_MMKV(conn) << " " << GetCommandString((Command)request.command);
-
-    MmbpResponse response; 
-    storage::DbExecute(request, &response);
-    response.DebugPrint();  
-
-    codec_.Send(conn, &response);
-
-    LOG_MMKV(conn) << " " << response.status_code
-      << " " << StatusCode2Str((StatusCode)response.status_code);
-
-  });
-}
-
-MmkvSession::~MmkvSession() noexcept {
 }

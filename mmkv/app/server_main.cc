@@ -36,8 +36,18 @@ int main(int argc, char* argv[]) {
   }
 
   EventLoop loop;
-  MmkvServer server(&loop, InetAddr(g_option.ip, g_option.port));
-  
+  std::unique_ptr<InetAddr> addr;
+
+  if (!strcasecmp(g_option.ip.c_str(), "any")) {
+    addr.reset(new InetAddr(g_option.port));
+  } else if (!strcasecmp(g_option.ip.c_str(), "localhost")) {
+    addr.reset(new InetAddr(g_option.port, true));
+  } else {
+    addr.reset(new InetAddr(g_option.ip, g_option.port));
+  }
+
+  MmkvServer server(&loop, *addr);
+
   server.Start();
   loop.StartLoop();
 }

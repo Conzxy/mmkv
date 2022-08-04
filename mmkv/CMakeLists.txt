@@ -3,9 +3,12 @@ file(GLOB_RECURSE MMKV_SRC
   disk/*.cc
   protocol/*.cc
   server/config.cc
+  server/option.cc
   storage/*.cc
   util/*.cc
   replacement/*.cc
+  ${CHISATO_DIR}/*.cc
+  ${TAKINA_DIR}/*.cc
 )
 
 file(GLOB_RECURSE MMKV_SERVER_SRC
