@@ -3,6 +3,8 @@
 
 #include "mmkv/algo/blist.h"
 #include "mmkv/algo/dictionary.h"
+#include "mmkv/algo/libc_allocator_with_realloc_no_record.h"
+
 #include "cache_interface.h"
 
 namespace mmkv {
@@ -13,8 +15,8 @@ using algo::Dictionary;
 
 template<typename K>
 class LruCache : public CacheInterface<K> {
-  using Cache = Blist<K*>;
-  using Dict = Dictionary<K, typename Cache::Node*>;
+  using Cache = Blist<K*, algo::LibcAllocatorWithReallocNoRecord<K*>>;
+  using Dict = Dictionary<K, typename Cache::Node*, algo::Hash<K>, algo::EqualKey<K>, algo::LibcAllocatorWithReallocNoRecord<K>>;
 
  public:
   explicit LruCache(size_t max_size) noexcept 
@@ -35,7 +37,7 @@ class LruCache : public CacheInterface<K> {
   auto DelEntry(K const &key) -> bool override;
 
   // average: O(1)
-  auto Exists(K const &key) -> bool override;
+  auto Search(K const &key) -> K* override;
 
   // O(1)  
   auto Victim() -> K* override {

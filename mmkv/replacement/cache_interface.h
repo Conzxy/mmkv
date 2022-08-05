@@ -37,12 +37,20 @@ class CacheInterface {
   /**
    * \brief Check a entry if exists
    */
-  virtual auto Exists(K const &key) -> bool = 0;
+  auto Exists(K const &key) -> bool { return Search(key) != nullptr; }
+
+  /**
+   * \brief Search the key in the cache
+   * \return 
+   *  nullptr -- Not found
+   */
+   virtual auto Search(K const &key) -> K* = 0;
 
   /**
    * \brief Get the victim entry in the cache
    * \return 
    *  Victim entry
+   *  nullptr -- No victim in cache
    */
   virtual auto Victim() -> K* = 0;
 

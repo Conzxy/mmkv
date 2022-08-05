@@ -47,8 +47,9 @@ K *LRU_CACHE_CLASS::UpdateEntry_(U &&entry) {
 }
 
 LRU_CACHE_TEMPLATE
-bool LRU_CACHE_CLASS::Exists(K const &key) {
-  return dict_.Find(key) != nullptr;
+K *LRU_CACHE_CLASS::Search(K const &key) {
+  auto kv = dict_.Find(key);
+  return kv ? &kv->key : nullptr;
 }
 
 LRU_CACHE_TEMPLATE
