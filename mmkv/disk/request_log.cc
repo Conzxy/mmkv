@@ -3,9 +3,11 @@
 #include <unistd.h>
 
 #include "mmkv/server/config.h"
+#include "mmkv/protocol/mmbp_request.h"
 
 using namespace mmkv::disk;
 using namespace mmkv::server;
+using namespace mmkv::protocol;
 using namespace kanon;
 
 RequestLog *mmkv::disk::g_rlog = nullptr;
@@ -55,4 +57,15 @@ void RequestLog::Start() {
   });
 
   latch_.Wait();
+}
+
+void RequestLog::AppendDel(String key) {
+  MmbpRequest request;
+  Buffer buffer;
+  request.SetKey();
+  request.key = std::move(key);
+  request.command = DEL;
+  request.SerializeTo(buffer);
+  buffer.Prepend32(buffer.GetReadableSize());
+  Append(buffer.GetReadBegin(), buffer.GetReadableSize());
 }

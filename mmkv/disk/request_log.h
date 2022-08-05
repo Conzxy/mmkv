@@ -14,6 +14,7 @@
 #include <kanon/net/endian_api.h>
 
 #include "mmkv/server/config.h"
+#include "mmkv/algo/string.h"
 
 namespace mmkv {
 namespace disk {
@@ -24,6 +25,7 @@ using kanon::MutexLock;
 using kanon::MutexGuard;
 using kanon::CountDownLatch;
 using kanon::AppendFile;
+using algo::String;
 
 class RequestLog {
   DISABLE_EVIL_COPYABLE(RequestLog)
@@ -71,7 +73,13 @@ class RequestLog {
     empty_cond_.Notify();
     io_thread_.Join();
   } 
-
+  
+  /**
+   * \brief Append MMBP request "Del key" to file
+   * The method can't append mutiple "del key" to file efficiently 
+   * since can't reuse the Buffer and MmbpRequest object.
+   */
+  void AppendDel(String key); 
  private:
   void Flush() noexcept {
     file_.Flush();
