@@ -10,9 +10,10 @@
 
 #include "mmkv/protocol/mmbp.h"
 #include "mmkv/protocol/status_code.h"
-#include "mmkv_data.h"
 #include "mmkv/protocol/type.h"
+#include "mmkv/replacement/cache_interface.h"
 
+#include "mmkv_data.h"
 #include "type.h"
 
 #include <kanon/util/noncopyable.h>
@@ -29,6 +30,7 @@ using protocol::WeightValues;
 using protocol::StrKvs;
 using protocol::OrderRange;
 using protocol::WeightRange;
+using replacement::CacheInterface;
 
 #define DB_MIN(x, y) (((x) < (y)) ? (x) : (y))
 
@@ -48,11 +50,7 @@ class MmkvDb {
   using Dict = AvlDictionary<String, MmkvData, Comparator<String>>;
   using ExDict = AvlDictionary<String, uint64_t, Comparator<String>>;
  public:
-  explicit MmkvDb(std::string name)
-    : name_(std::move(name))
-  {
-    LOG_INFO << "Database " << name_ << " created";
-  }
+  explicit MmkvDb(std::string name);
 
   MmkvDb()
     : MmkvDb("MMKV")
@@ -685,7 +683,33 @@ class MmkvDb {
    * The cycle is set in the config file
    */
   void CheckExpireCycle();
+
+
  private:
+  /*----------------------------------------------*/
+  /* Replacement API                              */
+  /*----------------------------------------------*/
+  
+  /**
+   * \brief If condition is satisfied, replace victim key
+   * \param key The address of the key in the database
+   */
+  void TryReplacekey(String const *key);
+
+  /**
+   * \brief Add a key to the cache
+   */
+  void CacheAdd(String const *key);
+
+  /** \brief Remove the key from cache */
+  void CacheRemove(String const *key);
+
+  /** 
+   * \brief Update the key from cache 
+   * update used to indicate it is accessed recently
+   */
+  void CacheUpdate(String const *key);
+
   /**
    * \brief Check if the key has expired
    * \return 
@@ -697,6 +721,7 @@ class MmkvDb {
   std::string name_;
   Dict dict_;
   ExDict exp_dict_; /** expire dictionary */
+  std::unique_ptr<CacheInterface<String const*>> cache_;
 };
 
 } // db

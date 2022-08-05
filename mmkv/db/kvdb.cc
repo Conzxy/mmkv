@@ -12,16 +12,31 @@
 
 #include "mmkv/disk/request_log.h"
 
+#include "mmkv/replacement/lru_cache.h"
+
 #include <kanon/log/logger.h>
 
 using namespace mmkv::db;
 using namespace mmkv::protocol;
 using namespace mmkv::disk;
 using namespace mmkv::server;
+using namespace mmkv::replacement;
+using namespace mmkv::util;
 using namespace kanon;
+
+MmkvDb::MmkvDb(std::string name)
+  : name_(std::move(name))
+  , cache_(nullptr)
+{
+  if (g_config.replace_policy == RP_LRU)
+    cache_.reset(new LruCache<String const*>(-1));
+
+  LOG_INFO << "Database " << name_ << " created";
+}
 
 void MmkvDb::GetAllKeys(StrValues& keys) {
   // Don't reclaim expired kv
+  // Don't replace any key
   keys.clear();
   keys.reserve(dict_.size());
   for (auto const& kv : dict_) {
@@ -36,12 +51,13 @@ bool MmkvDb::Type(String const& key, DataType& type) noexcept {
   if (!kv) return false; 
 
   type = kv->value.type;
+  CacheUpdate(&kv->key);
   return true;
 }
 
 bool MmkvDb::Delete(String const& k) {
   // Don't call CheckExpire()
-  // Delete handle all
+  // The 'del key' request has log to file by the MmkvSession
 
   auto node = dict_.Extract(k);
   if (!node) return false;
@@ -56,33 +72,39 @@ bool MmkvDb::Delete(String const& k) {
 
 StatusCode MmkvDb::Rename(String const& old_name, String&& new_name) {
   if (CheckExpire(old_name)) return S_NONEXISTS;
-
   auto exists = dict_.Find(new_name);
   if (exists) return S_EXISTS;
 
   auto node = dict_.Extract(old_name);
   if (!node) return S_NONEXISTS;
 
-  // auto kv = dict_.InsertKv(std::move(new_name), std::move(node->value.value));(void)kv;
-  // assert(kv);
-  // dict_.DropNode(node);
-  node->value.key = std::move(new_name);
-  // FIXME Efficient push without check of unique key
+  auto pkey = &node->value.key;
+  TryReplacekey(pkey);
+  *pkey = std::move(new_name);
+  // FIXME Efficiently push without check of unique key
   auto success = dict_.Push(node); (void)success;
+
+  // The address of the key is not changed,
+  // just update it in cache.
+  assert(pkey == &node->value.key);
+  CacheUpdate(pkey);
   assert(success);
   return S_OK;
 }
 
 StatusCode MmkvDb::InsertStr(String k, String v) {
+  TryReplacekey(nullptr); 
+
   MmkvData data = {
     .type = D_STRING,
     .any_data = nullptr, // dummy
   };
-
+  
   auto kv = dict_.InsertKv(std::move(k), std::move(data));
   if (!kv) return S_EXISTS;
   kv->value.any_data = new String(std::move(v));
-
+  
+  CacheAdd(&kv->key);
   return S_OK;
 }
 
@@ -93,6 +115,7 @@ StatusCode MmkvDb::EraseStr(String const& k) {
 
   if (slot) {
     if (str.type == D_STRING) {
+      CacheRemove(&slot->value.key);
       delete (String*)str.any_data;
       dict_.EraseNode(bucket, slot);
       return S_OK;
@@ -112,6 +135,7 @@ StatusCode MmkvDb::GetStr(String const& k, String*& str) noexcept {
   if (data) {
     if (data->value.type == D_STRING) {
       str = (String*)data->value.any_data;
+      CacheUpdate(&data->key);
       return S_OK;
     }
     else return S_EXISITS_DIFF_TYPE;
@@ -126,6 +150,8 @@ StatusCode MmkvDb::StrAppend(String const &key, String const &str) {
     // Reserve to avoid allocate more space
     pstr->reserve(str.size()+pstr->size());
     pstr->append(str);
+    // Try replace in the last is also OK
+    TryReplacekey(nullptr); 
   }
 
   return code;
@@ -152,14 +178,17 @@ StatusCode MmkvDb::SetStr(String k, String v) {
   auto success = dict_.InsertKvWithDuplicate(std::move(k), data, duplicate);
   if (success) {
     duplicate->value.any_data = new String(std::move(v));
+    CacheAdd(&duplicate->key);
   } else {
     if (duplicate->value.type == D_STRING) {
-      *((String*)(duplicate->value.any_data)) = std::move(v);
+      *((String*)duplicate->value.any_data) = std::move(v);
+      CacheUpdate(&duplicate->key);
     } else {
       return S_EXISITS_DIFF_TYPE;
     }
   }
-
+  
+  TryReplacekey(nullptr);
   return S_OK;
 }
 
@@ -317,7 +346,6 @@ StatusCode MmkvDb::ListPopBack(String const& k, uint32_t count) {
 
   return S_OK;
 }
-
 
 StatusCode MmkvDb::ListDel(String const& k) {
   Dict::Bucket* bucket = nullptr;
@@ -796,7 +824,7 @@ StatusCode MmkvDb::SetAndSize(String const& key1, String const& key2, size_t& co
   CHECK_EXPIRE_ROUTINE(key2);
   SET_OP_ROUTINE;
   count = 0;
-  set1->Intersection(*set2, [&count](String const& m) {
+  set1->Intersection(*set2, [&count](String const&) {
       count++;
       });
 
@@ -808,7 +836,7 @@ StatusCode MmkvDb::SetOrSize(String const& key1, String const& key2, size_t& cou
   CHECK_EXPIRE_ROUTINE(key2);
   SET_OP_ROUTINE;
   count = 0;
-  set1->Union(*set2, [&count](String const& m) {
+  set1->Union(*set2, [&count](String const&) {
       count++;
       });
 
@@ -820,7 +848,7 @@ StatusCode MmkvDb::SetSubSize(String const& key1, String const& key2, size_t& co
   CHECK_EXPIRE_ROUTINE(key2);
   SET_OP_ROUTINE;
   count = 0;
-  set1->Difference(*set2, [&count](String const& m) {
+  set1->Difference(*set2, [&count](String const&) {
       count++;
       });
 
@@ -875,6 +903,41 @@ StatusCode MmkvDb::GetTimeToLive(String const &key, uint64_t &ttl) {
 /* Private API                    */
 /*--------------------------------*/
 
+void MmkvDb::TryReplacekey(String const *key) {
+  if (!cache_ || g_config.max_memory_usage > g_memstat.memory_usage) return;
+  
+  auto victim = cache_->Victim();
+  // If the victim has already in the database,
+  // don't remove it from cache to avoid insert twice.
+  if (!victim || *victim == key) return;
+  assert(*victim); 
+  LOG_TRACE << "Victim: " << **victim;
+
+  auto node = dict_.Extract(**victim);
+  assert(node);
+  cache_->DelVictim();
+  g_rlog->AppendDel(std::move(node->value.key));
+  dict_.DropNode(node);
+}
+
+void MmkvDb::CacheAdd(String const *key) {
+  if (!cache_) return;
+  LOG_TRACE << "Add key: " << *key << " to cache";
+  cache_->UpdateEntry(key);
+}
+
+void MmkvDb::CacheRemove(String const *key) {
+  if (!cache_) return;
+  LOG_TRACE << "Remove key: " << *key << " from cache";
+  cache_->DelEntry(key);
+}
+
+void MmkvDb::CacheUpdate(String const *key) {
+  if (!cache_) return;
+  LOG_TRACE << "Update key: " << *key;
+  cache_->UpdateEntry(key);
+}
+
 void MmkvDb::CheckExpireCycle() {
   std::vector<String> expire_keys;
   const uint64_t cur_ms = util::GetTimeMs();
@@ -927,17 +990,7 @@ bool MmkvDb::CheckExpire(String const &key) {
     dict_.DropNode(node2);
 
     if (g_config.log_method == LM_REQUEST) {
-      Buffer buffer;
-      // buffer.ReserveWriteSpace(sizeof(CommandField)+key.size()+sizeof(uint32_t));
-      MmbpRequest req;
-      req.command = DEL;
-      req.key = key; /* FIXME move string instead of copy */
-      req.SetKey();
-      req.DebugPrint();
-      req.SerializeTo(buffer);
-      LOG_DEBUG << "request length = " << buffer.GetReadableSize();
-      buffer.Prepend32(buffer.GetReadableSize());
-      g_rlog->Append(buffer.GetReadBegin(), buffer.GetReadableSize());
+      g_rlog->AppendDel(std::move(const_cast<String&>(key)));
     }
     return true;
   }
