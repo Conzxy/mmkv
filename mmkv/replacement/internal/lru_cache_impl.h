@@ -57,6 +57,7 @@ bool LRU_CACHE_CLASS::DelEntry(K const &key) {
   auto entry = dict_.Extract(key);
   if (entry) {
     cache_.Erase(entry->value.value);
+    dict_.DropNode(entry);
     return true;
   }
 

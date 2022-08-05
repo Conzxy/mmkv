@@ -42,10 +42,10 @@ void MmkvServer::Start() {
   static MmkvDb db;
   g_db = &db;
 
-  static RequestLog rlog;
-  g_rlog = &rlog;
-
   if (g_config.log_method == LM_REQUEST) {
+    static RequestLog rlog;
+    g_rlog = &rlog;
+
     auto stime = GetTimeMs();
     LOG_INFO << "Recover from request log";
     try { 
@@ -57,6 +57,7 @@ void MmkvServer::Start() {
       LOG_ERROR << "Can't recover database from log";
     }
     LOG_INFO << "Recover cost: " << (GetTimeMs() - stime) << "ms";
+    g_rlog->Start();
   }
 
   if (g_config.expiration_check_cycle > 0) {
@@ -70,6 +71,5 @@ void MmkvServer::Start() {
     }, g_config.expiration_check_cycle);
   }
 
-  g_rlog->Start();
   Listen();
 }

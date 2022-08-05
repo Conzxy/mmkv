@@ -916,7 +916,9 @@ void MmkvDb::TryReplacekey(String const *key) {
   auto node = dict_.Extract(**victim);
   assert(node);
   cache_->DelVictim();
-  g_rlog->AppendDel(std::move(node->value.key));
+  if (g_config.log_method == server::LM_REQUEST)
+    g_rlog->AppendDel(std::move(node->value.key));
+  DeleteMmkvData(node->value.value);
   dict_.DropNode(node);
 }
 
