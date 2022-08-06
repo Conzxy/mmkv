@@ -61,7 +61,7 @@ void MmbpCodec::SetUpConnection(TcpConnectionPtr const& conn) {
             break;
           }
         }
-      }
+      } else break;
     }
 
   });
