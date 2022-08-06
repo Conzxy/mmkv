@@ -35,6 +35,14 @@ inline uint64_t raw2u64(char const *buf) noexcept {
   return *(uint64_t*)buf;
 }
 
+inline bool str2double(char const *buf, double &d) noexcept {
+  char *end = NULL;
+  auto res = strtod(buf, &end);
+  if (res == 0.0 && end == buf)
+    return false;
+  d = res;
+  return true;
+}
 inline bool str2u64(char const *buf, uint64_t &i) noexcept {
   char *end = NULL;
   auto res = strtoull(buf, &end, 10);
@@ -81,20 +89,10 @@ inline char const *memory_unit2str(MemoryUnit mu) noexcept {
 
 struct MemoryUsage {
   MemoryUnit unit;
-  uint64_t usage;
+  double usage;
 };
 
-inline MemoryUsage format_memory_usage(uint64_t usage) noexcept {
-  if (usage >= (1 << 30)) {
-    return { MU_GB, usage >> 30 };
-  } else if (usage >= (1 << 20)) {
-    return { MU_MB, usage >> 20 };
-  } else if (usage >= (1 << 10)) {
-    return { MU_KB, usage >> 10 };
-  }
-
-  return { MU_B, usage };
-}
+MemoryUsage format_memory_usage(uint64_t usage) noexcept;
 
 } // util
 } // mmkv

@@ -23,12 +23,12 @@ String mmkv::util::GetMemoryStat() {
   
   auto memory_usage = format_memory_usage(g_memstat.memory_usage-MEMORY_STAT_BUF_SIZE);
   int width = std::max(
-      std::max(DecimalCount(memory_usage.usage),
+      std::max(DecimalCount(memory_usage.usage)+4,
                DecimalCount(g_memstat.allocate_count)), 
       std::max(DecimalCount(g_memstat.reallocate_count),
                DecimalCount(g_memstat.deallocate_count)));
 
-  ::snprintf(buf, sizeof buf, "Memory usage     = %*zu %s\n", width, memory_usage.usage, memory_unit2str(memory_usage.unit));
+  ::snprintf(buf, sizeof buf, "Memory usage     = %*.3f %s\n", width, memory_usage.usage, memory_unit2str(memory_usage.unit));
   ret.append(buf);
   ::snprintf(buf, sizeof buf, "Allocate count   = %*zu times\n", width, g_memstat.allocate_count);
   ret.append(buf);
