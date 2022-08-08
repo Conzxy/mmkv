@@ -273,7 +273,11 @@ class Blist : protected blist::BNodeAllocator<T, Alloc>
      * 2. relink the prev of header(tail is head node also ok)
      * To regular node,
      * 1. relink prev
-     * 2. relink next */
+     * 2. relink next 
+     *
+     * Summary:
+     * Not tail, relink the next otherwise update header->prev
+     * Not head, relink the prev otherwise update header */
     if (node->next) { /* Not a tail */
       node->next->prev = node->prev;
     } else {
