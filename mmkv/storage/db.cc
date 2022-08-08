@@ -76,10 +76,8 @@ uint64_t storage::g_recv_time = 0;
 
 void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
   switch (request.command) {
-
     case STR_ADD: {
       CHECK_INVALID_REQUEST(request.HasKey() && request.HasValue(), "stradd");
-      
       auto code = DB->InsertStr(std::move(request.key), std::move(request.value));
       if (response) {
         response->status_code = code;
@@ -88,7 +86,6 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       break;
     case STR_GET: {
       CHECK_INVALID_REQUEST(request.HasKey(), "strget");
-
       String* str = nullptr;
       auto code = DB->GetStr(request.key, str);
       SET_XX_ELSE_CODE(SET_OK_VALUE(*str));
@@ -96,7 +93,6 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       break;
     case STR_DEL: {
       CHECK_INVALID_REQUEST(request.HasKey(), "strdel");
-
       auto code = DB->EraseStr(request.key);
       if (response) response->status_code = code;
     }
@@ -355,7 +351,8 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
 
     case MSET: {
       CHECK_INVALID_REQUEST(request.HasKey() && request.HasValues(), "mset");
-      response->status_code = DB->MapSet(request.key, std::move(request.values[0]), std::move(request.values[1]));
+      auto code = DB->MapSet(request.key, std::move(request.values[0]), std::move(request.values[1]));
+      if (response) response->status_code = code;
     }
       break;
 
@@ -470,19 +467,22 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
 
     case SANDTO: {
       CHECK_INVALID_REQUEST(request.HasValues(), "sandto");
-      response->status_code = DB->SetAndTo(request.values[1], request.values[2], std::move(request.values[0]));
+      auto code = DB->SetAndTo(request.values[1], request.values[2], std::move(request.values[0]));
+      if (response) response->status_code = code;
     }
       break;
 
     case SORTO: {
       CHECK_INVALID_REQUEST(request.HasValues(), "sorto");
-      response->status_code = DB->SetOrTo(request.values[1], request.values[2], std::move(request.values[0]));
+      auto code = DB->SetOrTo(request.values[1], request.values[2], std::move(request.values[0]));
+      if (response) response->status_code = code;
     }
       break;
 
     case SSUBTO: {
       CHECK_INVALID_REQUEST(request.HasValues(), "ssubto");
-      response->status_code = DB->SetSubTo(request.values[1], request.values[2], std::move(request.values[0]));
+      auto code = DB->SetSubTo(request.values[1], request.values[2], std::move(request.values[0]));
+      if (response) response->status_code = code;
     }
       break;
 
@@ -608,6 +608,30 @@ void storage::DbExecute(MmbpRequest& request, MmbpResponse* response) {
       DB->GetAllKeys(response->values);
       response->SetValues();
       response->SetOk();
+    }
+      break;
+
+    case DELS: {
+      auto &keys = request.values;
+      size_t count = 0;
+      for (auto &key : keys)
+        count += DB->Delete(key) ? 1 : 0;
+      
+      if (response) {
+        response->status_code = S_OK;;
+        response->count = count;
+        response->SetCount();
+      }
+    }
+      break;
+
+    case DELALL: {
+      size_t count = DB->DeleteAll();
+      if (response) {
+        response->status_code = S_OK;
+        response->count = count;
+        response->SetCount();
+      }
     }
       break;
   }

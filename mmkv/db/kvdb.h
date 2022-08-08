@@ -78,6 +78,13 @@ class MmkvDb {
    *  true -- remove successfully
    */
   bool Delete(String const& k);
+  
+  /**
+   * \brief Remove all entries
+   * \return 
+   *  Removed count
+   */
+  size_t DeleteAll();
 
   /**
    * \brief Get the type of key

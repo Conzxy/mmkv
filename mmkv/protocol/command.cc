@@ -70,6 +70,8 @@ std::string mmkv::protocol::detail::command_strings[] = {
   "RENAME",
   "TYPE",
   "KEYALL",
+  "DELS",
+  "DELALL",
 };
 
 static_assert(sizeof(mmkv::protocol::detail::command_strings) / sizeof(std::string) == COMMAND_NUM, "The size of command_strings must be equal to the number of the commands");

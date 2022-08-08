@@ -27,6 +27,7 @@ enum CommandFormat : uint8_t {
   F_EXIT,         // exit/quit
   F_EXPIRE,       // expirexxx expiration
   F_NONE,         // command
+  F_MUL_KEYS,     // command keys...
   F_INVALID,      // Invalid command
 };
 

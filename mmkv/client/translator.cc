@@ -253,6 +253,10 @@ Translator::ErrorCode Translator::Parse(MmbpRequest* request, StringView stateme
       SYNTAX_ERROR_ROUTINE_END;
     } 
       break;
+    case F_MUL_KEYS: {
+      SET_VALUES;
+    }
+      break;
     case F_INVALID:
     default:
       assert(false && "This must be a valid command");

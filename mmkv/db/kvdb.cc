@@ -999,3 +999,11 @@ bool MmkvDb::CheckExpire(String const &key) {
 
   return false;
 }
+
+size_t MmkvDb::DeleteAll() {
+  const auto ret = dict_.size();
+  dict_.Clear();
+  exp_dict_.Clear();
+  if (cache_) cache_->Clear();
+  return ret;
+}

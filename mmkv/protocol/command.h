@@ -81,6 +81,8 @@ enum Command : uint16_t {
   RENAME,
   TYPE,
   KEYALL,
+  DELS,
+  DELALL,
   COMMAND_NUM,
 };
 

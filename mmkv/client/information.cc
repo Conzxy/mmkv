@@ -34,6 +34,7 @@ static inline int GenCommandMetadata() {
     switch (i) {
       case MEM_STAT:
       case KEYALL:
+      case DELALL:
         command_formats[GetCommandString((Command)i)] = F_NONE;
         command_hints[i] = "";
         break;
@@ -158,6 +159,10 @@ static inline int GenCommandMetadata() {
       case EXPIREM_AFTER:
         command_formats[GetCommandString((Command)i)] = F_EXPIRE;
         command_hints[i] = " key time_interval";
+        break;
+      case DELS:
+        command_formats[GetCommandString(Command(i))] = F_MUL_KEYS;
+        command_hints[i] = " keys...";
         break;
       default:
         break;
