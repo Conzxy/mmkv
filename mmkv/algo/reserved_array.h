@@ -176,7 +176,9 @@ class ReservedArray : protected Alloc {
     Reallocate<value_type>(n);
   }
 
-
+  /**
+   * To user-defined can_reallocate class,
+   */
   void Shrink(size_type n) {
     if (n >= GetSize()) { return; }
 

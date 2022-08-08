@@ -186,7 +186,8 @@ class TreeHashTable : protected Alloc::template rebind<typename Tree::Node>::oth
    * \brief Destory the object and reclaims the memory
    */
   void DropNode(Node* node) { NodeAllocTraits::destroy(*this, node); FreeNode(node); }
-
+  
+  void Clear();
   /************************************************************/
   /* Getter interface                                         */
   /************************************************************/
@@ -239,6 +240,7 @@ class TreeHashTable : protected Alloc::template rebind<typename Tree::Node>::oth
     size_type size() const noexcept { return table.size(); }
     bool empty() const noexcept { return table.empty(); }
     void Grow(size_type expected_size) { table.Grow(expected_size); size_mask = size() - 1; }
+    void Shrink(size_type expected_size) { table.Shrink(expected_size); size_mask = size() - 1; }
     void Reset() { table.Shrink(0); }
   };
 

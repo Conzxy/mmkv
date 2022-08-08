@@ -53,7 +53,8 @@ class LruCache : public CacheInterface<K> {
 
   auto size() const noexcept -> size_t override { return cache_.size(); }
   auto max_size() const noexcept -> size_t override { return max_size_; }
-
+  auto Clear() -> void override;
+  auto New() const -> LruCache* override { return new LruCache(max_size_); }
   auto entries() const noexcept -> Cache const& { return cache_; }  
 
  private:

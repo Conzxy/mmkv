@@ -70,6 +70,17 @@ class CacheInterface {
    * Should be O(1)
    */
   virtual auto max_size() const noexcept -> size_t = 0;
+  
+  /**
+   * \brief Remove all entries in cache
+   */
+  virtual auto Clear() -> void = 0;
+  
+  /**
+   * \brief Clone a object
+   * \see Prototype pattern
+   */
+  virtual auto New() const -> CacheInterface* = 0;
 };
 
 } // replacement

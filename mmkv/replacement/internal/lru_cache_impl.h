@@ -7,6 +7,8 @@
 
 #include "mmkv/algo/string.h"
 
+#include <kanon/log/logger.h>
+
 #define LRU_CACHE_TEMPLATE template<typename K>
 #define LRU_CACHE_CLASS LruCache<K>
 
@@ -27,20 +29,19 @@ K *LRU_CACHE_CLASS::UpdateEntry_(U &&entry) {
     cache_.Extract(node);
     cache_.PushFront(node);
   } else {
-    // set the node of new inserted entry
-    cache_.PushFront(&duplicate->key);
-    duplicate->value = cache_.FrontNode();
-
     // If size over the max_size,
     // Pop the least used entry
-    if (cache_.size() > max_size_) {
+    if (cache_.size() >= max_size_) {
       // cache_ store the pointer to key instead of key
       // since key store in the dict_
       dict_.Erase(*cache_.Back());
       cache_.PopBack();
     }
-    assert(cache_.size() <= max_size_);
-
+    assert(cache_.size() < max_size_);
+    
+    // set the node of new inserted entry
+    cache_.PushFront(&duplicate->key);
+    duplicate->value = cache_.FrontNode();
   }
 
   return cache_.Front();
@@ -62,6 +63,12 @@ bool LRU_CACHE_CLASS::DelEntry(K const &key) {
   }
 
   return false;
+}
+
+LRU_CACHE_TEMPLATE
+void LRU_CACHE_CLASS::Clear() {
+  dict_.Clear();
+  cache_.Clear();
 }
 
 } // replacement

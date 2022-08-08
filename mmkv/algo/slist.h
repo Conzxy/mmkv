@@ -234,7 +234,16 @@ class Slist : protected slist::NodeAlloctor<T, Alloc>
     DestroyNode(node);
     FreeNode(node);
   }
-
+  
+  void Clear() {
+    Node* old_next = nullptr;
+    for (; header_; ) {
+      old_next = header_->next;
+      NodeAllocTraits::destroy(*this, header_);
+      NodeAllocTraits::deallocate(*this, header_, 1);
+      header_ = old_next;
+    }
+  }
  private:
   void EraseAfterNode(Node* pos) {
     assert(pos != nullptr);
@@ -273,13 +282,7 @@ class Slist : protected slist::NodeAlloctor<T, Alloc>
 
 SLIST_TEMPLATE
 inline SLIST_CLASS::~Slist() noexcept {
-  Node* old_next = nullptr;
-  for (; header_; ) {
-    old_next = header_->next;
-    NodeAllocTraits::destroy(*this, header_);
-    NodeAllocTraits::deallocate(*this, header_, 1);
-    header_ = old_next;
-  }
+  Clear();
 }
 
 SLIST_TEMPLATE

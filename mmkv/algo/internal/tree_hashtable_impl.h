@@ -285,6 +285,20 @@ TREE_HASH_TABLE_CLASS::EraseNode(Bucket* bucket, Node* node) {
 }
 
 TREE_HASH_TABLE_TEMPLATE
+inline void TREE_HASH_TABLE_CLASS::Clear() {
+  table1().Shrink(4);
+  for (size_type i = 0; i < 4; ++i)
+    table1()[i].Clear();
+  
+  table1().used = 0;
+
+  if (InRehashing()) {
+    table2().Shrink(0);
+  }
+  rehash_move_bucket_index_ = ~0;
+}
+
+TREE_HASH_TABLE_TEMPLATE
 void TREE_HASH_TABLE_CLASS::DebugPrint() {
 #ifdef _DEBUG_TREE_HASH_TABLE_
   printf("====== Hash table metadata =====\n");

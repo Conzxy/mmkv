@@ -191,6 +191,8 @@ class HashTable : protected BucketAllocator<T, Alloc>
    * \brief Destory the object and reclaims the memory
    */
   void DropNode(Node* node) { NodeAllocTraits::destroy(*this, node); FreeNode(node); }
+  
+  void Clear();
 
   /************************************************************/
   /* Getter interface                                         */
@@ -246,7 +248,8 @@ class HashTable : protected BucketAllocator<T, Alloc>
     size_type size() const noexcept { return table.size(); }
     bool empty() const noexcept { return table.empty(); }
     void Grow(size_type expected_size) { table.Grow(expected_size); size_mask = size() - 1; }
-    void Reset() { table.Shrink(0); }
+    void Shrink(size_type expected_size) { table.Shrink(expected_size); size_mask = size() - 1; }
+    void Reset() { Shrink(0); }
   };
 
   void Rehash();

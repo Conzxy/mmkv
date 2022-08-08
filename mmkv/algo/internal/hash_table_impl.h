@@ -247,6 +247,23 @@ void HASH_TABLE_CLASS::Rehash() {
 }
 
 HASH_TABLE_TEMPLATE
+void HASH_TABLE_CLASS::Clear() {
+  // size_type n = table1().size();
+
+  table1().Shrink(4);
+  for (size_type i = 0; i < 4; ++i)
+    table1()[i].Clear();
+  table1().used = 0;
+  
+  if (InRehashing()) {
+    table2().Shrink(0);
+    // for (size_type i = 0; i < n; ++i)
+    //   table2()[i].Clear();
+  }
+  rehash_move_bucket_index_ = ~0;
+}
+
+HASH_TABLE_TEMPLATE
 void HASH_TABLE_CLASS::IncrementalRehash() {
   if (!InRehashing()) {
     return;
