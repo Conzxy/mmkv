@@ -33,7 +33,7 @@ class MmkvClient {
 
  private:
   
-  TcpClient client_;
+  TcpClientPtr client_;
   protocol::MmbpCodec codec_;
 
   ResponsePrinter response_printer_;

@@ -16,6 +16,7 @@
 #include "information.h"
 #include "option.h"
 
+#include <kanon/net/tcp_client.h>
 #include <linenoise.h>
 #include <ternary_tree.h>
 
@@ -46,11 +47,11 @@ static TernaryNode *command_tst = nullptr;
 static void InstallLinenoise();
 
 MmkvClient::MmkvClient(EventLoop* loop, InetAddr const& server_addr) 
-  : client_(loop, server_addr, "Mmkv console client") 
+  : client_(NewTcpClient(loop, server_addr, "Mmkv console client"))
   , codec_(MmbpResponse::GetPrototype())
   , io_cond_(mutex_)
 {
-  client_.SetConnectionCallback([this, &server_addr](TcpConnectionPtr const& conn) {
+  client_->SetConnectionCallback([this, &server_addr](TcpConnectionPtr const& conn) {
     if (conn->IsConnected()) {
       codec_.SetUpConnection(conn);
       printf("Connect to %s successfully\n\n", server_addr.ToIpPort().c_str());
@@ -89,7 +90,7 @@ MmkvClient::MmkvClient(EventLoop* loop, InetAddr const& server_addr)
 
   InstallLinenoise();
   if (g_option.reconnect)
-    client_.EnableRetry();
+    client_->EnableRetry();
 }
 
 MmkvClient::~MmkvClient() noexcept {
@@ -131,7 +132,7 @@ bool MmkvClient::ConsoleIoProcess() {
     
     case Translator::E_EXIT: {
       is_exit = true;
-      client_.Disconnect();
+      client_->Disconnect();
     }
       break;
 
@@ -150,7 +151,7 @@ bool MmkvClient::ConsoleIoProcess() {
       break;
 
     case Translator::E_OK: {
-      codec_.Send(client_.GetConnection(), &request);
+      codec_.Send(client_->GetConnection(), &request);
       start_time = GetTimeUs();
     }
       break;
@@ -168,9 +169,9 @@ bool MmkvClient::ConsoleIoProcess() {
 
 void MmkvClient::Start() {
   printf("%s\n\n", APPLICATION_INFORMATION);
-  printf("Connecting %s...\n", client_.GetServerAddr().ToIpPort().c_str());
+  printf("Connecting %s...\n", client_->GetServerAddr().ToIpPort().c_str());
   
-  client_.Connect();
+  client_->Connect();
 }
 
 /* Callback of command hint */
