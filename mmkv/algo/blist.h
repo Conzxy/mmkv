@@ -85,12 +85,7 @@ class Blist : protected blist::BNodeAllocator<T, Alloc>
   }
 
   ~Blist() noexcept {
-    auto node = header_;
-    for (; header_;) {
-      node = header_->next;
-      DropNode(header_);
-      header_ = node;
-    }
+    Clear();
   }
 
   Blist(Blist&& other) noexcept 
@@ -188,6 +183,7 @@ class Blist : protected blist::BNodeAllocator<T, Alloc>
     // new_node->next = header_;
     header_->prev->next = new_node;
     header_->prev = new_node;
+    assert(!new_node->next);
 
     return 1;
   }
@@ -246,22 +242,77 @@ class Blist : protected blist::BNodeAllocator<T, Alloc>
   }
 
   void Extract(Node *node) {
-    node->next->prev = node->prev;
-    node->prev->next = node->next;
-    if (node == header_)
+    /* Avoid invalid node
+     * e.g. Has extracted node */
+    if (!node || !node->prev) return;
+
+    /* Handling head node and tail node specially */
+#if 0
+    if (node == header_) {
+      /* The head node is also a tail node */
+      if (node->next)
+        node->next->prev = node->prev;
       header_ = node->next;
+    } else if (node == header_->prev) {
+      assert(!node->next);
+      node->prev->next = node->next;
+      header_->prev = node->prev;
+      assert(!header_->prev->next);
+    } else {
+      assert(node->next);
+      node->next->prev = node->prev;
+      node->prev->next = node->next;
+      assert(!header_->prev->next);
+    }
+#else
+    /* To head node,
+     * 1. relink the next only(can't update prev since prev->next = NULL must)
+     * 2. update header
+     * To tail node,
+     * 1. relink the prev only(The next must be NULL, so can't update the next) 
+     * 2. relink the prev of header(tail is head node also ok)
+     * To regular node,
+     * 1. relink prev
+     * 2. relink next */
+    if (node->next) { /* Not a tail */
+      node->next->prev = node->prev;
+    } else {
+      assert(!header_->prev->next);
+      header_->prev = node->prev;
+    }
+  
+    /* Later process node == head since updating header maybe */
+    if (node != header_)
+      node->prev->next = node->next;
+    else
+      header_ = node->next;
+#endif
+
     node->next = node->prev = nullptr;
   }
 
   void Erase(Node *node) {
+    Extract(node);
     DropNode(node);
   }
+  
+  void DropNode(Node* node) { DestroyNode(node); FreeNode(node); }
 
+  void Clear() {
+    auto node = header_;
+    for (; header_;) {
+      node = header_->next;
+      DropNode(header_);
+      header_ = node;
+    }
+    assert(count_ == 0);
+  }
  private:
   void SetHeader(Node* header) {
     header_ = header;
     // header_->next = header_;
     header_->prev = header_;
+    assert(header_->next == nullptr);
   }
 
   Node* AllocateNode() {
@@ -291,7 +342,6 @@ class Blist : protected blist::BNodeAllocator<T, Alloc>
 
   void FreeNode(Node* node) { NodeAllocTraits::deallocate(*this, node, 1); count_--; }
   void DestroyNode(Node* node) { AllocTraits::destroy(*this, &node->value); }
-  void DropNode(Node* node) { DestroyNode(node); FreeNode(node); }
 
   // Data member:
   Node* header_;

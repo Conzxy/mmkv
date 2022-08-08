@@ -1,4 +1,5 @@
 #include "mmkv/algo/blist.h"
+#include "mmkv/algo/internal/bnode.h"
 
 #include <gtest/gtest.h>
 
@@ -84,7 +85,7 @@ TEST(blist, pop_back) {
 }
 
 TEST(blist, initializer_list) {
-  Blist<int> lst({0, 1,2,3,4,5,6});
+  Blist<int> lst({0,1,2,3,4,5,6});
 
   int i = 0;
   auto lst_beg = lst.begin();
@@ -93,3 +94,29 @@ TEST(blist, initializer_list) {
     EXPECT_EQ(i++, *(lst_beg));
   }
 }
+
+static inline blist::BNode<int> *node_advance(blist::BNode<int> *node, int n) noexcept {
+  while (n--) node = node->next;
+  return node;
+}
+
+TEST(blist, erase) {
+  Blist<int> lst({0,1,2,3,4,5,6});
+  ASSERT_EQ(lst.size(), 7); 
+  Blist<int>::Node *nodes[7]; 
+  nodes[0] = node_advance(lst.FrontNode(), 1);
+  nodes[1] = node_advance(lst.FrontNode(), 3);
+  nodes[2] = node_advance(lst.FrontNode(), 2);
+  nodes[3] = node_advance(lst.FrontNode(), 0);
+  nodes[4] = node_advance(lst.FrontNode(), 6);
+  nodes[5] = node_advance(lst.FrontNode(), 4);
+  nodes[6] = node_advance(lst.FrontNode(), 5);
+
+  for (size_t i = 0; i < 7; ++i)
+    lst.Erase(nodes[i]);
+
+  ASSERT_EQ(lst.size(), 0);
+  for (auto e : lst)
+    printf("e = %d\n", e);
+}
+
