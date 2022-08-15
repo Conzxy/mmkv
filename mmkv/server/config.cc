@@ -3,6 +3,7 @@
 #include "option.h"
 #include "mmkv/util/time_util.h"
 #include "mmkv/util/conv.h"
+#include "mmkv/util/tokenizer.h"
 
 #include <chisato.h>
 #include <kanon/log/logger.h>
@@ -21,6 +22,7 @@ static StringView replace_policy2str(ReplacePolicy rp) noexcept;
 static bool set_log_method(StrSlice value, void *args) noexcept;
 static bool set_replace_policy(StrSlice value, void *args) noexcept;
 static bool set_max_memoey_usage(StrSlice vlaue, void *args) noexcept;
+static bool set_nodes(StrSlice value, void *args);
 
 void RegisterConfig(MmkvConfig &config) {
   chisato::AddConfig("LogMethod", &config.log_method, &set_log_method);
@@ -30,6 +32,11 @@ void RegisterConfig(MmkvConfig &config) {
   chisato::AddConfig("ReplacePolicy", &config.replace_policy, &set_replace_policy);
   chisato::AddConfig("DiagnosticLogDirectory", &config.diagnostic_log_dir);
   chisato::AddConfig("MaxMemoryUsage", &config.max_memory_usage, &set_max_memoey_usage);
+  chisato::AddConfig("RouterAddress", &config.router_address);
+  chisato::AddConfig("ShardNum", &config.shard_num);
+  chisato::AddConfig("RouterPort", &config.router_port);
+  chisato::AddConfig("TrackPort", &config.tracker_port);
+  chisato::AddConfig("Nodes", &config.nodes, &set_nodes);
 }
 
 bool ParseConfig(std::string &errmsg) {
@@ -49,14 +56,20 @@ bool ParseConfig(std::string &errmsg) {
 
 void PrintMmkvConfig(MmkvConfig const &config) {
   const auto usage = format_memory_usage(config.max_memory_usage);
-  LOG_DEBUG << "Config information: \n"
-    << "LogMethod=" << log_method2str(config.log_method)
-    << "\nExpirationCheckCycle=" << config.expiration_check_cycle
-    << "\nLazyExpiration=" << config.lazy_expiration
-    << "\nRequestLogLocation=" << config.request_log_location
-    << "\nReplacePolicy=" << replace_policy2str(config.replace_policy)
-    << "\nDiagnosticLogDirectory=" << config.diagnostic_log_dir
-    << "\nMaxMemoryUsage=" << usage.usage << " " << memory_unit2str(usage.unit);
+  LOG_DEBUG << "Config information: \n";
+  LOG_DEBUG << "LogMethod=" << log_method2str(config.log_method);
+  LOG_DEBUG  << "\nExpirationCheckCycle=" << config.expiration_check_cycle;
+  LOG_DEBUG  << "\nLazyExpiration=" << config.lazy_expiration;
+  LOG_DEBUG  << "\nRequestLogLocation=" << config.request_log_location;
+  LOG_DEBUG  << "\nReplacePolicy=" << replace_policy2str(config.replace_policy);
+  LOG_DEBUG  << "\nDiagnosticLogDirectory=" << config.diagnostic_log_dir;
+  LOG_DEBUG  << "\nMaxMemoryUsage=" << usage.usage << " " << memory_unit2str(usage.unit);
+  LOG_DEBUG  << "\nRouterAddress=" << config.router_address;
+  LOG_DEBUG  << "\nShardNum=" << config.shard_num;
+  LOG_DEBUG  << "\nNodes: ";
+  for (size_t i = 0; i < config.nodes.size(); ++i) {
+    LOG_DEBUG << "node " << i << ": " << config.nodes[i];
+  }
 }
 
 #define LM_REQUEST_STR "request"
@@ -115,6 +128,17 @@ static inline bool set_max_memoey_usage(StrSlice value, void *args) noexcept {
   *max_memory_usage = str2memory_usage({value.data(), value.size()});
   if (*max_memory_usage == (uint64_t)-1)
     return false;
+  return true;
+}
+
+static inline bool set_nodes(StrSlice value, void *args) {
+  std::vector<std::string> nodes;
+  Tokenizer tokens(StringView(value.data(), value.size()), ',');
+
+  // FIXME Valid check
+  for (auto token : tokens) {
+    nodes.emplace_back(token.ToString());
+  }
   return true;
 }
 

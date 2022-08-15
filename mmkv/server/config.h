@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <string>
 
+#include "mmkv/util/shard_util.h"
+
 namespace mmkv {
 namespace server {
 
@@ -30,6 +32,11 @@ struct MmkvConfig {
   long expiration_check_cycle = 0;
   std::string request_log_location = "/tmp/.mmkv-request.log";
   std::string diagnostic_log_dir = "";
+  std::string router_address = "";
+  long shard_num = DEFAULT_SHARD_NUM;
+  long router_port = 9997;
+  long tracker_port = router_port + 10000;
+  std::vector<std::string> nodes;
 };
 
 extern MmkvConfig g_config;
@@ -39,6 +46,13 @@ bool ParseConfig(std::string &errmsg);
 void PrintMmkvConfig(MmkvConfig const &config);
 bool inline IsExpirationDisable() noexcept {
   return !g_config.lazy_expiration && g_config.expiration_check_cycle <= 0;
+}
+
+/* If the address of router exists,
+ * the server split keys into shards
+ */
+bool inline IsShardServer() noexcept {
+  return !g_config.router_address.empty();
 }
 
 } // namespace server
