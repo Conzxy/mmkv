@@ -11,17 +11,20 @@
 #include "mmkv/protocol/mmbp.h"
 #include "mmkv/protocol/status_code.h"
 #include "mmkv/protocol/type.h"
+#include "mmkv/protocol/shard_code.h"
 #include "mmkv/replacement/cache_interface.h"
 
 #include "mmkv_data.h"
 #include "type.h"
 
 #include <kanon/util/noncopyable.h>
+#include <kanon/thread/rw_lock.h>
 
 namespace mmkv {
 namespace db {
 
 using algo::AvlDictionary;
+using algo::HashSet;
 // using algo::Dictionary;
 using algo::Comparator;
 using protocol::StrValues;
@@ -30,6 +33,8 @@ using protocol::WeightValues;
 using protocol::StrKvs;
 using protocol::OrderRange;
 using protocol::WeightRange;
+using protocol::Shard;
+using protocol::ShardCode;
 using replacement::CacheInterface;
 
 #define DB_MIN(x, y) (((x) < (y)) ? (x) : (y))
@@ -47,8 +52,6 @@ using replacement::CacheInterface;
 class MmkvDb {
   DISABLE_EVIL_COPYABLE(MmkvDb)
 
-  using Dict = AvlDictionary<String, MmkvData, Comparator<String>>;
-  using ExDict = AvlDictionary<String, uint64_t, Comparator<String>>;
  public:
   explicit MmkvDb(std::string name);
 
@@ -691,7 +694,18 @@ class MmkvDb {
    */
   void CheckExpireCycle();
 
+  /**
+   * Remove the shard from database
+   * \param shard_id  id of shard
+   */
+  void RemoveShard(protocol::Shard shard_id);
 
+  /**
+   * Get all keys in the mapped shard
+   */
+  ShardCode GetShardKeys(Shard shard_id, std::vector<String const*> &keys);
+
+  String GetShardInfo();
  private:
   /*----------------------------------------------*/
   /* Replacement API                              */
@@ -725,10 +739,46 @@ class MmkvDb {
    */
   bool CheckExpire(String const &key);
 
-  std::string name_;
+  /*----------------------------------------------*/
+  /* Shard management API                         */
+  /*----------------------------------------------*/
+
+  /**
+   * Insert the key to the mapped shard.
+   * \param key Exists in the database
+   */
+  void AddKeyToShard(String const &key);
+
+  /**
+   * Remove the key record from the mapped shard
+   * \param key Exists in the database
+   */
+  void RemoveKeyFromShard(String const &key);
+
+
+  /****** Data member *******/
+  using Dict = AvlDictionary<String, MmkvData, Comparator<String>>;
+  using ExDict = AvlDictionary<String, uint64_t, Comparator<String>>;
+  using ShardDict = AvlDictionary<protocol::Shard, HashSet<String const*>, Comparator<protocol::Shard>>;
+
+  std::string name_; /* For log */
+
+  /* Store all key-value records. */
   Dict dict_;
+  /* Store the expiration time of key. 
+   * ExDict的键类型不是String*（在dict_中的拷贝）而是String
+   * （存储键本身）。
+   * 如果采用String*作为键类型，那么每次都得先获取在dict_的key地址
+   * 对于一些操作是这是没有必要的。
+   * 尽管采用String作为键需要耗费更多空间
+   * FIXME 
+   * 采用String*作为键实现 */
   ExDict exp_dict_; /** expire dictionary */
   std::unique_ptr<CacheInterface<String const*>> cache_;
+
+  /* Record the shard => keys
+   * 保存的是在dict_中key的拷贝 */
+  ShardDict sdict_;
 };
 
 } // db

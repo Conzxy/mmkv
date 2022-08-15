@@ -1,3 +1,17 @@
+/* Cache management:
+ * - [x] Type()
+ * - [x] Delete()
+ * - [x] Rename()
+ * - [x] InsertStr()
+ * - [x] EraseStr()
+ * - [x] GetStr()
+ * - [x] StrAppend
+ * - [x] SetStr
+ * Shard management:
+ * - [x] Delete
+ * - [x] InsertStr
+ * - [x] EraseStr
+ */
 #include "kvdb.h"
 #include "mmkv/db/data_type.h"
 #include "mmkv/db/mmkv_data.h"
@@ -13,6 +27,7 @@
 #include "mmkv/disk/request_log.h"
 
 #include "mmkv/replacement/lru_cache.h"
+#include "mmkv/util/shard_util.h"
 
 #include <kanon/log/logger.h>
 
@@ -61,9 +76,11 @@ bool MmkvDb::Delete(String const& k) {
 
   auto node = dict_.Extract(k);
   if (!node) return false;
+  auto &key = node->value.key;
+  RemoveKeyFromShard(key);
+  CacheRemove(&key);
   DeleteMmkvData(node->value.value);
   dict_.DropNode(node);
-
   // It's ok even though k doesn't exists
   exp_dict_.Erase(k);
 
@@ -105,6 +122,8 @@ StatusCode MmkvDb::InsertStr(String k, String v) {
   kv->value.any_data = new String(std::move(v));
   
   CacheAdd(&kv->key);
+  AddKeyToShard(kv->key);
+
   return S_OK;
 }
 
@@ -115,7 +134,9 @@ StatusCode MmkvDb::EraseStr(String const& k) {
 
   if (slot) {
     if (str.type == D_STRING) {
-      CacheRemove(&slot->value.key);
+      auto &key = slot->value.key;
+      CacheRemove(&key);
+      RemoveKeyFromShard(key);
       delete (String*)str.any_data;
       dict_.EraseNode(bucket, slot);
       return S_OK;
@@ -1005,5 +1026,55 @@ size_t MmkvDb::DeleteAll() {
   dict_.Clear();
   exp_dict_.Clear();
   if (cache_) cache_->Clear();
+  return ret;
+}
+
+void MmkvDb::AddKeyToShard(String const &key) {
+  if (IsShardServer()) {
+    sdict_[MakeShardId(key)].Insert(&key);
+  }
+}
+
+void MmkvDb::RemoveKeyFromShard(String const &key) {
+  if (IsShardServer()) {
+    sdict_[MakeShardId(key)].Erase(&key);
+  }
+}
+
+void MmkvDb::RemoveShard(Shard shard_id) {
+  if (IsShardServer()) {
+    sdict_.Erase(shard_id);
+  }
+}
+
+ShardCode MmkvDb::GetShardKeys(Shard shard_id, std::vector<String const*> &keys) {
+  if (!IsShardServer()) return SC_NOT_SHARD_SERVER;
+  
+  auto shard_keys = sdict_.Find(shard_id);
+  if (!shard_keys) return SC_NO_SHARD;
+
+  auto &_keys = shard_keys->value;
+  for (auto &key : _keys) {
+    keys.push_back(key);
+  }
+
+  return SC_OK;
+}
+
+String MmkvDb::GetShardInfo() {
+  String ret;
+  char buf[64];
+  for (auto &shard_keys : sdict_) {
+    auto shard = shard_keys.key;
+    auto &keys = shard_keys.value;
+    ret += "shard ";
+    snprintf(buf, sizeof buf, "%u", shard);
+    ret += buf;
+    ret += " :";
+    for (auto key : keys) {
+      ret += *key;
+      ret += " ";
+    }
+  }
   return ret;
 }
