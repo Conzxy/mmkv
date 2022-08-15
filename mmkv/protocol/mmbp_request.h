@@ -23,9 +23,7 @@ extern MmbpRequest prototype;
 // 避免丑陋的getter/setter
 // e.g. 由于可能需要移动字段，因此需要提供writable getter
 class MmbpRequest : public MmbpMessage {
-
  public:
-
   MmbpRequest();
   ~MmbpRequest() noexcept override;
 

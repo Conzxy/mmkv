@@ -18,11 +18,10 @@ class MmbpMessage {
   virtual ~MmbpMessage() = default;
 
   virtual void SerializeTo(ChunkList& buffer) const = 0;
-  virtual void SerializeTo(Buffer& buffer) const = 0;
+  virtual void SerializeTo(Buffer& buffer) const {
+  }
+
   virtual void ParseFrom(Buffer& buffer) = 0;
-  // FIXME
-  // virtual void SerializeToStream(ChunkList& buffer) const = 0;
-  // virtual void ParseFromStream(Buffer& buffer) = 0;
   virtual MmbpMessage *New() const = 0;
 
 };

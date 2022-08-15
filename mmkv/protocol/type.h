@@ -35,6 +35,8 @@ using DRange = detail::RangeT<double>;
 using WeightRange = DRange;
 using OrderRange = Range;
 
+using Shard = uint32_t;
+
 } // protocol
 } // mmkv
 

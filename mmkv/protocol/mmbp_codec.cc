@@ -31,6 +31,12 @@ MmbpCodec::MmbpCodec(MmbpMessage* prototype)
   });
 }
 
+MmbpCodec::MmbpCodec(MmbpMessage *prototype, TcpConnectionPtr const &conn) 
+  : MmbpCodec(prototype)
+{
+  SetUpConnection(conn);
+}
+
 void MmbpCodec::SetUpConnection(TcpConnectionPtr const& conn) {
   conn->SetMessageCallback([this](TcpConnectionPtr const& conn, Buffer& buffer, TimeStamp recv_time) {
     while (buffer.GetReadableSize() >= SIZE_LENGTH) {
@@ -103,7 +109,7 @@ MmbpCodec::ErrorCode MmbpCodec::Parse(Buffer &buffer, MmbpMessage *message) {
   return E_NO_COMPLETE_MESSAGE; 
 }
 
-void MmbpCodec::Send(TcpConnectionPtr const& conn, MmbpMessage const* message) {
+void MmbpCodec::Send(TcpConnection *conn, MmbpMessage const *message) {
   OutputBuffer buffer;
   SerializeTo(message, buffer); 
 

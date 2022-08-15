@@ -16,7 +16,8 @@ using algo::String;
 using kanon::ChunkList;
 using kanon::Buffer;
 
-inline void SetField(String& str, Buffer& buffer, bool is_16=false) {
+template<typename Alloc>
+inline void SetField(std::basic_string<char, std::char_traits<char>, Alloc>& str, Buffer& buffer, bool is_16=false) {
   str.clear();
   auto len = is_16 ? buffer.Read16() : buffer.Read32();
   str.reserve(len);
@@ -38,7 +39,8 @@ inline void SetField(WeightValues& values, Buffer& buffer) {
   }
 }
 
-inline void SetField(StrValues& values, Buffer& buffer) {
+template<typename Alloc>
+inline void SetField(std::vector<std::basic_string<char, std::char_traits<char>, Alloc>> & values, Buffer& buffer) {
   auto count = buffer.Read32();
   values.resize(count); 
   
@@ -88,14 +90,32 @@ inline void SetField(int64_t& i, Buffer& buffer) {
   i = (int64_t)buffer.Read64();
 }
 
-template<typename BT>
-inline void SerializeField(String const& str, BT &buffer, bool is_16=false) {
+#define SET_FILED_UVEC(bc)  \
+inline void SetField(std::vector<uint##bc##_t> &u##bc##s, Buffer &buffer) { \
+  u##bc##s.resize(buffer.Read##bc()); \
+  for (auto &u##bc : u##bc##s) { \
+    u##bc = buffer.Read##bc(); \
+  } \
+} \
+ \
+inline void SetField(std::vector<std::vector<uint##bc##_t>> &u##bc##_2d, Buffer &buffer) { \
+  u##bc##_2d.resize(buffer.Read##bc()); \
+  for (auto &u##bc##s : u##bc##_2d) { \
+    SetField(u##bc##s, buffer); \
+  } \
+}
+
+SET_FILED_UVEC(16)
+SET_FILED_UVEC(32)
+
+template<typename Alloc, typename BT>
+inline void SerializeField(std::basic_string<char, std::char_traits<char>, Alloc> const& str, BT &buffer, bool is_16=false) {
   is_16 ? buffer.Append16(str.size()) : buffer.Append32(str.size());
   buffer.Append(str.data(), str.size());
 }
 
-template<typename BT>
-inline void SerializeField(StrValues const& values, BT& buffer) {
+template<typename Alloc, typename BT>
+inline void SerializeField(std::vector<std::basic_string<char, std::char_traits<char>, Alloc>> const& values, BT& buffer) {
   buffer.Append32(values.size());
   
   for (size_t i = 0; i < values.size(); ++i) {
@@ -146,6 +166,23 @@ template<typename BT>
 inline void SerializeField(uint16_t i, BT& buffer) {
   buffer.Append16(i);
 }
+
+// bc = bit count
+#define SERIALIZED_FIELD_UVEC(bc) \
+inline void SerializeField(std::vector<uint##bc##_t> const &u##bc##s, ChunkList &buffer) { \
+  buffer.Append##bc(u##bc##s.size()); \
+  for (auto u##bc : u##bc##s) \
+    buffer.Append##bc(u##bc); \
+} \
+ \
+inline void SerializeField(std::vector<std::vector<uint##bc##_t>> const &u##bc##_2d, ChunkList &buffer) { \
+  buffer.Append##bc(u##bc##_2d.size()); \
+  for (auto const &u##bc##s : u##bc##_2d) \
+    SerializeField(u##bc##s, buffer); \
+}
+
+SERIALIZED_FIELD_UVEC(32)
+SERIALIZED_FIELD_UVEC(16)
 
 inline void SetBit(uint8_t& bits, int idx) noexcept {
   bits |= (1 << idx);

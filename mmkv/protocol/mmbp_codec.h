@@ -39,8 +39,11 @@ class MmbpCodec {
   static uint8_t MMBP_TAG_SIZE;
 
  public:
-  MmbpCodec(MmbpMessage* prototype);
-  
+  explicit MmbpCodec(MmbpMessage* prototype);
+  MmbpCodec(MmbpMessage *prototype, TcpConnectionPtr const &conn);
+
+  MmbpCodec(MmbpCodec &&) = default;
+
   void SetUpConnection(TcpConnectionPtr const& conn);
 
   void SetMessageCallback(MessageCallback cb) {
@@ -51,7 +54,8 @@ class MmbpCodec {
     error_cb_ = std::move(cb);
   }
 
-  void Send(TcpConnectionPtr const& conn, MmbpMessage const* message);
+  void Send(TcpConnectionPtr const& conn, MmbpMessage const* message) { Send(conn.get(), message); }
+  void Send(TcpConnection * conn, MmbpMessage const *message);
 
   /* Deprecated
    * In the old version, this is a implementation detail of message callback of connection.
