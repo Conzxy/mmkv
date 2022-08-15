@@ -28,7 +28,7 @@ class AvlDictionary : public AvlTreeHashMap<K, V, Comparator, HF, GK, Alloc> {
    * This is not an efficient method.
    * It is perfered to call InsertWithDuplicate().
    */
-  value_type& operator[](key_type const& key) {
+  mapped_type& operator[](key_type const& key) {
     auto kv = Base::Find(key);
 
     if (!kv) {
