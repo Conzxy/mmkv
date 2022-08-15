@@ -2,11 +2,11 @@ file(GLOB_RECURSE MMKV_SRC
   db/*.cc
   disk/*.cc
   protocol/*.cc
-  server/config.cc
-  server/option.cc
+  server/*.cc
   storage/*.cc
   util/*.cc
   replacement/*.cc
+  client/tracker_client.cc
   ${CHISATO_DIR}/*.cc
   ${TAKINA_DIR}/*.cc
 )

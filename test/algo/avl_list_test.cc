@@ -30,9 +30,9 @@ int main() {
   
   for (int i = 0; i < 100; ++i) {
     std::string* duplicate = nullptr;
-    auto e = lst.InsertWithDuplicate(std::to_string(i), &duplicate);
+    auto e = lst.InsertWithDuplicate(std::to_string(i), &duplicate);(void)e;
     assert(e);
-    auto res = lst.VerifyAvlProperties();
+    auto res = lst.VerifyAvlProperties();(void)res;
     assert(res);
     std::cout << i << ": " << duplicate << "\n";
   }

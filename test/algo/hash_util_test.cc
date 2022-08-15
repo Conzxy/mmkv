@@ -21,7 +21,7 @@ int main() {
   XXH32_state_t* const state = XXH32_createState();
   assert(state);
 
-  auto ok = XXH32_reset(state, 0) != XXH_ERROR;
+  auto ok = XXH32_reset(state, 0) != XXH_ERROR;(void)ok;
   assert(ok);
   
   uint32_t checksum = 0;

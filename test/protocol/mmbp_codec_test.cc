@@ -16,7 +16,7 @@ TEST(mmbp_codec, xxhash) {
   output_buffer.Append("ABCDE");
   auto state = XXH32_createState();
 
-  auto ok = XXH32_reset(state, 0) != XXH_ERROR;
+  auto ok = XXH32_reset(state, 0) != XXH_ERROR;(void)ok;
   assert(ok);
 
   for (auto const& chunk : output_buffer) {
