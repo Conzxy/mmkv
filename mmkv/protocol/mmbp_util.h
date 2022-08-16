@@ -105,8 +105,21 @@ inline void SetField(std::vector<std::vector<uint##bc##_t>> &u##bc##_2d, Buffer 
   } \
 }
 
+/* Used for has_bits */
+inline void SetField(uint8_t *u8s, size_t len, Buffer &buffer) {
+  for (size_t i = 0; i < len; ++i) {
+    u8s[i] = buffer.Read8();
+  }
+}
+
 SET_FILED_UVEC(16)
 SET_FILED_UVEC(32)
+
+inline void SetField(std::vector<char> &buf, Buffer &buffer) {
+  buf.resize(buffer.Read32());
+  memcpy(&buf[0], buffer.GetReadBegin(), buf.size());
+  buffer.AdvanceRead(buf.size());
+}
 
 template<typename Alloc, typename BT>
 inline void SerializeField(std::basic_string<char, std::char_traits<char>, Alloc> const& str, BT &buffer, bool is_16=false) {
@@ -183,6 +196,17 @@ inline void SerializeField(std::vector<std::vector<uint##bc##_t>> const &u##bc##
 
 SERIALIZED_FIELD_UVEC(32)
 SERIALIZED_FIELD_UVEC(16)
+
+inline void SerializeField(std::vector<char> const &buf, ChunkList &buffer) {
+  buffer.Append32(buf.size());
+  buffer.Append(buf.data(), buf.size());
+}
+
+/* Used for has_bits */
+inline void SerializeField(uint8_t const *u8s, size_t len, ChunkList& buffer) {
+  for (size_t i = 0; i < len; ++i)
+    buffer.Append32(u8s[i]);
+}
 
 inline void SetBit(uint8_t& bits, int idx) noexcept {
   bits |= (1 << idx);
