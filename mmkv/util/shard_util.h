@@ -6,6 +6,7 @@
 #include <xxhash.h>
 
 #define DEFAULT_SHARD_NUM (1 << 12) /** Default number of shard */
+#define SHARD_TEST 1
 
 namespace mmkv {
 
