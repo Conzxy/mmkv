@@ -7,9 +7,15 @@
 #include "mmkv/protocol/mmbp_codec.h"
 
 namespace mmkv {
+
+namespace protocol {
+class TrackRequest;
+}
+
 namespace server {
 
 class Tracker;
+using protocol::TrackRequest;
 
 class TrackSession : kanon::noncopyable {
  public:
@@ -17,7 +23,7 @@ class TrackSession : kanon::noncopyable {
   ~TrackSession() = default;
 
  private:
-  void AddNode();
+  void AddNode(TrackRequest &req);
   void OnMessage(TcpConnectionPtr const &conn,
     Buffer &buffer, uint32_t, TimeStamp recv_tm);
 

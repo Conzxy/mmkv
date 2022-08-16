@@ -25,7 +25,7 @@ void TrackSession::OnMessage(TcpConnectionPtr const &conn,
 
   switch (req.GetOperation()) {
   case TO_ADD_NODE:
-    AddNode();
+    AddNode(req);
   break;
   case TO_MOVE_SHARD: {
     if (req.HasNodeId() && req.HasShardId()) {
@@ -45,9 +45,10 @@ void TrackSession::OnMessage(TcpConnectionPtr const &conn,
   }
 }
 
-void TrackSession::AddNode() {
+void TrackSession::AddNode(TrackRequest &req) {
   LOG_TRACE << "New node join to the cluster";
   LOG_TRACE << "Node ID=" << tracker_->node_id_;
+  LOG_TRACE << "Sharder port=" << req.sharder_port;
 
   TrackResponse response;
   response.node_id = tracker_->node_id_;
@@ -99,12 +100,11 @@ void TrackSession::AddNode() {
 
     auto &node_mapped = tracker_->node_map[response.node_id];
     node_mapped.address = conn_->GetPeerAddr().ToIp();
-    node_mapped.port = conn_->GetPeerAddr().GetPort();
-
+    node_mapped.port = req.sharder_port;
     response.SetAddrs();
     response.SetShard2D();
     tracker_->node_id_++;
-    tracker_->state_ = Tracker::BUSY;
+    if (!response.shard_2d.empty()) tracker_->state_ = Tracker::BUSY;
     LOG_TRACE << "Total node number=" << tracker_->node_id_;
   }
 
