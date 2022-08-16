@@ -19,6 +19,17 @@ struct Comparator <int> {
   }
 };
 
+/* To unsigned integer,
+ * can't return x - y since
+ * (signed)(x - y(y > 2^31-1)) > 0
+ */
+template<>
+struct Comparator <uint32_t> {
+  inline int32_t operator()(uint32_t x, uint32_t y) const noexcept {
+    return (x < y) ? -1 : ((x == y) ? 0 : 1);
+  }
+};
+
 template<typename Alloc>
 struct Comparator <std::basic_string<char, std::char_traits<char>, Alloc>> {
   using StrType = std::basic_string<char, std::char_traits<char>, Alloc>;
