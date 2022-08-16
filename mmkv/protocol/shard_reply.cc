@@ -12,24 +12,31 @@ ShardReply::ShardReply() {
 }
 
 ShardReply::~ShardReply() noexcept {
-  for (auto &req : reqs) {
-    delete req;
-  }
 }
 
 void ShardReply::SerializeTo(ChunkList &buffer) const {
   SerializeField(code, buffer);
-  SerializeField(reqs.size(), buffer);
-  for (auto &req : reqs) {
-    req->SerializeTo(buffer); 
-  }
+  SerializeField(req_buf, buffer);
 }
 
 void ShardReply::ParseFrom(Buffer &buffer) {
   SetField(code, buffer);
-  reqs.resize(buffer.Read32());
-  for (auto &req : reqs) {
-    req = new MmbpRequest;
-    req->ParseFrom(buffer);
+  SetField(req_buf, buffer);
+}
+
+static char const *ShardCode2String(ShardCode code) noexcept {
+  switch (code) {
+  case SC_OK:
+    return "Ok";
+  case SC_NO_SHARD:
+    return "No shard";
+  case SC_NOT_SHARD_SERVER:
+    return "not shard server";
   }
+  return "Unknown";
+}
+
+void ShardReply::DebugPrint() {
+  LOG_DEBUG << "ShardCode: " << ShardCode2String(GetShardCode());
+  LOG_DEBUG << "Request buffer size=" << req_buf.size();
 }

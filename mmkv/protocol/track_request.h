@@ -25,10 +25,12 @@ class TrackRequest : public MmbpMessage {
 
   FIELD_SET_HAS_DEFINE(ShardId, 0, 0)
   FIELD_SET_HAS_DEFINE(NodeId, 0, 1)
+  FIELD_SET_HAS_DEFINE(SharderPort, 0, 2)
 
   uint8_t operation;
   uint32_t shard_id;
   uint32_t node_id;
+  uint16_t sharder_port;
 
   static TrackRequest *prototype;
  private:

@@ -16,12 +16,14 @@ class ShardReply : public MmbpMessage {
   void SerializeTo(ChunkList &buffer) const override;
   void ParseFrom(Buffer &buffer) override;
   ShardReply *New() const override { return new ShardReply(); }
+  void DebugPrint();
   ShardCode GetShardCode() const noexcept { return (ShardCode)code; }
 
   static ShardReply *prototype;
 
   uint8_t code;
-  std::vector<MmbpRequest*> reqs;
+  // std::vector<MmbpRequest*> reqs;
+  std::vector<char> req_buf{};
 };
 
 } // protocol

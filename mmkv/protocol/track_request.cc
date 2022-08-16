@@ -20,6 +20,8 @@ void TrackRequest::SerializeTo(ChunkList &buffer) const {
     SerializeField(shard_id, buffer);
   if (HasNodeId())
     SerializeField(node_id, buffer);
+  if (HasSharderPort())
+    SerializeField(sharder_port, buffer);
 }
 
 void TrackRequest::ParseFrom(Buffer &buffer) {
@@ -29,6 +31,8 @@ void TrackRequest::ParseFrom(Buffer &buffer) {
     SetField(shard_id, buffer);
   if (HasNodeId())
     SetField(node_id, buffer);
+  if (HasSharderPort())
+    SetField(sharder_port, buffer);
 }
 
 static char const *TrackOperation2String(TrackOperation op) noexcept {
@@ -51,4 +55,8 @@ void TrackRequest::DebugPrint() {
   if (HasNodeId()) {
     LOG_DEBUG << "ShardId=" << shard_id;
   }
+
+  LOG_DEBUG << "HasSharderPort: " << HasSharderPort();
+  if (HasSharderPort())
+    LOG_DEBUG << "SharderPort=" << sharder_port;
 }
