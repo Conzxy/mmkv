@@ -32,10 +32,11 @@ struct MmkvConfig {
   long expiration_check_cycle = 0;
   std::string request_log_location = "/tmp/.mmkv-request.log";
   std::string diagnostic_log_dir = "";
-  std::string router_address = "";
+  std::string router_address = "127.0.0.1:9997";
   long shard_num = DEFAULT_SHARD_NUM;
-  long router_port = 9997;
-  long tracker_port = router_port + 10000;
+  int router_port = 9997;
+  int tracker_port = router_port + 10000;
+  int sharder_port = 9998;
   std::vector<std::string> nodes;
 };
 
@@ -51,7 +52,7 @@ bool inline IsExpirationDisable() noexcept {
 /* If the address of router exists,
  * the server split keys into shards
  */
-bool inline IsShardServer() noexcept {
+bool inline IsSharder() noexcept {
   return !g_config.router_address.empty();
 }
 

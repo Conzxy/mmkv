@@ -58,15 +58,17 @@ void PrintMmkvConfig(MmkvConfig const &config) {
   const auto usage = format_memory_usage(config.max_memory_usage);
   LOG_DEBUG << "Config information: \n";
   LOG_DEBUG << "LogMethod=" << log_method2str(config.log_method);
-  LOG_DEBUG  << "\nExpirationCheckCycle=" << config.expiration_check_cycle;
-  LOG_DEBUG  << "\nLazyExpiration=" << config.lazy_expiration;
-  LOG_DEBUG  << "\nRequestLogLocation=" << config.request_log_location;
-  LOG_DEBUG  << "\nReplacePolicy=" << replace_policy2str(config.replace_policy);
-  LOG_DEBUG  << "\nDiagnosticLogDirectory=" << config.diagnostic_log_dir;
-  LOG_DEBUG  << "\nMaxMemoryUsage=" << usage.usage << " " << memory_unit2str(usage.unit);
-  LOG_DEBUG  << "\nRouterAddress=" << config.router_address;
-  LOG_DEBUG  << "\nShardNum=" << config.shard_num;
-  LOG_DEBUG  << "\nNodes: ";
+  LOG_DEBUG << "\nExpirationCheckCycle=" << config.expiration_check_cycle;
+  LOG_DEBUG << "\nLazyExpiration=" << config.lazy_expiration;
+  LOG_DEBUG << "\nRequestLogLocation=" << config.request_log_location;
+  LOG_DEBUG << "\nReplacePolicy=" << replace_policy2str(config.replace_policy);
+  LOG_DEBUG << "\nDiagnosticLogDirectory=" << config.diagnostic_log_dir;
+  LOG_DEBUG << "\nMaxMemoryUsage=" << usage.usage << " " << memory_unit2str(usage.unit);
+  LOG_DEBUG << "\nRouterAddress=" << config.router_address;
+  LOG_DEBUG << "\nShardNum=" << config.shard_num;
+  LOG_DEBUG << "\nRouterPort" << config.router_port;
+  LOG_DEBUG << "\nSharderPort" << config.sharder_port;
+  LOG_DEBUG << "\nNodes: ";
   for (size_t i = 0; i < config.nodes.size(); ++i) {
     LOG_DEBUG << "node " << i << ": " << config.nodes[i];
   }
