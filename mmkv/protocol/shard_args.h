@@ -2,18 +2,20 @@
 #define MMKV_PROTOCOL_SHARD_ARGS_H_
 
 #include "mmbp.h"
+#include "common.h"
 
 namespace mmkv {
 namespace protocol {
 
 enum ShardOperation : uint8_t {
   SO_GET_SHARD = 0,
-  SO_DEL_SHARD,
+  SO_REM_SHARD,
 };
 
 class ShardArgs : public MmbpMessage {
  public:
   ShardArgs();
+  ~ShardArgs() = default;
 
   void SerializeTo(ChunkList &buffer) const override;
   void ParseFrom(Buffer &buffer) override;
@@ -26,9 +28,6 @@ class ShardArgs : public MmbpMessage {
   uint32_t shard_id;
 
   static ShardArgs *prototype;
- private:
-  
-  // uint8_t has_bits_[1];
 };
 
 } // protocol

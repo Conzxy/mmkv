@@ -26,7 +26,7 @@ static inline char const *ShardOperation2String(ShardOperation op) noexcept {
   switch (op) {
   case SO_GET_SHARD:
     return "Get shard";
-  case SO_DEL_SHARD:
+  case SO_REM_SHARD:
     return "Del shard";
   }
   return "unknown ShardOperation";

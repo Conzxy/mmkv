@@ -1030,25 +1030,25 @@ size_t MmkvDb::DeleteAll() {
 }
 
 void MmkvDb::AddKeyToShard(String const &key) {
-  if (IsShardServer()) {
+  if (IsSharder()) {
     sdict_[MakeShardId(key)].Insert(&key);
   }
 }
 
 void MmkvDb::RemoveKeyFromShard(String const &key) {
-  if (IsShardServer()) {
+  if (IsSharder()) {
     sdict_[MakeShardId(key)].Erase(&key);
   }
 }
 
 void MmkvDb::RemoveShard(Shard shard_id) {
-  if (IsShardServer()) {
+  if (IsSharder()) {
     sdict_.Erase(shard_id);
   }
 }
 
 ShardCode MmkvDb::GetShardKeys(Shard shard_id, std::vector<String const*> &keys) {
-  if (!IsShardServer()) return SC_NOT_SHARD_SERVER;
+  if (!IsSharder()) return SC_NOT_SHARD_SERVER;
   
   auto shard_keys = sdict_.Find(shard_id);
   if (!shard_keys) return SC_NO_SHARD;
