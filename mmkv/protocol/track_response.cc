@@ -24,6 +24,9 @@ void TrackResponse::SerializeTo(ChunkList &buffer) const {
     SerializeField(addrs, buffer);
     SerializeField(ports, buffer);
   }
+  if (HasNodes()) {
+    SerializeField(nodes, buffer);
+  }
 }
 
 void TrackResponse::ParseFrom(Buffer &buffer) {
@@ -35,6 +38,9 @@ void TrackResponse::ParseFrom(Buffer &buffer) {
     SetField(addrs, buffer);
     SetField(ports, buffer);
   }
+  if (HasNodes()) {
+    SetField(nodes, buffer);
+  }
 }
 
 void TrackResponse::DebugPrint() {
@@ -42,6 +48,7 @@ void TrackResponse::DebugPrint() {
   LOG_DEBUG << "HasAddrs: " << HasAddrs();
   LOG_DEBUG << "HasShard2D: " << HasShard2D();
   LOG_DEBUG << "HasNodeId: " << HasNodeId();
+  LOG_DEBUG << "HasNodes: " << HasNodes();
 }
 
 inline char const* TrackStatusCode2String(TrackStatusCode code) noexcept {
@@ -52,6 +59,10 @@ inline char const* TrackStatusCode2String(TrackStatusCode code) noexcept {
     return "Wait";
   case TS_ADD_NODE_OK:
     return "Add node ok";
+  case TS_LEAVE_OK:
+    return "Leave ok";
+  case TS_QUERY_OK:
+    return "Query ok";
   }
   // Not reached
   return "Unknown TrackStatusCode";

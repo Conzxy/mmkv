@@ -11,6 +11,8 @@ enum TrackOperation : uint8_t {
   TO_ADD_NODE = 0,
   TO_MOVE_SHARD,
   TO_MOVE_FINISH,
+  TO_LEAVE,
+  TO_QUERY,
 };
 
 class TrackRequest : public MmbpMessage {

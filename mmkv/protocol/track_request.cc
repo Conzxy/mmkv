@@ -40,6 +40,7 @@ static char const *TrackOperation2String(TrackOperation op) noexcept {
   case TO_ADD_NODE: return "Add node";
   case TO_MOVE_SHARD: return "Move shard";
   case TO_MOVE_FINISH: return "Move finish";
+  case TO_LEAVE: return "Leave";
   }
   return "Unknown TrackOperation";
 }
