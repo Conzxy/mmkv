@@ -21,11 +21,11 @@ int main() {
   auto chunk = list.GetFirstChunk();
   auto rlen = sock::ToNetworkByteOrder32(list.GetReadableSize());
 
-  g_rlog->Start();
+  rlog().Start();
   for (int i = 0; i < N; ++i) {
     LOG_DEBUG << "readable size = " << chunk->GetReadableSize();
-    g_rlog->Append(&rlen, sizeof rlen);
-    g_rlog->Append(chunk->GetReadBegin(), chunk->GetReadableSize());
+    rlog().Append(&rlen, sizeof rlen);
+    rlog().Append(chunk->GetReadBegin(), chunk->GetReadableSize());
   }
 
   ::sleep(10);

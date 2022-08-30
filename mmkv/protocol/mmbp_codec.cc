@@ -124,7 +124,7 @@ void MmbpCodec::SerializeTo(MmbpMessage const* message, OutputBuffer& buffer) {
   
   auto ok = XXH32_reset(state, 0) != XXH_ERROR;(void)ok;
   assert(ok && "XXH32_reset() error");
-  
+
   for (auto const& chunk : buffer) {
     LOG_DEBUG << "chunk readable size = " << chunk.GetReadableSize();
     ok = XXH32_update(state, chunk.GetReadBegin(), chunk.GetReadableSize()) != XXH_ERROR;

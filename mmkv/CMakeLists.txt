@@ -1,3 +1,9 @@
+file(GLOB_RECURSE DISTRIBUTION_SRC
+  tracker/*.cc
+  router/*.cc
+  sharder/*.cc
+)
+
 file(GLOB_RECURSE MMKV_SRC
   db/*.cc
   disk/*.cc
@@ -7,6 +13,8 @@ file(GLOB_RECURSE MMKV_SRC
   util/*.cc
   replacement/*.cc
   client/tracker_client.cc
+  ${DISTRIBUTION_SRC}
+  cluster/*.cc
   ${CHISATO_DIR}/*.cc
   ${TAKINA_DIR}/*.cc
 )
@@ -19,6 +27,21 @@ file(GLOB_RECURSE MMKV_SERVER_SRC
   disk/*.cc
   db/*.cc
   storage/*.cc
+  tracker/*.cc
+  sharder/*.cc
+  ${TAKINA_DIR}/takina.cc
+  ${CHISATO_DIR}/chisato.cc
+)
+
+file(GLOB_RECURSE ROUTER_SRC
+  app/router_main.cc
+  server/*.cc
+  util/*.cc
+  protocol/*.cc
+  disk/*.cc
+  db/*.cc
+  storage/*.cc
+  ${DISTRIBUTION_SRC}
   ${TAKINA_DIR}/takina.cc
   ${CHISATO_DIR}/chisato.cc
 )
@@ -65,3 +88,6 @@ target_include_directories(mmkv-cli PRIVATE ${TAKINA_DIR} PRIVATE ${TERNARY_DIR}
 
 GenApplication(rlogdump RLOG_DUMP_SRC MMKV_LIB_LIST)
 target_include_directories(rlogdump PRIVATE ${TAKINA_DIR})
+
+GenApplication(router ROUTER_SRC MMKV_LIB_LIST)
+target_include_directories(router PRIVATE ${CHISATO_DIR} ${TAKINA_DIR})

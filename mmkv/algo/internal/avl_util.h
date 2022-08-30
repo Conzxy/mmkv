@@ -1,9 +1,9 @@
 #ifndef _MMKV_ALGO_INTERNAL_AVL_UTIL_H_
 #define _MMKV_ALGO_INTERNAL_AVL_UTIL_H_
 
-#include "avl_node.h"
-
 #include <assert.h>
+
+#include "avl_node.h"
 
 using mmkv::algo::avl::AvlBaseNode;
 
@@ -13,7 +13,8 @@ namespace algo {
 /*
  * 仅用于AvlTree插入API
  */
-inline void _LinkSlot(AvlBaseNode** slot, AvlBaseNode* node, AvlBaseNode* parent) noexcept {
+inline void _LinkSlot(AvlBaseNode** slot, AvlBaseNode* node,
+                      AvlBaseNode* parent) noexcept {
   slot[0] = node;
   slot[0]->parent = parent;
 }
@@ -21,7 +22,8 @@ inline void _LinkSlot(AvlBaseNode** slot, AvlBaseNode* node, AvlBaseNode* parent
 /*
  * new_node取代old_node，与old_node的parent重链接(relink)，如果取代了根节点，将更新根节点
  */
-inline void _ChildPlace(AvlBaseNode* old_node, AvlBaseNode* new_node, AvlBaseNode* parent, AvlBaseNode** root) noexcept {
+inline void _ChildPlace(AvlBaseNode* old_node, AvlBaseNode* new_node,
+                        AvlBaseNode* parent, AvlBaseNode** root) noexcept {
   assert(old_node);
   if (parent) {
     if (old_node == parent->left)
@@ -37,14 +39,14 @@ inline void _ChildPlace(AvlBaseNode* old_node, AvlBaseNode* new_node, AvlBaseNod
  * 以node为基点，node与右孩子的边为主轴，向左旋转，如此右孩子成为新根节点
  * 而node成为了左孩子
  */
-inline AvlBaseNode* _RotateLeft(AvlBaseNode* node, AvlBaseNode** root) noexcept {
+inline AvlBaseNode* _RotateLeft(AvlBaseNode* node,
+                                AvlBaseNode** root) noexcept {
   AvlBaseNode* right = node->right;
   AvlBaseNode* parent = node->parent;
   assert(node && right);
-  
+
   node->right = right->left;
-  if (node->right)
-    node->right->parent = node;
+  if (node->right) node->right->parent = node;
   right->left = node;
   right->parent = parent;
   node->parent = right;
@@ -57,14 +59,14 @@ inline AvlBaseNode* _RotateLeft(AvlBaseNode* node, AvlBaseNode** root) noexcept 
 /*
  * 左旋的对称操作
  */
-inline AvlBaseNode* _RotateRight(AvlBaseNode* node, AvlBaseNode** root) noexcept {
+inline AvlBaseNode* _RotateRight(AvlBaseNode* node,
+                                 AvlBaseNode** root) noexcept {
   AvlBaseNode* left = node->left;
   AvlBaseNode* parent = node->parent;
   assert(left && node);
 
   node->left = left->right;
-  if (node->left)
-    node->left->parent = node;
+  if (node->left) node->left->parent = node;
   left->right = node;
   left->parent = parent;
   node->parent = left;
@@ -103,7 +105,8 @@ inline void _UpdateHeight(AvlBaseNode* node) noexcept {
  *  显然前提条件是RIGHT_HEIGHT(y) - LEFT_HEIGHT(y) > 0，当右高比左高1的时候，
  *  先以y作为基点，左旋调整至上述case。
  */
-inline AvlBaseNode* _FixupLeftHeavy(AvlBaseNode* node, AvlBaseNode** root) noexcept {
+inline AvlBaseNode* _FixupLeftHeavy(AvlBaseNode* node,
+                                    AvlBaseNode** root) noexcept {
   AvlBaseNode* left = node->left;
   const int lh = LEFT_HEIGHT(left);
   const int rh = RIGHT_HEIGHT(left);
@@ -124,7 +127,8 @@ inline AvlBaseNode* _FixupLeftHeavy(AvlBaseNode* node, AvlBaseNode** root) noexc
 /*
  * 左重修复的对称操作
  */
-inline AvlBaseNode* _FixupRigtHeavy(AvlBaseNode* node, AvlBaseNode** root) noexcept {
+inline AvlBaseNode* _FixupRigtHeavy(AvlBaseNode* node,
+                                    AvlBaseNode** root) noexcept {
   AvlBaseNode* right = node->right;
   int lh = LEFT_HEIGHT(right);
   int rh = RIGHT_HEIGHT(right);
@@ -135,7 +139,7 @@ inline AvlBaseNode* _FixupRigtHeavy(AvlBaseNode* node, AvlBaseNode** root) noexc
     _UpdateHeight(right);
   }
 
-  node= _RotateLeft(node, root);
+  node = _RotateLeft(node, root);
   _UpdateHeight(node->left);
   _UpdateHeight(node);
 
@@ -155,8 +159,10 @@ inline void _InsertFixup(AvlBaseNode* node, AvlBaseNode** root) noexcept {
   for (; node; node = node->parent) {
     lh = LEFT_HEIGHT(node);
     rh = RIGHT_HEIGHT(node);
-    h = AVL_MAX(lh, rh) + 1; 
-    if (node->height == h) { break; }
+    h = AVL_MAX(lh, rh) + 1;
+    if (node->height == h) {
+      break;
+    }
     node->height = h;
 
     bf = lh - rh;
@@ -182,13 +188,14 @@ inline void _EraseFixup(AvlBaseNode* node, AvlBaseNode** root) noexcept {
     h = AVL_MAX(lh, rh) + 1;
 
     bf = lh - rh;
-    
-    // if (node->height == h && bf >= -1 && bf <= -1) break; 
+
+    // if (node->height == h && bf >= -1 && bf <= -1) break;
     // node->height = h // 该语句可以省略
 
     if (node->height != h)
       node->height = h;
-    else if (bf >= -1 && bf <= 1) break;
+    else if (bf >= -1 && bf <= 1)
+      break;
 
     if (bf >= 2) {
       node = _FixupLeftHeavy(node, root);
@@ -209,9 +216,8 @@ inline void _Erase(AvlBaseNode* node, AvlBaseNode** root) noexcept {
     AvlBaseNode* old_node = node;
     AvlBaseNode* left;
     node = node->right;
-    while ((left = node->left))
-      node = left;
-    
+    while ((left = node->left)) node = left;
+
     if (node->parent == old_node) {
       node->left = old_node->left;
       old_node->left->parent = node;
@@ -224,10 +230,10 @@ inline void _Erase(AvlBaseNode* node, AvlBaseNode** root) noexcept {
       AvlBaseNode* right = node->right;
       _ChildPlace(node, right, parent2, root);
       if (right) right->parent = parent2;
-      
+
       right = old_node->right;
       left = old_node->left;
-      assert (right && left);
+      assert(right && left);
       node->right = right;
       right->parent = node;
       node->left = left;
@@ -237,13 +243,15 @@ inline void _Erase(AvlBaseNode* node, AvlBaseNode** root) noexcept {
       _ChildPlace(old_node, node, parent, root);
       node = parent2;
       // 原来的parent可能失衡
-    } 
+    }
   } else {
     AvlBaseNode* child = nullptr;
 
-    if (node->left) child = node->left;
-    else if (node->right) child = node->right;
-    
+    if (node->left)
+      child = node->left;
+    else if (node->right)
+      child = node->right;
+
     _ChildPlace(node, child, parent, root);
     if (child) child->parent = parent;
     node = parent;
@@ -297,12 +305,11 @@ inline AvlBaseNode* _GetNextNode(AvlBaseNode* node) noexcept {
   if (!node) return nullptr;
   if (node->right) {
     node = node->right;
-    while (node->left)
-      node = node->left;
+    while (node->left) node = node->left;
   } else {
     // AvlBaseNode* parent;
     // for (;;) {
-    //   if (!node) break; 
+    //   if (!node) break;
     //   parent = node->parent;
     //   if (parent->left == node) { node = parent; break; }
     //   node = parent;
@@ -315,7 +322,7 @@ inline AvlBaseNode* _GetNextNode(AvlBaseNode* node) noexcept {
     }
   }
 
-  return node; 
+  return node;
 }
 
 // 前驱：刚好比node小的节点
@@ -325,8 +332,7 @@ inline AvlBaseNode* _GetPrevNode(AvlBaseNode* node) noexcept {
 
   if (node->left) {
     node = node->left;
-    while (node->right)
-      node = node->right;
+    while (node->right) node = node->right;
   } else {
     AvlBaseNode* cur;
     for (;;) {
@@ -339,7 +345,7 @@ inline AvlBaseNode* _GetPrevNode(AvlBaseNode* node) noexcept {
   return node;
 }
 
-} // algo
-} // mmkv
+}  // namespace algo
+}  // namespace mmkv
 
-#endif // _MMKV_ALGO_INTERNAL_AVL_UTIL_H_
+#endif  // _MMKV_ALGO_INTERNAL_AVL_UTIL_H_
