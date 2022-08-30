@@ -6,6 +6,8 @@
 
 #include "mmkv/db/kvdb.h"
 
+#include "mmkv/tracker/tracker_client.h"
+
 namespace mmkv {
 namespace server {
 
@@ -16,7 +18,7 @@ class MmkvServer {
   friend class MmkvSession;
   
  public:
-  explicit MmkvServer(EventLoop* loop, InetAddr const& addr);
+  explicit MmkvServer(EventLoop* loop, InetAddr const& addr, InetAddr const &sharder_addr);
   ~MmkvServer() noexcept;
 
   void Listen() {
@@ -30,6 +32,9 @@ class MmkvServer {
   void Start();
  private:
   TcpServer server_;
+
+  std::unique_ptr<EventLoopThread> tracker_cli_loop_thr_;
+  std::unique_ptr<TrackerClient> tracker_cli_;
 };
 
 } // server

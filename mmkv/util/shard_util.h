@@ -12,8 +12,11 @@ namespace mmkv {
 
 using protocol::Shard;
 using protocol::String;
-inline Shard MakeShardId(String const &key) noexcept {
+
+template<typename Alloc>
+inline Shard MakeShardId(std::basic_string<char, std::char_traits<char> , Alloc> const &key) noexcept {
   return XXH32(key.c_str(), key.size(), 0);
+
 }
 
 } // mmkv

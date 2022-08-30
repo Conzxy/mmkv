@@ -6,4 +6,7 @@
 #define LOG_MMKV(_conn) \
   LOG_INFO << _conn->GetPeerAddr().ToIp()
 
+/** Background port difference */
+#define BACKGROUND_PORT_DIFF 10000
+
 #endif

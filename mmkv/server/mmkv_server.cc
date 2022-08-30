@@ -17,8 +17,10 @@ using namespace mmkv::server;
 using namespace mmkv::storage;
 using namespace mmkv::util;
 
-MmkvServer::MmkvServer(EventLoop* loop, InetAddr const& addr)
+MmkvServer::MmkvServer(EventLoop* loop, InetAddr const& addr, InetAddr const &sharder_addr)
   : server_(loop, addr, "In-Memory Key-Value database server")
+  , tracker_cli_loop_thr_(mmkv_config().IsSharder() ? new EventLoopThread("TrackerClient") : nullptr)
+  , tracker_cli_(mmkv_config().IsSharder() ? new TrackerClient(tracker_cli_loop_thr_->StartRun(), InetAddr(mmkv_config().router_address), sharder_addr) : nullptr)
 {
   server_.SetConnectionCallback([this](TcpConnectionPtr const& conn) {
     if (conn->IsConnected()) {
@@ -32,6 +34,12 @@ MmkvServer::MmkvServer(EventLoop* loop, InetAddr const& addr)
       LOG_MMKV(conn) << " disconnected";
     }
   });
+
+  if (tracker_cli_) {
+    LOG_INFO << "This is configured as a shard server also";
+    LOG_INFO << "Connecting to the router server...";
+    tracker_cli_->Connect();
+  }
 }
 
 MmkvServer::~MmkvServer() noexcept {
@@ -39,13 +47,7 @@ MmkvServer::~MmkvServer() noexcept {
 }
 
 void MmkvServer::Start() {
-  static MmkvDb db;
-  g_db = &db;
-
-  if (g_config.log_method == LM_REQUEST) {
-    static RequestLog rlog;
-    g_rlog = &rlog;
-
+  if (mmkv_config().log_method == LM_REQUEST) {
     auto stime = GetTimeMs();
     LOG_INFO << "Recover from request log";
     try { 
@@ -57,18 +59,18 @@ void MmkvServer::Start() {
       LOG_ERROR << "Can't recover database from log";
     }
     LOG_INFO << "Recover cost: " << (GetTimeMs() - stime) << "ms";
-    g_rlog->Start();
+    rlog().Start();
   }
 
-  if (g_config.expiration_check_cycle > 0) {
+  if (mmkv_config().expiration_check_cycle > 0) {
     LOG_INFO << "The mmkv will check all expired entries actively";
-    LOG_INFO << "The cycle is " << g_config.expiration_check_cycle << " seconds";
+    LOG_INFO << "The cycle is " << mmkv_config().expiration_check_cycle << " seconds";
 
     server_.GetLoop()->RunEvery([]() {
       // FIXME thread-safe
       LOG_DEBUG << "Check expiration";
-      storage::DbCheckExpirationCycle();
-    }, g_config.expiration_check_cycle);
+      database_manager().CheckExpirationCycle();
+    }, mmkv_config().expiration_check_cycle);
   }
 
   Listen();
