@@ -294,6 +294,7 @@ bool Parse(char const *path, std::string &errmsg) {
         errmsg += std::to_string(lineno);
         errmsg += "\nField error: Unknown field '";
         errmsg.append(field.data(), field.size());
+        errmsg += '\'';
         return false;
       }
     } else if (!line.empty() && !std::all_of(line.begin(), line.end(), [](char c)  { return c == ' '; })) {
