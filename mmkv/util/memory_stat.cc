@@ -4,11 +4,9 @@
 #include <stdio.h>
 
 using namespace mmkv::util;
+using namespace kanon;
 
-MemoryStat mmkv::util::g_memstat = MemoryStat {
-  .memory_usage = 0,
-  .allocate_count = 0,
-  .deallocate_count = 0,
-  .reallocate_count = 0
-};
-
+MemoryStat &mmkv::util::memory_stat() {
+  static MemoryStat stat;
+  return stat;
+}
