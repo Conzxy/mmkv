@@ -43,7 +43,7 @@ MmkvDb::MmkvDb(std::string name)
   : name_(std::move(name))
   , cache_(nullptr)
 {
-  if (g_config.replace_policy == RP_LRU)
+  if (mmkv_config().replace_policy == RP_LRU)
     cache_.reset(new LruCache<String const*>(-1));
 
   LOG_INFO << "Database " << name_ << " created";
@@ -877,7 +877,7 @@ StatusCode MmkvDb::SetSubSize(String const& key1, String const& key2, size_t& co
 }
 
 StatusCode MmkvDb::ExpireAtMs(String &&key, uint64_t expire) {
-  if (IsExpirationDisable()) return protocol::S_EXPIRE_DISABLE;
+  if (mmkv_config().IsExpirationDisable()) return protocol::S_EXPIRE_DISABLE;
   auto kv = dict_.Find(key);
   if (!kv) return S_NONEXISTS;
 
@@ -925,7 +925,7 @@ StatusCode MmkvDb::GetTimeToLive(String const &key, uint64_t &ttl) {
 /*--------------------------------*/
 
 void MmkvDb::TryReplacekey(String const *key) {
-  if (!cache_ || g_config.max_memory_usage > g_memstat.memory_usage) return;
+  if (!cache_ || mmkv_config().max_memory_usage > memory_stat().memory_usage) return;
   
   auto victim = cache_->Victim();
   // If the victim has already in the database,
@@ -937,8 +937,8 @@ void MmkvDb::TryReplacekey(String const *key) {
   auto node = dict_.Extract(**victim);
   assert(node);
   cache_->DelVictim();
-  if (g_config.log_method == server::LM_REQUEST)
-    g_rlog->AppendDel(std::move(node->value.key));
+  if (mmkv_config().log_method == server::LM_REQUEST)
+    rlog().AppendDel(std::move(node->value.key));
   DeleteMmkvData(node->value.value);
   dict_.DropNode(node);
 }
@@ -980,7 +980,7 @@ void MmkvDb::CheckExpireCycle() {
     exp_dict_.Erase(key);
   }
 
-  if (g_config.log_method == LM_REQUEST) {
+  if (mmkv_config().log_method == LM_REQUEST) {
     MmbpRequest request;
     Buffer buffer;
     for (auto &key : expire_keys) {
@@ -989,7 +989,7 @@ void MmkvDb::CheckExpireCycle() {
       request.command = DEL;
       request.SerializeTo(buffer);
       buffer.Prepend32(buffer.GetReadableSize());
-      g_rlog->Append(buffer.GetReadBegin(), buffer.GetReadableSize());
+      rlog().Append(buffer.GetReadBegin(), buffer.GetReadableSize());
       buffer.AdvanceAll();
       request.Reset();
     }
@@ -997,7 +997,7 @@ void MmkvDb::CheckExpireCycle() {
 }
 
 bool MmkvDb::CheckExpire(String const &key) {
-  if (!g_config.lazy_expiration) return false;
+  if (!mmkv_config().lazy_expiration) return false;
   ExDict::Bucket *bucket = nullptr;
   const auto node = exp_dict_.FindNode(key, &bucket);
   if (!node) return false;
@@ -1012,8 +1012,8 @@ bool MmkvDb::CheckExpire(String const &key) {
     DeleteMmkvData(node2->value.value);
     dict_.DropNode(node2);
 
-    if (g_config.log_method == LM_REQUEST) {
-      g_rlog->AppendDel(std::move(const_cast<String&>(key)));
+    if (mmkv_config().log_method == LM_REQUEST) {
+      rlog().AppendDel(std::move(const_cast<String&>(key)));
     }
     return true;
   }
@@ -1030,25 +1030,25 @@ size_t MmkvDb::DeleteAll() {
 }
 
 void MmkvDb::AddKeyToShard(String const &key) {
-  if (IsSharder()) {
+  if (mmkv_config().IsSharder()) {
     sdict_[MakeShardId(key)].Insert(&key);
   }
 }
 
 void MmkvDb::RemoveKeyFromShard(String const &key) {
-  if (IsSharder()) {
+  if (mmkv_config().IsSharder()) {
     sdict_[MakeShardId(key)].Erase(&key);
   }
 }
 
 void MmkvDb::RemoveShard(Shard shard_id) {
-  if (IsSharder()) {
+  if (mmkv_config().IsSharder()) {
     sdict_.Erase(shard_id);
   }
 }
 
 ShardCode MmkvDb::GetShardKeys(Shard shard_id, std::vector<String const*> &keys) {
-  if (!IsSharder()) return SC_NOT_SHARD_SERVER;
+  if (!mmkv_config().IsSharder()) return SC_NOT_SHARD_SERVER;
   
   auto shard_keys = sdict_.Find(shard_id);
   if (!shard_keys) return SC_NO_SHARD;

@@ -12,7 +12,7 @@ struct Option {
   bool reconnect = false;
 };
 
-extern Option g_option;
+Option &cli_option();
 
 void RegisterOptions();
 

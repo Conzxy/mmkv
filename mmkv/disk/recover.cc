@@ -16,7 +16,7 @@ using namespace mmkv::server;
 static constexpr int BUFFER_SIZE = 1 << 16;
 
 Recover::Recover()
-  : file_(g_config.request_log_location, File::READ)
+  : file_(mmkv_config().request_log_location, File::READ)
 {
 }
 
@@ -37,7 +37,7 @@ void Recover::ParseFromRequest() {
       auto size = buffer.Read32();
       if (buffer.GetReadableSize() >= size - sizeof(size)) {
         request.ParseFrom(buffer);
-        DbExecute(request, nullptr);
+        database_manager().Execute(request, nullptr);
         assert(GetCommandType((Command)request.command) == CT_WRITE);
       } else {
         break;

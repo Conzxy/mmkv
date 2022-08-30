@@ -65,7 +65,7 @@ MmkvClient::MmkvClient(EventLoop* loop, InetAddr const& server_addr)
         ::exit(0);
       } else {
         puts("\nConnection is closed by peer server");
-        if (!g_option.reconnect)
+        if (!cli_option().reconnect)
           ::exit(0);
       }
 
@@ -89,7 +89,7 @@ MmkvClient::MmkvClient(EventLoop* loop, InetAddr const& server_addr)
   });
 
   InstallLinenoise();
-  if (g_option.reconnect)
+  if (cli_option().reconnect)
     client_->EnableRetry();
 }
 

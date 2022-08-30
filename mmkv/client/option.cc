@@ -5,15 +5,24 @@
 namespace mmkv {
 namespace client {
 
-Option g_option;
-
-void RegisterOptions() {
-  takina::AddUsage("./mmkv_cli [OPTIONS]");
-  takina::AddDescription("Command-line-interface client of mmkv");
-  takina::AddOption({"p", "port", "Port of mmkv server", "PORT"}, &g_option.port);
-  takina::AddOption({"h", "host", "Hostname of mmkv server", "HOST"}, &g_option.host);
-  takina::AddOption({"r", "reconnect", "Reconnect to server when peer close the connection"}, &g_option.reconnect);
+Option &cli_option()
+{
+  static Option option;
+  return option;
 }
 
-} // client
-} // mmkv
+void RegisterOptions()
+{
+  takina::AddUsage("./mmkv_cli [OPTIONS]");
+  takina::AddDescription("Command-line-interface client of mmkv");
+  takina::AddOption({"p", "port", "Port of mmkv server", "PORT"},
+                    &cli_option().port);
+  takina::AddOption({"h", "host", "Hostname of mmkv server", "HOST"},
+                    &cli_option().host);
+  takina::AddOption(
+      {"r", "reconnect", "Reconnect to server when peer close the connection"},
+      &cli_option().reconnect);
+}
+
+} // namespace client
+} // namespace mmkv

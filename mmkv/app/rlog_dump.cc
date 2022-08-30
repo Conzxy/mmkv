@@ -22,7 +22,10 @@ struct Option {
   std::string file_location = "/tmp/.mmkv-request.log";
 };
 
-Option g_option;
+Option &log_dump_option() {
+  static Option option;
+  return option;
+} 
 
 static constexpr int BUFFER_SIZE = 1 << 16;
 
@@ -31,9 +34,9 @@ void PrintRequest(MmbpRequest const& req);
 int main(int argc, char** argv) {
   takina::AddUsage("./rlogdump [OPTIONS]");
   takina::AddDescription("This is a parser of mmkv request log");
-  takina::AddOption({"", "clear", "Clear the request log"}, &g_option.clear);
-  takina::AddOption({"s", "size", "Size of log file"}, &g_option.size);
-  takina::AddOption({"f", "file", "File location(default: /tmp/.mmkv-request.log)", "LOCATION"}, &g_option.file_location);
+  takina::AddOption({"", "clear", "Clear the request log"}, &log_dump_option().clear);
+  takina::AddOption({"s", "size", "Size of log file"}, &log_dump_option().size);
+  takina::AddOption({"f", "file", "File location(default: /tmp/.mmkv-request.log)", "LOCATION"}, &log_dump_option().file_location);
 
   std::string errmsg;
   if (!takina::Parse(argc, argv, &errmsg)) {
@@ -41,34 +44,34 @@ int main(int argc, char** argv) {
     return 0;
   }
 
-  if (g_option.clear) {
+  if (log_dump_option().clear) {
 #if 0
     std::string cmd;
-    util::StrCat(cmd, "cat %a> %a", g_option.file_location.c_str(), g_option.file_location.c_str());
+    util::StrCat(cmd, "cat %a> %a", log_dump_option().file_location.c_str(), log_dump_option().file_location.c_str());
     ::system(cmd.c_str());
 #else
     char cmd[4096];
-    ::snprintf(cmd, sizeof cmd, "cat %s> %s", g_option.file_location.c_str(), g_option.file_location.c_str());
+    ::snprintf(cmd, sizeof cmd, "cat %s> %s", log_dump_option().file_location.c_str(), log_dump_option().file_location.c_str());
     ::system(cmd);
 #endif
     return 0;
   }
 
-  if (g_option.size) {
+  if (log_dump_option().size) {
     Stat stat;
-    if (!stat.Open(g_option.file_location)) {
-      fprintf(stderr, "Failed to open file: %s\n", g_option.file_location.c_str());
+    if (!stat.Open(log_dump_option().file_location)) {
+      fprintf(stderr, "Failed to open file: %s\n", log_dump_option().file_location.c_str());
       return 0;
     }
 
     const auto usage = format_memory_usage(stat.GetFileSize());
-    printf("The size of request log = %" PRIu64 " %s\n", usage.usage, memory_unit2str(usage.unit));
+    printf("The size of request log = %lf %s\n", usage.usage, memory_unit2str(usage.unit));
     return 0;
   }
 
   File file;
-  if (!file.Open(g_option.file_location, File::READ)) {
-    fprintf(stderr, "Failed to open file: %s\n", g_option.file_location.c_str());
+  if (!file.Open(log_dump_option().file_location, File::READ)) {
+    fprintf(stderr, "Failed to open file: %s\n", log_dump_option().file_location.c_str());
     return 0;
   }
 

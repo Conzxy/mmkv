@@ -14,7 +14,10 @@ using namespace mmkv::util;
 namespace mmkv {
 namespace server {
 
-MmkvConfig g_config;
+MmkvConfig &mmkv_config() {
+  static MmkvConfig config;
+  return config;
+}
 
 static StringView log_method2str(LogMethod mtd) noexcept;
 static StringView replace_policy2str(ReplacePolicy rp) noexcept;
@@ -34,17 +37,15 @@ void RegisterConfig(MmkvConfig &config) {
   chisato::AddConfig("MaxMemoryUsage", &config.max_memory_usage, &set_max_memoey_usage);
   chisato::AddConfig("RouterAddress", &config.router_address);
   chisato::AddConfig("ShardNum", &config.shard_num);
-  chisato::AddConfig("RouterPort", &config.router_port);
-  chisato::AddConfig("TrackPort", &config.tracker_port);
   chisato::AddConfig("Nodes", &config.nodes, &set_nodes);
 }
 
 bool ParseConfig(std::string &errmsg) {
   auto start_time = GetTimeMs();
-  auto success = chisato::Parse(g_option.config_name, errmsg); 
+  auto success = chisato::Parse(mmkv_option().config_name, errmsg); 
 
   if (!success) return false;
-  if (g_config.request_log_location.empty()) {
+  if (mmkv_config().request_log_location.empty()) {
     LOG_ERROR << "The RequestLogLocation field in the config file is missing";
     return false;
   }
@@ -66,8 +67,6 @@ void PrintMmkvConfig(MmkvConfig const &config) {
   LOG_DEBUG << "\nMaxMemoryUsage=" << usage.usage << " " << memory_unit2str(usage.unit);
   LOG_DEBUG << "\nRouterAddress=" << config.router_address;
   LOG_DEBUG << "\nShardNum=" << config.shard_num;
-  LOG_DEBUG << "\nRouterPort" << config.router_port;
-  LOG_DEBUG << "\nSharderPort" << config.sharder_port;
   LOG_DEBUG << "\nNodes: ";
   for (size_t i = 0; i < config.nodes.size(); ++i) {
     LOG_DEBUG << "node " << i << ": " << config.nodes[i];

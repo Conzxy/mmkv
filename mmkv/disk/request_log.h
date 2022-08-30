@@ -102,10 +102,12 @@ class RequestLog {
 /* Declare pointer to avoid
  * undefined initailzation sequence
  * e.g.
- * g_rlog initialize before g_config parsed,
+ * rlog() initialize before mmkv_config() parsed,
  * the location of file is undefined
  */
-extern RequestLog *g_rlog;
+// extern RequestLog *g_rlog;
+
+RequestLog &rlog();
 
 } // disk
 } // mmkv

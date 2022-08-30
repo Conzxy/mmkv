@@ -20,7 +20,7 @@ int main(int argc, char* argv[]) {
   EventLoopThread loop_thread;
   auto loop = loop_thread.StartRun(); 
 
-  InetAddr server_addr(g_option.host, g_option.port);
+  InetAddr server_addr(cli_option().host, cli_option().port);
   MmkvClient client(loop, server_addr);
   client.Start();
   

@@ -10,12 +10,17 @@ using namespace mmkv::server;
 using namespace mmkv::protocol;
 using namespace kanon;
 
-RequestLog *mmkv::disk::g_rlog = nullptr;
+// RequestLog *mmkv::disk::g_rlog = nullptr;
+
+RequestLog &mmkv::disk::rlog() {
+  static RequestLog rlog;
+  return rlog;
+}
 
 RequestLog::RequestLog() 
   : empty_cond_(empty_lock_) 
   , io_thread_("RequestLogBackground")
-  , file_(g_config.request_log_location)
+  , file_(mmkv_config().request_log_location)
   , fd_(::fileno(file_.fp()))
   , latch_(1)
   , running_(false)

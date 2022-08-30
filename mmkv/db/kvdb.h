@@ -64,10 +64,18 @@ class MmkvDb {
   ~MmkvDb() noexcept {
     LOG_INFO << "Database " << name_ << " removed";
   }
+  
+  // MmkvDb(MmkvDb &&) = default;
+  // MmkvDb &operator=(MmkvDb &&) = default;
 
   /*----------------------------------------------*/
   /* Common API                                   */ 
   /*----------------------------------------------*/
+  
+  /**
+   * \brief Determine if the database is empty
+   */
+  bool IsEmpty() const noexcept { return dict_.empty(); }
 
   /** 
    * \brief Get all keys in the database
