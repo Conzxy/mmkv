@@ -1,0 +1,9 @@
+[submodule "third-party/ternary-tree"]
+	path = third-party/ternary-tree
+	url = https://github.com/Conzxy/ternary-tree
+[submodule "third-party/takina"]
+	path = third-party/takina
+	url = https://github.com/Conzxy/takina
+[submodule "third-party/chisato"]
+	path = third-party/chisato
+	url = https://github.com/Conzxy/chisato
