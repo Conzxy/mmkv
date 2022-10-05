@@ -243,7 +243,7 @@ void TrackSession::MoveShard(TrackRequest &req)
     if ((uint32_t)-1 != old_node_id) {
       auto &shards = tracker_->node_map_[old_node_id].shards;
       old_shard = shards.back();
-      shards.pop_back();
+      shards.pop_back(); MMKV_UNUSED(old_shard);
       assert(req.shard_id == old_shard);
       LOG_DEBUG << "Remove shard from " << old_node_id;
     } else {

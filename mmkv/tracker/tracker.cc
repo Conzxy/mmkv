@@ -17,9 +17,9 @@ Tracker::Tracker(EventLoop *loop, InetAddr const &addr)
       auto session = new TrackSession(this, conn);
       /* node_session_map需在新节点显式请求加入节点后注册，
        * 即在TrackSession::Join()中处理 */
-      conn->SetContext(session);
+      conn->SetContext(*session);
     } else {
-      auto session = *AnyCast<TrackSession *>(conn->GetContext());
+      auto session = AnyCast<TrackSession>(conn->GetContext());
       /* 无论存不存在，直接删除，因为判断有无也需要相同的时间复杂度 */
       node_session_map.erase(session->node_id_);
       RemoveNode(session->node_id_);
