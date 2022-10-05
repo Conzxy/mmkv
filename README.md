@@ -49,22 +49,18 @@
 开发中
 
 ## Build
-该项目需要额外安装[kanon](https://github.com/Conzxy/kanon)，是我个人编写的网络库，为该项目提供网络模块的支持。安装方式参考其github页面。
-
-其他的依赖放在`third-party`，由项目本身管理。
-
 ```shell
 git clone https://github.com/Conzxy/mmkv
 cd mmkv/bin
 export MMKV_BUILD_PATH=... # build目录的路径
 # 或在~/.bash_profile中加上该句
-chmod u+x release_build.sh
-./release_build.sh mmkv-cli
-./release_build.sh mmkv-server
-# Debug mode by following:
-# chmod u+x build.sh
-# ./build.sh mmkv-cli
+chmod u+x build.sh
+./build.sh -m=release mmkv-cli
+./build.sh -m=release mmkv-server
+# Debug mode
+# ./build.sh mmkv-cli(OR ./build.sh -m=debug mmkv-cli)
 # ./build.sh mmkv-server
+# Please type "./build.sh --help" to see all options
 ```
 
 ## Run
