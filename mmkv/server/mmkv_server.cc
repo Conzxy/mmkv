@@ -24,13 +24,13 @@ MmkvServer::MmkvServer(EventLoop* loop, InetAddr const& addr, InetAddr const &sh
 {
   server_.SetConnectionCallback([this](TcpConnectionPtr const& conn) {
     if (conn->IsConnected()) {
-      conn->SetContext(new MmkvSession(conn, this));
+      conn->SetContext(*new MmkvSession(conn, this));
       LOG_MMKV(conn) << " connected";
     } else {
-      auto p = AnyCast<MmkvSession*>(conn->GetContext());
+      auto p = AnyCast<MmkvSession>(conn->GetContext());
       assert(p);
 
-      delete *p;
+      delete p;
       LOG_MMKV(conn) << " disconnected";
     }
   });

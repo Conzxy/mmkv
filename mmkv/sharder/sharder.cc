@@ -11,9 +11,9 @@ Sharder::Sharder(EventLoop *loop, InetAddr const &addr)
 {
   server_.SetConnectionCallback([](TcpConnectionPtr const &conn) {
     if (conn->IsConnected()) {
-      conn->SetContext(new ShardSession(conn));
+      conn->SetContext(*new ShardSession(conn));
     } else {
-      delete *AnyCast<ShardSession*>(conn->GetContext());
+      delete AnyCast<ShardSession>(conn->GetContext());
     }
   });
 }

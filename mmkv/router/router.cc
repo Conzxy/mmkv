@@ -17,9 +17,9 @@ Router::Router(EventLoop *loop, InetAddr const &addr,
 
   router_.SetConnectionCallback([this](TcpConnectionPtr const &conn) {
     if (conn->IsConnected()) {
-      conn->SetContext(new RouterSession(&tracker_, conn));
+      conn->SetContext(*new RouterSession(&tracker_, conn));
     } else {
-      delete *AnyCast<RouterSession *>(conn->GetContext());
+      delete AnyCast<RouterSession>(conn->GetContext());
     }
   });
 
