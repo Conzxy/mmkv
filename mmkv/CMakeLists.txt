@@ -15,8 +15,8 @@ file(GLOB_RECURSE MMKV_SRC
   client/tracker_client.cc
   ${DISTRIBUTION_SRC}
   cluster/*.cc
-  ${CHISATO_DIR}/*.cc
-  ${TAKINA_DIR}/*.cc
+  ${CHISATO_DIR}/chisato.cc
+  ${TAKINA_DIR}/takina.cc
 )
 
 file(GLOB_RECURSE MMKV_SERVER_SRC

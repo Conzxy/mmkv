@@ -54,15 +54,21 @@ message(STATUS "BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
 set(MMKV_SOURCE_DIR ${PROJECT_SOURCE_DIR}/mmkv)
 set(THIRD_PARTY_DIR ${PROJECT_SOURCE_DIR}/third-party)
-set(LINENOISE_DIR ${THIRD_PARTY_DIR}/linenoise)
-set(XXHASH_DIR ${THIRD_PARTY_DIR}/xxHash)
+
+set(KANON_DIR ${THIRD_PARTY_DIR}/kanon)
 set(TAKINA_DIR ${THIRD_PARTY_DIR}/takina)
 set(CHISATO_DIR ${THIRD_PARTY_DIR}/chisato)
 set(TERNARY_DIR ${THIRD_PARTY_DIR}/ternary-tree)
 
+set(LINENOISE_DIR ${THIRD_PARTY_DIR}/linenoise)
+set(XXHASH_DIR ${THIRD_PARTY_DIR}/xxHash)
+
+include_directories(${KANON_DIR})
 include_directories(${PROJECT_SOURCE_DIR})
 include_directories(${LINENOISE_DIR})
 include_directories(${XXHASH_DIR})
+
+add_subdirectory(${KANON_DIR})
 
 link_directories(${XXHASH_DIR})
 
