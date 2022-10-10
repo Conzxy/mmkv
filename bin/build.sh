@@ -53,11 +53,7 @@ for arg in "$@"; do
       VERBOSE=1
     ;;
     -h|--help):
-      echo "Usage: ./build.sh target_name [--mode|-m] [-v|--verbose]"
-      echo "Options: "
-      echo "-m/--mode=debug/release  Build mode(Case insensitive)"
-      echo "-v/--verbose             Print detail message"
-      exit 0
+      PrintHelp
     ;;
     *):
       echo "Unknown option, don't accpet" 
