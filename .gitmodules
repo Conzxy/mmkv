@@ -10,3 +10,6 @@
 [submodule "third-party/kanon"]
 	path = third-party/kanon
 	url = https://github.com/Conzxy/kanon
+[submodule "third-party/hklua"]
+	path = third-party/hklua
+	url = https://github.com/Conzxy/hklua
