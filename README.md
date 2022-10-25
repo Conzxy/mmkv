@@ -33,9 +33,9 @@
 - [x] 支持`Log`和`Recovery`（目前仅支持request log）
 - [x] 实现key的`expiration`管理（包括是否允许设置过期时间，删除过期时间，过期键的检测策略）
 - [x] 实现key的`replacement`管理（包括是否配置最大内存占用，达到最大内存占用时的替换策略）
-- [ ] 支持分布式存储(distributed system)
-- [ ] 支持Raft容错
-- [ ] 支持多线程
+- [x] 支持多线程处理请求
+- [x] 支持分布式存储（暂时不完整）
+- [ ] 支持Raft一致性算法，实现高可用
 
 ### CLI
 - [x] 实现`translator`将输入行翻译成MMBP request
@@ -46,7 +46,7 @@
 - [x] 对于输入的命令大小写不敏感（可以识别，提示，补全）
 
 ### Client API
-开发中
+参考[mmkvc](https://github.com/Conzxy/mmkvc)。
 
 ## Build
 ```shell
