@@ -3,7 +3,9 @@
 #include "mmkv/server/config.h"
 #include "mmkv/server/option.h"
 #include "mmkv/util/conv.h"
+#include "mmkv/util/str_util.h"
 
+#include <kanon/string/string_util.h>
 #include <kanon/log/async_log.h>
 #include <takina.h>
 
@@ -15,8 +17,14 @@ int main(int argc, char *argv[])
 {
   std::string errmsg;
 
-  RegisterOptions();
-  const auto success = ParseOptions(argc, argv, errmsg);
+  takina::AddUsage(kanon::StrCat(argv[0], " [OPTIONS]"));
+  takina::AddDescription("The server of mmkv(memory key-value)");
+  takina::AddOption({"c", "config", "The filename of config(default : ./mmkv.conf)", "CONFIG_NAME"}, &mmkv_option().config_name);
+  takina::AddOption({"p", "port", "Port number(default: 9998)", "PORT"}, &mmkv_option().port);
+  takina::AddOption({"i", "ip", "IP address(default: any)", "IP-ADDRESS"}, &mmkv_option().ip);
+  takina::AddSection("Background deamon options");
+  takina::AddOption({"sp", "sharder-port", "Port number of sharder(default: 19998)"}, &mmkv_option().sharder_port);
+  const auto success = takina::Parse(argc, argv, &errmsg);
   if (!success) {
     ::fprintf(stderr, "Failed to parse the options: \n%s\n", errmsg.c_str());
     return 0;
@@ -24,10 +32,14 @@ int main(int argc, char *argv[])
   takina::Teardown();
   LOG_INFO << "Options has parsed successfully";
 
-  RegisterConfig(mmkv_config());
-  if (!ParseConfig(errmsg)) {
-    ::fprintf(stderr, "Failed to parse the config file: \n%s\n",
-              errmsg.c_str());
+  // RegisterConfig(mmkv_config());
+  // if (!ParseConfig(errmsg)) {
+  //   ::fprintf(stderr, "Failed to parse the config file: \n%s\n",
+  //             errmsg.c_str());
+  //   return 0;
+  // }
+  if (!ParseLuaConfig(mmkv_option().config_name, mmkv_config())) {
+    ::fprintf(stderr, "Failed to parse the options\n");
     return 0;
   }
   LOG_INFO << "Config has parsed successfully";

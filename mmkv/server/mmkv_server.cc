@@ -20,7 +20,7 @@ using namespace mmkv::util;
 MmkvServer::MmkvServer(EventLoop* loop, InetAddr const& addr, InetAddr const &sharder_addr)
   : server_(loop, addr, "In-Memory Key-Value database server")
   , tracker_cli_loop_thr_(mmkv_config().IsSharder() ? new EventLoopThread("TrackerClient") : nullptr)
-  , tracker_cli_(mmkv_config().IsSharder() ? new TrackerClient(tracker_cli_loop_thr_->StartRun(), InetAddr(mmkv_config().router_address), sharder_addr) : nullptr)
+  , tracker_cli_(mmkv_config().IsSharder() ? new TrackerClient(tracker_cli_loop_thr_->StartRun(), InetAddr(mmkv_config().config_server_endpoint), sharder_addr) : nullptr)
 {
   server_.SetConnectionCallback([this](TcpConnectionPtr const& conn) {
     if (conn->IsConnected()) {

@@ -9,16 +9,13 @@ namespace mmkv {
 namespace server {
 
 struct MmkvOption {
-  std::string config_name = "./mmkv.conf";
+  std::string config_name = "./mmkvconf.lua";
   int port = 9998;
   std::string ip = "any";
   int sharder_port = port + BACKGROUND_PORT_DIFF;
 };
 
 MmkvOption &mmkv_option();
-
-void RegisterOptions();
-bool ParseOptions(int argc, char **argv, std::string &errmsg);
 
 } // option
 } // mmkv

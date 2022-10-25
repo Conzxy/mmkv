@@ -220,8 +220,8 @@ static inline void InstallLinenoise() {
   ternary_add(&command_tst, "HELP", false);
 
   if (::linenoiseHistoryLoad(COMMAND_HISTORY_LOCATION) < 0) {
-    ::fprintf(stderr, "Failed to load the command history\n");
-    ::exit(0);
+    ::fprintf(stderr, "Failed to load the command history\n"
+        "OR there is no command history");
   }
 
   ::linenoiseSetMultiLine(1); 
