@@ -35,7 +35,7 @@ void RegisterConfig(MmkvConfig &config) {
   chisato::AddConfig("ReplacePolicy", &config.replace_policy, &set_replace_policy);
   chisato::AddConfig("DiagnosticLogDirectory", &config.diagnostic_log_dir);
   chisato::AddConfig("MaxMemoryUsage", &config.max_memory_usage, &set_max_memoey_usage);
-  chisato::AddConfig("RouterAddress", &config.router_address);
+  chisato::AddConfig("RouterAddress", &config.config_server_endpoint);
   chisato::AddConfig("ShardNum", &config.shard_num);
   chisato::AddConfig("Nodes", &config.nodes, &set_nodes);
 }
@@ -65,7 +65,7 @@ void PrintMmkvConfig(MmkvConfig const &config) {
   LOG_DEBUG << "\nReplacePolicy=" << replace_policy2str(config.replace_policy);
   LOG_DEBUG << "\nDiagnosticLogDirectory=" << config.diagnostic_log_dir;
   LOG_DEBUG << "\nMaxMemoryUsage=" << usage.usage << " " << memory_unit2str(usage.unit);
-  LOG_DEBUG << "\nRouterAddress=" << config.router_address;
+  LOG_DEBUG << "\nRouterAddress=" << config.config_server_endpoint;
   LOG_DEBUG << "\nShardNum=" << config.shard_num;
   LOG_DEBUG << "\nNodes: ";
   for (size_t i = 0; i < config.nodes.size(); ++i) {

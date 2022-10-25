@@ -32,7 +32,8 @@ struct MmkvConfig {
   long expiration_check_cycle = 0;
   std::string request_log_location = "/tmp/.mmkv-request.log";
   std::string diagnostic_log_dir = "";
-  std::string router_address = "127.0.0.1:9997";
+  std::string config_server_endpoint = "0.0.0.0:9997";
+  std::string tracker_endpoint = "0.0.0.0:19997";
   long shard_num = DEFAULT_SHARD_NUM;
   std::vector<std::string> nodes;
   int thread_num = 1;
@@ -45,11 +46,11 @@ struct MmkvConfig {
    * the server split keys into shards
    */
   bool inline IsSharder() const noexcept {
-    return !router_address.empty();
+    return !config_server_endpoint.empty();
   }
 
   bool inline SupportDistribution() const noexcept {
-    return !router_address.empty();
+    return !config_server_endpoint.empty();
   }
 };
 
@@ -57,6 +58,9 @@ MmkvConfig &mmkv_config();
 
 void RegisterConfig(MmkvConfig &config);
 bool ParseConfig(std::string &errmsg);
+
+bool ParseLuaConfig(kanon::StringArg filename, MmkvConfig &config);
+
 void PrintMmkvConfig(MmkvConfig const &config);
 
 
