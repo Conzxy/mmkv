@@ -1,6 +1,6 @@
 file(GLOB_RECURSE DISTRIBUTION_SRC
   tracker/*.cc
-  router/*.cc
+  configd/*.cc
   sharder/*.cc
 )
 
@@ -12,6 +12,7 @@ file(GLOB_RECURSE MMKV_SRC
   storage/*.cc
   util/*.cc
   replacement/*.cc
+  lua/*.cc
   client/tracker_client.cc
   ${DISTRIBUTION_SRC}
   cluster/*.cc
@@ -23,6 +24,7 @@ file(GLOB_RECURSE MMKV_SERVER_SRC
   app/server_main.cc
   server/*.cc
   util/*.cc
+  lua/*.cc
   protocol/*.cc
   disk/*.cc
   db/*.cc
@@ -33,8 +35,8 @@ file(GLOB_RECURSE MMKV_SERVER_SRC
   ${CHISATO_DIR}/chisato.cc
 )
 
-file(GLOB_RECURSE ROUTER_SRC
-  app/router_main.cc
+file(GLOB_RECURSE CONFIGD_SRC
+  app/configd_main.cc
   server/*.cc
   util/*.cc
   protocol/*.cc
@@ -80,7 +82,11 @@ set(MMKV_LIB_LIST kanon_net kanon_base xxhash)
 
 # GenLib(mmkv_server_src ${MMKV_SERVER_SRC})
 # GenLib(mmkv_client_src ${MMKV_CLIENT_SRC})
-GenApplication(mmkv-server MMKV_SERVER_SRC MMKV_LIB_LIST)
+
+SetLibName(HKLUA_LIB hklua)
+set(MMKV_SERVER_LIBS ${MMKV_LIB_LIST} lua ${HKLUA_LIB})
+
+GenApplication(mmkv-server MMKV_SERVER_SRC MMKV_SERVER_LIBS)
 target_include_directories(mmkv-server PRIVATE ${TAKINA_DIR} PRIVATE ${CHISATO_DIR})
 
 GenApplication(mmkv-cli MMKV_CLIENT_SRC MMKV_LIB_LIST)
@@ -89,5 +95,5 @@ target_include_directories(mmkv-cli PRIVATE ${TAKINA_DIR} PRIVATE ${TERNARY_DIR}
 GenApplication(rlogdump RLOG_DUMP_SRC MMKV_LIB_LIST)
 target_include_directories(rlogdump PRIVATE ${TAKINA_DIR})
 
-GenApplication(router ROUTER_SRC MMKV_LIB_LIST)
-target_include_directories(router PRIVATE ${CHISATO_DIR} ${TAKINA_DIR})
+GenApplication(configd CONFIGD_SRC MMKV_LIB_LIST)
+target_include_directories(configd PRIVATE ${CHISATO_DIR} ${TAKINA_DIR})
