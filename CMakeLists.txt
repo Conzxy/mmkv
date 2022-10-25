@@ -59,6 +59,7 @@ set(KANON_DIR ${THIRD_PARTY_DIR}/kanon)
 set(TAKINA_DIR ${THIRD_PARTY_DIR}/takina)
 set(CHISATO_DIR ${THIRD_PARTY_DIR}/chisato)
 set(TERNARY_DIR ${THIRD_PARTY_DIR}/ternary-tree)
+set(HKLUA_DIR ${THIRD_PARTY_DIR}/hklua)
 
 set(LINENOISE_DIR ${THIRD_PARTY_DIR}/linenoise)
 set(XXHASH_DIR ${THIRD_PARTY_DIR}/xxHash)
@@ -67,9 +68,9 @@ include_directories(${KANON_DIR})
 include_directories(${PROJECT_SOURCE_DIR})
 include_directories(${LINENOISE_DIR})
 include_directories(${XXHASH_DIR})
+include_directories(${HKLUA_DIR})
 
 add_subdirectory(${KANON_DIR})
-
 link_directories(${XXHASH_DIR})
 
 # I don't want to use the builtin variable ${BUILD_SHARED_LIBS}
@@ -118,6 +119,14 @@ macro (GenApplication app_name src_list lib_list)
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin"
   )
 endmacro()
+
+macro (SetLibName var prefix)
+  if (${CMAKE_BUILD_TYPE} STREQUAL "Release")
+    set(${var} ${prefix})
+  else ()
+    set(${var} "${prefix}_debug")
+  endif ()
+endmacro ()
 
 # message(STATUS "BUILD_SHARED_LIBS = ${BUILD_SHARED_LIBS}")
 message(STATUS "BUILD_ALL_TESTS = ${BUILD_ALL_TESTS}")
