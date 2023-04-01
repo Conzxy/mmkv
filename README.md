@@ -1,4 +1,7 @@
 # Mmkv(Memory Key-Value database/cache)
+![license](https://img.shields.io/github/license/conzxy/mmkv) ![code-top](https://img.shields.io/github/languages/top/conzxy/mmkv) ![C++ standard](https://img.shields.io/badge/Standard-C%2B%2B14-red)  
+![](https://img.shields.io/badge/Platform-Linux-blue) ![linux-build](https://img.shields.io/github/actions/workflow/status/conzxy/mmkv/cmake-linux.yml?label=Linux%20CI&logo=Linux)  
+ ![commit-date](https://img.shields.io/github/last-commit/conzxy/mmkv)  
 其他细节内容参考[wiki](https://github.com/Conzxy/mmkv/wiki)。
 
 ## Introducation
