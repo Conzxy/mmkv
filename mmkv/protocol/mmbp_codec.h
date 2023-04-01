@@ -23,20 +23,15 @@ class MmbpCodec {
     E_INVALID_MESSAGE,
     E_NO_COMPLETE_MESSAGE, // This is not a error, just indicator
   };
+
+  using SizeHeaderType = uint32_t;
+  using CheckSumType = uint32_t;
+
  private:
 
   // using MessageCallback = std::function<void(TcpConnectionPtr const&, std::unique_ptr<MmbpMessage>, TimeStamp)>;
   using MessageCallback = std::function<void(TcpConnectionPtr const&, Buffer&, uint32_t, TimeStamp)>;
   using ErrorCallback = std::function<void(TcpConnectionPtr const&, ErrorCode)>;
-
-  using SizeHeaderType = uint32_t;
-  using CheckSumType = uint32_t;
-
-  static constexpr uint8_t SIZE_LENGTH = sizeof(SizeHeaderType);
-  static constexpr uint8_t CHECKSUM_LENGTH = sizeof(CheckSumType);
-  static constexpr uint32_t MAX_SIZE = 1 << 26; // 64MB
-  static char const MMBP_TAG[];
-  static uint8_t MMBP_TAG_SIZE;
 
  public:
   explicit MmbpCodec(MmbpMessage* prototype);
