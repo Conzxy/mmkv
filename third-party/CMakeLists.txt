@@ -3,3 +3,4 @@ execute_process(COMMAND make
 )
 
 add_subdirectory(hklua)
+add_subdirectory(replxx)
