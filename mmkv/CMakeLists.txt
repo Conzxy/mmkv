@@ -57,7 +57,7 @@ file(GLOB_RECURSE MMKV_CLIENT_SRC
   ${TERNARY_DIR}/ternary_tree.c
 )
 
-list (APPEND MMKV_CLIENT_SRC ${LINENOISE_DIR}/linenoise.c)
+#list (APPEND MMKV_CLIENT_SRC ${LINENOISE_DIR}/linenoise.c)
 
 file(GLOB_RECURSE RLOG_DUMP_SRC
   app/rlog_dump.cc
@@ -76,6 +76,8 @@ else ()
 endif ()
 
 GenLib(${MMKV_LIB} ${MMKV_SRC})
+target_link_libraries(${MMKV_LIB} PRIVATE linenoise)
+
 target_include_directories(${MMKV_LIB} PRIVATE ${CHISATO_DIR} PRIVATE ${TAKINA_DIR})
 
 set(MMKV_LIB_LIST kanon_net kanon_base xxhash)
@@ -84,12 +86,13 @@ set(MMKV_LIB_LIST kanon_net kanon_base xxhash)
 # GenLib(mmkv_client_src ${MMKV_CLIENT_SRC})
 
 SetLibName(HKLUA_LIB hklua)
-set(MMKV_SERVER_LIBS ${MMKV_LIB_LIST} lua ${HKLUA_LIB})
+set(MMKV_SERVER_LIBS ${MMKV_LIB_LIST} lua dl ${HKLUA_LIB})
+set(MMKV_CLIENT_LIBS ${MMKV_LIB_LIST} replxx)
 
 GenApplication(mmkv-server MMKV_SERVER_SRC MMKV_SERVER_LIBS)
 target_include_directories(mmkv-server PRIVATE ${TAKINA_DIR} PRIVATE ${CHISATO_DIR})
 
-GenApplication(mmkv-cli MMKV_CLIENT_SRC MMKV_LIB_LIST)
+GenApplication(mmkv-cli MMKV_CLIENT_SRC MMKV_CLIENT_LIBS)
 target_include_directories(mmkv-cli PRIVATE ${TAKINA_DIR} PRIVATE ${TERNARY_DIR})
 
 GenApplication(rlogdump RLOG_DUMP_SRC MMKV_LIB_LIST)
