@@ -13,3 +13,6 @@
 [submodule "third-party/hklua"]
 	path = third-party/hklua
 	url = https://github.com/Conzxy/hklua
+[submodule "third-party/replxx"]
+	path = third-party/replxx
+	url = https://github.com/AmokHuginnsson/replxx
