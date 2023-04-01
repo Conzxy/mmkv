@@ -52,7 +52,8 @@ MmkvDb::MmkvDb(std::string name)
 void MmkvDb::GetAllKeys(StrValues& keys) {
   // Don't reclaim expired kv
   // Don't replace any key
-  keys.clear();
+  // FIXME 检查Clear()是否需要？
+  // keys.clear();
   keys.reserve(dict_.size());
   for (auto const& kv : dict_) {
     keys.emplace_back(kv.key);

@@ -694,7 +694,9 @@ void DatabaseManager::Execute(MmbpRequest &request, MmbpResponse *response)
 
   case KEYALL: {
     RLOCK_ALL
-    DB.GetAllKeys(response->values);
+    for (auto const &db_instance : instances_) {
+      db_instance->db.GetAllKeys(response->values);
+    }
     response->SetValues();
     response->SetOk();
     RUNLOCK_ALL
@@ -717,7 +719,10 @@ void DatabaseManager::Execute(MmbpRequest &request, MmbpResponse *response)
 
   case DELALL: {
     WLOCK_ALL
-    size_t count = DB.DeleteAll();
+    size_t count = 0;
+    for (auto const &db_instance : instances_) {
+      count += db_instance->db.DeleteAll();
+    }
     if (response) {
       response->status_code = S_OK;
       response->count = count;
