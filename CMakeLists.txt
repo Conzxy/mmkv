@@ -12,8 +12,11 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
 set(CMAKE_CXX_FLAGS_MINSIZEREL "-Os -DNDEBUG")
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-Og")
 
+message(STATUS "CXX compiler: ${CMAKE_CXX_COMPILER}")
+
 set(CXX_FLAGS 
  -Wall
+ -Wno-attributes
  -Wextra
  -Wno-return-local-addr
  -Wno-unused-parameter
@@ -61,7 +64,7 @@ set(CHISATO_DIR ${THIRD_PARTY_DIR}/chisato)
 set(TERNARY_DIR ${THIRD_PARTY_DIR}/ternary-tree)
 set(HKLUA_DIR ${THIRD_PARTY_DIR}/hklua)
 
-set(LINENOISE_DIR ${THIRD_PARTY_DIR}/linenoise)
+set(LINENOISE_DIR ${THIRD_PARTY_DIR}/linenoise-ng/include)
 set(XXHASH_DIR ${THIRD_PARTY_DIR}/xxHash)
 
 include_directories(${KANON_DIR})
@@ -132,6 +135,6 @@ endmacro ()
 message(STATUS "BUILD_ALL_TESTS = ${BUILD_ALL_TESTS}")
 message(STATUS "BUILD_ALL_EXAMPLES = ${BUILD_ALL_EXAMPLES}")
 
+add_subdirectory(third-party)
 add_subdirectory(mmkv)
 add_subdirectory(test)
-add_subdirectory(third-party)
