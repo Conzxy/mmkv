@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <string>
 
+#include "kanon/util/macro.h"
+
 namespace mmkv {
 namespace protocol {
 
@@ -89,6 +91,11 @@ enum Command : uint16_t {
 namespace detail {
 extern std::string command_strings[];
 } // detail
+
+KANON_INLINE std::string* GetCommandStrings() KANON_NOEXCEPT
+{
+  return detail::command_strings;
+}
 
 inline std::string const &GetCommandString(Command cmd) {
   return detail::command_strings[cmd];

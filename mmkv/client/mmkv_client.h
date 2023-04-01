@@ -10,6 +10,8 @@
 #include <kanon/thread/mutex_lock.h>
 #include <kanon/util/noncopyable.h>
 
+struct Replxx;
+
 namespace mmkv {
 namespace client {
 
@@ -30,9 +32,11 @@ class MmkvClient {
   void IoWait() {
     io_cond_.Wait();
   }
-
- private:
   
+  KANON_INLINE Replxx *replxx() KANON_NOEXCEPT { return replxx_; }
+ private:
+  void InstallLinenoise() KANON_NOEXCEPT;   
+
   TcpClientPtr client_;
   protocol::MmbpCodec codec_;
 
@@ -41,7 +45,8 @@ class MmkvClient {
   kanon::MutexLock mutex_;
   
   std::string prompt_;
-
+  
+  Replxx *replxx_;
   protocol::Command current_cmd_;
 };
 

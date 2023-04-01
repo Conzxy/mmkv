@@ -61,6 +61,11 @@ extern std::unordered_map<kanon::StringView, Command, StringViewHash> command_ma
 
 } // detail
 
+KANON_INLINE std::string *GetCommandHints() KANON_NOEXCEPT
+{
+  return detail::command_hints;
+}
+
 inline std::string const &GetCommandHint(Command cmd) {
   return detail::command_hints[cmd]; 
 }
