@@ -3,7 +3,7 @@
 PrintHelp() {
   echo "Usage: ./build.sh target_name [--mode|-m] [-v|--verbose]"
   echo "Options: "
-  echo "-m|--mode=debug/release  Build mode(Case insensitive)"
+  echo "-d|-debug                  Build in debug mode"
   echo "-v|--verbose             Print detail message"
   exit 0
 }
@@ -39,15 +39,12 @@ esac
 
 shift
 
-MODE="Debug"
-VERBOSE=0
-
 CheckTargetIsSet
 
 for arg in "$@"; do
   case "$arg" in
-    -m=*|--mode=*):
-      MODE="${arg#*=}"
+    -d|--debug):
+      DEBUG=1
     ;;
     -v|--verbose):
       VERBOSE=1
@@ -62,16 +59,11 @@ for arg in "$@"; do
   esac
 done
 
-[[ ${MODE,,} == "debug" ]] && MODE="Debug" || MODE="Release"
+[[ $DEBUG == 1 ]] && MODE="Debug" || MODE="Release"
 [[ $VERBOSE == 1 ]] && VERBOSE="-v" || VERBOSE=""
 
-if [[ -z "$MMKV_BUILD_PATH" ]]; then
-  echo "You must export the build path of mmkv"
-  echo "e.g. export MMKV_BUILD_PATH=..."
-  echo "OR append \"export MMKV_BUILD_PATH=...\" to your .bash_profile or .zshrc, etc."
-  exit 1
-fi
-
-cd $MMKV_BUILD_PATH
-cmake .. -DCMAKE_BUILD_TYPE=$MODE
-cmake --build . --target $TARGET --parallel $(nproc) $VERBOSE
+echo "MODE = $MODE"
+echo "Verbose = $VERBOSE"
+cd ../build
+#cmake .. -DCMAKE_BUILD_TYPE=$MODE
+#cmake --build . --target $TARGET --parallel $(nproc) $VERBOSE

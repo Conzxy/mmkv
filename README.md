@@ -52,22 +52,23 @@
 参考[mmkvc](https://github.com/Conzxy/mmkvc)。
 
 ## Build
+### CMake
 ```shell
-git clone https://github.com/Conzxy/mmkv
-cd mmkv/bin
-export MMKV_BUILD_PATH=... # build目录的路径
-# 或在~/.bash_profile中加上该句
-chmod u+x build.sh
-./build.sh -m=release mmkv-cli
-./build.sh -m=release mmkv-server
-# Debug mode
-# ./build.sh mmkv-cli(OR ./build.sh -m=debug mmkv-cli)
-# ./build.sh mmkv-server
-# Please type "./build.sh --help" to see all options
+mkdir build
+cd build
+cmake ..
+cmake --build . --target mmkv-cli --parallel $(nproc)
+cmake --build . --target mmkv-server --parallel $(nproc)
 ```
 
-## Run
-运行结果可以参考以下GIF。<br>
+### Shell Script
+为了避免CMake的命令比较长，也可以通过以下脚本编译：
+```shell
+cd bin
+chmod u+x build.sh
+./build.sh mmkv-cli
+./build.sh mmkv-server
+```
 
 ### FAQ
 * 如果`mmkv-cli`输出了日志信息，可以通过设置环境变量关闭`KANON_DEBUG=0`，server的日志信息也可以通过相同的方法关闭。
