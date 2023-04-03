@@ -76,7 +76,7 @@ else ()
 endif ()
 
 GenLib(${MMKV_LIB} ${MMKV_SRC})
-target_link_libraries(${MMKV_LIB} PRIVATE linenoise)
+#target_link_libraries(${MMKV_LIB} PRIVATE linenoise)
 
 target_include_directories(${MMKV_LIB} PRIVATE ${CHISATO_DIR} PRIVATE ${TAKINA_DIR})
 
