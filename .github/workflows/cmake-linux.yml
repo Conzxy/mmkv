@@ -34,7 +34,7 @@ jobs:
         submodules: recursive
 
     - name: Install dependences
-    - run: |
+      run: |
         apt install lua5.3
       shell: bash
 
