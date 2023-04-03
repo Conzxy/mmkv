@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
-    <title>ReservedArray &#8212; Mmkv v1.0.0 文档</title>
+    <title>Data strucuture design &amp; benchmark &#8212; Mmkv v1.0.0 文档</title>
   
   
   
@@ -44,8 +44,8 @@
     <script>DOCUMENTATION_OPTIONS.pagename = 'server/Data-structure';</script>
     <link rel="index" title="索引" href="../genindex.html" />
     <link rel="search" title="搜索" href="../search.html" />
-    <link rel="next" title="Config" href="Cache-Replacement.html" />
-    <link rel="prev" title="Format" href="Config.html" />
+    <link rel="next" title="Cache Replacement" href="Cache-Replacement.html" />
+    <link rel="prev" title="Configuration" href="Config.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="zh-CN"/>
   </head>
@@ -125,39 +125,18 @@
         <ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="../README.html">Introduction</a></li>
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="index.html">服务端</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-1"><i class="fa-solid fa-chevron-down"></i></label><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="Config.html">Format</a></li>
-
-<li class="toctree-l2 current active"><a class="current reference internal" href="#">ReservedArray</a></li>
-
-
-
-
-
-
-
-
-<li class="toctree-l2"><a class="reference internal" href="Cache-Replacement.html">Config</a></li>
-
-<li class="toctree-l2"><a class="reference internal" href="Protocol.html">MMBP request</a></li>
-
-<li class="toctree-l2"><a class="reference internal" href="Expiration-Management.html">Expiration Policy</a></li>
-
-<li class="toctree-l2"><a class="reference internal" href="Recovery.html">Config</a></li>
-
+<li class="toctree-l2"><a class="reference internal" href="Config.html">配置文件</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">数据结构实现及其性能测试</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Cache-Replacement.html">缓冲替换实现</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Protocol.html">协议设计</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Expiration-Management.html">过期管理</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Recovery.html">重启恢复</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Option.html">命令行选项</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../cli/index.html">CLI客户端</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-2"><i class="fa-solid fa-chevron-down"></i></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../cli/CLI%28Command-Line-interface%29.html">Command-line edit</a></li>
-
-<li class="toctree-l2"><a class="reference internal" href="../cli/Commands.html">Common</a></li>
-
-
-
-
-
-
-
+<li class="toctree-l2"><a class="reference internal" href="../cli/CLI%28Command-Line-interface%29.html">支持功能</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cli/Commands.html">支持命令</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../client-api/index.html">客户端API</a></li>
@@ -297,7 +276,7 @@ document.write(`
               
 
 <div id="jb-print-docs-body" class="onlyprint">
-    <h1>ReservedArray</h1>
+    <h1>Data strucuture design & benchmark</h1>
     <!-- Table of contents -->
     <div id="print-main-content">
         <div id="jb-print-toc">
@@ -307,17 +286,16 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">ReservedArray</a></li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#slist">Slist</a></li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#blist">Blist</a></li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#hashtable">HashTable</a></li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#hashset">HashSet</a></li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#dictionary">Dictionary</a></li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#avltree">AvlTree</a></li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#treehashtable">TreeHashTable</a></li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#avldictionary">AvlDictionary</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#reservedarray">ReservedArray</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#slist">Slist</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#blist">Blist</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#hashtable">HashTable</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#hashset">HashSet</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#dictionary">Dictionary</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#avltree">AvlTree</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#treehashtable">TreeHashTable</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#avldictionary">AvlDictionary</a></li>
 </ul>
-
             </nav>
         </div>
     </div>
@@ -328,7 +306,9 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article" role="main">
                   
-  <p><code class="docutils literal notranslate"><span class="pre">mmkv</span></code>的数据结构都在<code class="docutils literal notranslate"><span class="pre">/mmkv/algo</span></code>中，主要包括：</p>
+  <section id="data-strucuture-design-benchmark">
+<h1>Data strucuture design &amp; benchmark<a class="headerlink" href="#data-strucuture-design-benchmark" title="此标题的永久链接">#</a></h1>
+<p><code class="docutils literal notranslate"><span class="pre">mmkv</span></code>的数据结构都在<code class="docutils literal notranslate"><span class="pre">/mmkv/algo</span></code>中，主要包括：</p>
 <ul class="simple">
 <li><p>ReservedArray</p></li>
 <li><p>Slist</p></li>
@@ -342,70 +322,81 @@ document.write(`
 </ul>
 <p>这些数据结构均是<code class="docutils literal notranslate"><span class="pre">STL-like</span></code>风格，区别在于API命名风格不同。</p>
 <section id="reservedarray">
-<h1>ReservedArray<a class="headerlink" href="#reservedarray" title="此标题的永久链接">#</a></h1>
+<h2>ReservedArray<a class="headerlink" href="#reservedarray" title="此标题的永久链接">#</a></h2>
 <a class="reference external image-reference" href="https://s2.loli.net/2022/08/09/MFo5b82DLdj1YzN.png"><img alt="reserved_array.png" src="https://s2.loli.net/2022/08/09/MFo5b82DLdj1YzN.png" /></a>
-<p><span class="raw-html-m2r"><br></span>
-<code class="docutils literal notranslate"><span class="pre">ReservedArray</span></code>是专门为<code class="docutils literal notranslate"><span class="pre">HashTable</span></code>准备的连续容器，不过相对<code class="docutils literal notranslate"><span class="pre">std::vector</span></code>，不支持append操作自动扩展，因为只有<code class="docutils literal notranslate"><span class="pre">data</span></code>和<code class="docutils literal notranslate"><span class="pre">end</span></code>两个指针维护一个内存区域。<span class="raw-html-m2r"><br></span>
-除了这个区别，最大的区别就是<code class="docutils literal notranslate"><span class="pre">ReservedArray</span></code>支持<code class="docutils literal notranslate"><span class="pre">reallocate</span></code>，其默认采用的内存分配器是<code class="docutils literal notranslate"><span class="pre">LibcAllocatorWithRealloc</span></code>（与STL的默认分配器的区别在于<code class="docutils literal notranslate"><span class="pre">::realloc()</span></code>）。具体来说，只有<code class="docutils literal notranslate"><span class="pre">trivial</span></code>类型和定义了静态数据成员<code class="docutils literal notranslate"><span class="pre">static</span> <span class="pre">[constexpr]</span> <span class="pre">bool</span> <span class="pre">can_reallocate</span> <span class="pre">=</span> <span class="pre">true</span></code>且默认构造函数不抛出异常的类才允许进行reallocate，其余的还是走老路子，即先分配新的内存区域再移动过去，释放原区域。<span class="raw-html-m2r"><br></span></p>
+<p><span class="raw-html-m2r"><br></span></p>
+<blockquote>
+<div><p><code class="docutils literal notranslate"><span class="pre">ReservedArray</span></code>是专门为<code class="docutils literal notranslate"><span class="pre">HashTable</span></code>准备的连续容器，不过相对<code class="docutils literal notranslate"><span class="pre">std::vector</span></code>，不支持append操作自动扩展，因为只有<code class="docutils literal notranslate"><span class="pre">data</span></code>和<code class="docutils literal notranslate"><span class="pre">end</span></code>两个指针维护一个内存区域。<span class="raw-html-m2r"><br></span></p>
+</div></blockquote>
+<p>除了这个区别，最大的区别就是<code class="docutils literal notranslate"><span class="pre">ReservedArray</span></code>支持<code class="docutils literal notranslate"><span class="pre">reallocate</span></code>，其默认采用的内存分配器是<code class="docutils literal notranslate"><span class="pre">LibcAllocatorWithRealloc</span></code>（与STL的默认分配器的区别在于<code class="docutils literal notranslate"><span class="pre">::realloc()</span></code>）。具体来说，只有<code class="docutils literal notranslate"><span class="pre">trivial</span></code>类型和定义了静态数据成员<code class="docutils literal notranslate"><span class="pre">static</span> <span class="pre">[constexpr]</span> <span class="pre">bool</span> <span class="pre">can_reallocate</span> <span class="pre">=</span> <span class="pre">true</span></code>且默认构造函数不抛出异常的类才允许进行reallocate，其余的还是走老路子，即先分配新的内存区域再移动过去，释放原区域。<span class="raw-html-m2r"><br></span></p>
 <a class="reference external image-reference" href="https://s2.loli.net/2022/08/09/8yv9gVtojfcmUrT.png"><img alt="reserved_array_slist.png" src="https://s2.loli.net/2022/08/09/8yv9gVtojfcmUrT.png" /></a>
-<p><span class="raw-html-m2r"><br></span>
-可见采用<code class="docutils literal notranslate"><span class="pre">reallocate</span></code>带来的性能提升是明显的</p>
+<p><span class="raw-html-m2r"><br></span></p>
+<p>可见采用<code class="docutils literal notranslate"><span class="pre">reallocate</span></code>带来的性能提升是明显的</p>
 </section>
 <section id="slist">
-<h1>Slist<a class="headerlink" href="#slist" title="此标题的永久链接">#</a></h1>
+<h2>Slist<a class="headerlink" href="#slist" title="此标题的永久链接">#</a></h2>
 <a class="reference external image-reference" href="https://s2.loli.net/2022/08/09/PyjZU4oXDd8fkFA.png"><img alt="slist.png" src="https://s2.loli.net/2022/08/09/PyjZU4oXDd8fkFA.png" /></a>
-<p><span class="raw-html-m2r"><br></span>
-<code class="docutils literal notranslate"><span class="pre">Slist</span></code>是与<code class="docutils literal notranslate"><span class="pre">std::forward_list</span></code>类似的单链表，区别在于<code class="docutils literal notranslate"><span class="pre">Slist</span></code>没有哨兵且没有成环（因为没有哨兵作为尾后迭代器），为了节省空间（哈希表分离列表法可能会有很多空槽占用哨兵）。</p>
+<p><span class="raw-html-m2r"><br></span></p>
+<blockquote>
+<div><p><code class="docutils literal notranslate"><span class="pre">Slist</span></code>是与<code class="docutils literal notranslate"><span class="pre">std::forward_list</span></code>类似的单链表，区别在于<code class="docutils literal notranslate"><span class="pre">Slist</span></code>没有哨兵且没有成环（因为没有哨兵作为尾后迭代器），为了节省空间（哈希表分离列表法可能会有很多空槽占用哨兵）。</p>
+</div></blockquote>
 </section>
 <section id="blist">
-<h1>Blist<a class="headerlink" href="#blist" title="此标题的永久链接">#</a></h1>
+<h2>Blist<a class="headerlink" href="#blist" title="此标题的永久链接">#</a></h2>
 <a class="reference external image-reference" href="https://s2.loli.net/2022/08/09/iNEuyA4dw3oPB1k.png"><img alt="blist.png" src="https://s2.loli.net/2022/08/09/iNEuyA4dw3oPB1k.png" /></a>
-<p><span class="raw-html-m2r"><br></span>
-<code class="docutils literal notranslate"><span class="pre">Blist</span></code>是类似<code class="docutils literal notranslate"><span class="pre">std::list</span></code>的双向链表，区别在于<code class="docutils literal notranslate"><span class="pre">Blist</span></code>没有哨兵且没有成环（同<code class="docutils literal notranslate"><span class="pre">Slist</span></code>的原因）。<span class="raw-html-m2r"><br></span></p>
+<p><span class="raw-html-m2r"><br></span></p>
+<blockquote>
+<div><p><code class="docutils literal notranslate"><span class="pre">Blist</span></code>是类似<code class="docutils literal notranslate"><span class="pre">std::list</span></code>的双向链表，区别在于<code class="docutils literal notranslate"><span class="pre">Blist</span></code>没有哨兵且没有成环（同<code class="docutils literal notranslate"><span class="pre">Slist</span></code>的原因）。<span class="raw-html-m2r"><br></span></p>
+</div></blockquote>
 <a class="reference external image-reference" href="https://s2.loli.net/2022/08/09/GnBskx36De8drbz.png"><img alt="blist_int.png" src="https://s2.loli.net/2022/08/09/GnBskx36De8drbz.png" /></a>
-<p><span class="raw-html-m2r"><br></span>
-（注意，图中橙色与棕色几乎合并）<span class="raw-html-m2r"><br></span>
-| Operation | Blist VS std::list |
-| — | — |
-| popback | &lt; |
-| popfront | == |
-| pushback | &gt; |
-| pushfront | &lt; |</p>
+<p><span class="raw-html-m2r"><br></span></p>
+<p>（注意，图中橙色与棕色几乎合并）<span class="raw-html-m2r"><br></span></p>
+<div class="line-block">
+<div class="line">Operation | Blist VS std::list |</div>
+<div class="line">— | — |</div>
+<div class="line">popback | &lt; |</div>
+<div class="line">popfront | == |</div>
+<div class="line">pushback | &gt; |</div>
+<div class="line">pushfront | &lt; |</div>
+</div>
 <p>虽然<code class="docutils literal notranslate"><span class="pre">Blist</span></code>从操作优劣程度来看，是比<code class="docutils literal notranslate"><span class="pre">std::list</span></code>差的，但是差距不大，作为省空间的代价是可以接受的。</p>
 </section>
 <section id="hashtable">
-<h1>HashTable<a class="headerlink" href="#hashtable" title="此标题的永久链接">#</a></h1>
+<h2>HashTable<a class="headerlink" href="#hashtable" title="此标题的永久链接">#</a></h2>
 <a class="reference external image-reference" href="https://s2.loli.net/2022/08/09/mIlRe6nvDB3kNFL.png"><img alt="hash_table.png" src="https://s2.loli.net/2022/08/09/mIlRe6nvDB3kNFL.png" /></a>
-<p><span class="raw-html-m2r"><br></span>
-<code class="docutils literal notranslate"><span class="pre">HashTable</span></code>是基于<code class="docutils literal notranslate"><span class="pre">Separate-list</span></code>策略的哈希表，列表类型是<code class="docutils literal notranslate"><span class="pre">Slist</span></code>，但是<code class="docutils literal notranslate"><span class="pre">rehash</span></code>策略并不是一次移动所有桶子(bucket)，而是每次读写操作移动一个桶子直到<code class="docutils literal notranslate"><span class="pre">rehash</span></code>完成，即所谓的<code class="docutils literal notranslate"><span class="pre">递进式再散列</span></code>(Incremental rehash)。<span class="raw-html-m2r"><br></span>
-除此之外，为了可以用<code class="docutils literal notranslate"><span class="pre">&amp;</span></code>代替<code class="docutils literal notranslate"><span class="pre">%</span></code>获得桶的索引，<code class="docutils literal notranslate"><span class="pre">rehash</span></code>呈两倍扩展，而不是选择最近的更大素数，尽管这会导致即使选用的哈希函数比较均一，在一定程度上会导致碰撞率上升而降低性能。这点可以通过更换列表类型缓解<span class="raw-html-m2r"><br></span>
-不过该哈希表并没有针对迭代进行优化，因为一般这样做会降低<code class="docutils literal notranslate"><span class="pre">点查询</span></code>(point query)的性能，因此暂时不考虑这方面的优化。</p>
+<p><span class="raw-html-m2r"><br></span></p>
+<blockquote>
+<div><p><code class="docutils literal notranslate"><span class="pre">HashTable</span></code>是基于<code class="docutils literal notranslate"><span class="pre">Separate-list</span></code>策略的哈希表，列表类型是<code class="docutils literal notranslate"><span class="pre">Slist</span></code>，但是<code class="docutils literal notranslate"><span class="pre">rehash</span></code>策略并不是一次移动所有桶子(bucket)，而是每次读写操作移动一个桶子直到<code class="docutils literal notranslate"><span class="pre">rehash</span></code>完成，即所谓的<code class="docutils literal notranslate"><span class="pre">递进式再散列</span></code>(Incremental rehash)。<span class="raw-html-m2r"><br></span></p>
+<p>除此之外，为了可以用<code class="docutils literal notranslate"><span class="pre">&amp;</span></code>代替<code class="docutils literal notranslate"><span class="pre">%</span></code>获得桶的索引，<code class="docutils literal notranslate"><span class="pre">rehash</span></code>呈两倍扩展，而不是选择最近的更大素数，尽管这会导致即使选用的哈希函数比较均一，在一定程度上会导致碰撞率上升而降低性能。这点可以通过更换列表类型缓解<span class="raw-html-m2r"><br></span></p>
+</div></blockquote>
+<p>不过该哈希表并没有针对迭代进行优化，因为一般这样做会降低<code class="docutils literal notranslate"><span class="pre">点查询</span></code>(point query)的性能，因此暂时不考虑这方面的优化。</p>
 </section>
 <section id="hashset">
-<h1>HashSet<a class="headerlink" href="#hashset" title="此标题的永久链接">#</a></h1>
+<h2>HashSet<a class="headerlink" href="#hashset" title="此标题的永久链接">#</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">HashSet</span></code>是<code class="docutils literal notranslate"><span class="pre">HashTable</span></code>的子类，除了继承来的方法，还提供了三种方法支持对两个集合的<code class="docutils literal notranslate"><span class="pre">交集</span></code>，<code class="docutils literal notranslate"><span class="pre">并集</span></code>，<code class="docutils literal notranslate"><span class="pre">差集</span></code>的元素进行操作（传递回调）。</p>
 </section>
 <section id="dictionary">
-<h1>Dictionary<a class="headerlink" href="#dictionary" title="此标题的永久链接">#</a></h1>
+<h2>Dictionary<a class="headerlink" href="#dictionary" title="此标题的永久链接">#</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">Dictionary</span></code>是<code class="docutils literal notranslate"><span class="pre">HashTable</span></code>的子类，差别不大，仅新增了更方便键值对的方法。</p>
 </section>
 <section id="avltree">
-<h1>AvlTree<a class="headerlink" href="#avltree" title="此标题的永久链接">#</a></h1>
+<h2>AvlTree<a class="headerlink" href="#avltree" title="此标题的永久链接">#</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">mmkv</span></code>的有序集合，我没有选择<strong>红黑树</strong>或<strong>跳表</strong>，首先，跳表的性能并没有平衡树好，其次，红黑树的高度并不是严格的<code class="docutils literal notranslate"><span class="pre">O(lg(n))</span></code>而是<code class="docutils literal notranslate"><span class="pre">O(2lg(n+1))</span></code>。因此对于<code class="docutils literal notranslate"><span class="pre">读</span> <span class="pre">&gt;</span> <span class="pre">写</span></code>的<code class="docutils literal notranslate"><span class="pre">mmkv</span></code>而言高度更严格平衡的<code class="docutils literal notranslate"><span class="pre">avl</span></code>树更为适合。<span class="raw-html-m2r"><br></span></p>
 <a class="reference external image-reference" href="https://s2.loli.net/2022/08/09/TiLdaDHNFlshc3q.png"><img alt="avl_tree.png" src="https://s2.loli.net/2022/08/09/TiLdaDHNFlshc3q.png" /></a>
-<p><span class="raw-html-m2r"><br></span>
-与红黑树相比，在插入和删除上更差，但是查询更好。符合预期结果。</p>
+<p><span class="raw-html-m2r"><br></span></p>
+<p>与红黑树相比，在插入和删除上更差，但是查询更好。符合预期结果。</p>
 </section>
 <section id="treehashtable">
-<h1>TreeHashTable<a class="headerlink" href="#treehashtable" title="此标题的永久链接">#</a></h1>
+<h2>TreeHashTable<a class="headerlink" href="#treehashtable" title="此标题的永久链接">#</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">HashTable</span></code>采用链表的弊端在<code class="docutils literal notranslate"><span class="pre">HashTable</span></code>中已经讲明。<code class="docutils literal notranslate"><span class="pre">TreeHashTable</span></code>选用的列表类型是<code class="docutils literal notranslate"><span class="pre">平衡树</span></code>(balanced-search-tree)，可以使插入，删除，查询的算法复杂度维持在<code class="docutils literal notranslate"><span class="pre">O(lgn)</span></code>，在一定程度上缓解了由于哈希函数和表大小带来的问题。<span class="raw-html-m2r"><br></span></p>
 </section>
 <section id="avldictionary">
-<h1>AvlDictionary<a class="headerlink" href="#avldictionary" title="此标题的永久链接">#</a></h1>
+<h2>AvlDictionary<a class="headerlink" href="#avldictionary" title="此标题的永久链接">#</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">AvlDictionary</span></code>是<code class="docutils literal notranslate"><span class="pre">AvlTreeMap</span></code>(<code class="docutils literal notranslate"><span class="pre">TreeHashTable</span></code>的别名)的子类，列表类型是<code class="docutils literal notranslate"><span class="pre">avl</span></code>树。</p>
 <a class="reference external image-reference" href="https://s2.loli.net/2022/08/09/ZqNiOS2WUIE18Gs.png"><img alt="avl_hash_table.png" src="https://s2.loli.net/2022/08/09/ZqNiOS2WUIE18Gs.png" /></a>
-<p><span class="raw-html-m2r"><br></span>
-与基于链表的哈希表相比，使用avl树的哈希表在查询和删除上要更好，但是插入要差一些。</p>
+<p><span class="raw-html-m2r"><br></span></p>
+<p>与基于链表的哈希表相比，使用avl树的哈希表在查询和删除上要更好，但是插入要差一些。</p>
+</section>
 </section>
 
 
@@ -423,7 +414,7 @@ document.write(`
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">上一页</p>
-        <p class="prev-next-title">Format</p>
+        <p class="prev-next-title">Configuration</p>
       </div>
     </a>
     <a class="right-next"
@@ -431,7 +422,7 @@ document.write(`
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">下一页</p>
-        <p class="prev-next-title">Config</p>
+        <p class="prev-next-title">Cache Replacement</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -450,17 +441,16 @@ document.write(`
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">ReservedArray</a></li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#slist">Slist</a></li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#blist">Blist</a></li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#hashtable">HashTable</a></li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#hashset">HashSet</a></li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#dictionary">Dictionary</a></li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#avltree">AvlTree</a></li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#treehashtable">TreeHashTable</a></li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#avldictionary">AvlDictionary</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#reservedarray">ReservedArray</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#slist">Slist</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#blist">Blist</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#hashtable">HashTable</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#hashset">HashSet</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#dictionary">Dictionary</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#avltree">AvlTree</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#treehashtable">TreeHashTable</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#avldictionary">AvlDictionary</a></li>
 </ul>
-
   </nav></div>
 
 </div></div>

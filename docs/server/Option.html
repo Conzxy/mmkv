@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
-    <title>Options &#8212; Mmkv v1.0.0 文档</title>
+    <title>Server Options &#8212; Mmkv v1.0.0 文档</title>
   
   
   
@@ -45,7 +45,7 @@
     <link rel="index" title="索引" href="../genindex.html" />
     <link rel="search" title="搜索" href="../search.html" />
     <link rel="next" title="CLI client Documents" href="../cli/index.html" />
-    <link rel="prev" title="Config" href="Recovery.html" />
+    <link rel="prev" title="Reboot recovery" href="Recovery.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="zh-CN"/>
   </head>
@@ -125,39 +125,18 @@
         <ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="../README.html">Introduction</a></li>
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="index.html">服务端</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-1"><i class="fa-solid fa-chevron-down"></i></label><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="Config.html">Format</a></li>
-
-<li class="toctree-l2"><a class="reference internal" href="Data-structure.html">ReservedArray</a></li>
-
-
-
-
-
-
-
-
-<li class="toctree-l2"><a class="reference internal" href="Cache-Replacement.html">Config</a></li>
-
-<li class="toctree-l2"><a class="reference internal" href="Protocol.html">MMBP request</a></li>
-
-<li class="toctree-l2"><a class="reference internal" href="Expiration-Management.html">Expiration Policy</a></li>
-
-<li class="toctree-l2"><a class="reference internal" href="Recovery.html">Config</a></li>
-
+<li class="toctree-l2"><a class="reference internal" href="Config.html">配置文件</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Data-structure.html">数据结构实现及其性能测试</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Cache-Replacement.html">缓冲替换实现</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Protocol.html">协议设计</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Expiration-Management.html">过期管理</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Recovery.html">重启恢复</a></li>
 <li class="toctree-l2 current active"><a class="current reference internal" href="#">命令行选项</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../cli/index.html">CLI客户端</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-2"><i class="fa-solid fa-chevron-down"></i></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../cli/CLI%28Command-Line-interface%29.html">Command-line edit</a></li>
-
-<li class="toctree-l2"><a class="reference internal" href="../cli/Commands.html">Common</a></li>
-
-
-
-
-
-
-
+<li class="toctree-l2"><a class="reference internal" href="../cli/CLI%28Command-Line-interface%29.html">支持功能</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cli/Commands.html">支持命令</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../client-api/index.html">客户端API</a></li>
@@ -295,7 +274,7 @@ document.write(`
               
 
 <div id="jb-print-docs-body" class="onlyprint">
-    <h1>Options</h1>
+    <h1>Server Options</h1>
     <!-- Table of contents -->
     <div id="print-main-content">
         <div id="jb-print-toc">
@@ -309,8 +288,8 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article" role="main">
                   
-  <section id="options">
-<h1>Options<a class="headerlink" href="#options" title="此标题的永久链接">#</a></h1>
+  <section id="server-options">
+<h1>Server Options<a class="headerlink" href="#server-options" title="此标题的永久链接">#</a></h1>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">-c/--config</span></code>：指定config文件位置</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">-i/--ip</span></code>：指定ip地址</p></li>
@@ -333,7 +312,7 @@ document.write(`
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">上一页</p>
-        <p class="prev-next-title">Config</p>
+        <p class="prev-next-title">Reboot recovery</p>
       </div>
     </a>
     <a class="right-next"

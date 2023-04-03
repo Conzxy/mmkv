@@ -1,13 +1,16 @@
 
+CLI client
+==========
+
 ``mmkv-cli``\ 是\ ``mmkv``\ 提供给用户与\ ``mmkv-server``\ 基于命令行进行交互的CLI程序。
 
 Command-line edit
-=================
+-----------------
 
 由于本CLI想要实现\ ``自动补全``\ ，\ ``历史记录``\ ，\ ``命令提示``\ ，\ ``清屏``\ 这些命令行编辑需求，因此依赖于\ `linenoise <https://github.com/antirez/linenoise>`_\ 。
 
 Shell-command
-=============
+-------------
 
 该CLI可以执行shell命令，只需要输入行以\ ``!``\ 开头，后面的输入内容会被视为shell命令及参数传递给\ ``/bin/shell``\ 等shell执行。
 

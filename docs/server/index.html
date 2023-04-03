@@ -44,7 +44,7 @@
     <script>DOCUMENTATION_OPTIONS.pagename = 'server/index';</script>
     <link rel="index" title="索引" href="../genindex.html" />
     <link rel="search" title="搜索" href="../search.html" />
-    <link rel="next" title="Format" href="Config.html" />
+    <link rel="next" title="Configuration" href="Config.html" />
     <link rel="prev" title="Mmkv(Memory Key-Value database/cache)" href="../README.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="zh-CN"/>
@@ -125,39 +125,18 @@
         <ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="../README.html">Introduction</a></li>
 <li class="toctree-l1 current active has-children"><a class="current reference internal" href="#">服务端</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-1"><i class="fa-solid fa-chevron-down"></i></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="Config.html">Format</a></li>
-
-<li class="toctree-l2"><a class="reference internal" href="Data-structure.html">ReservedArray</a></li>
-
-
-
-
-
-
-
-
-<li class="toctree-l2"><a class="reference internal" href="Cache-Replacement.html">Config</a></li>
-
-<li class="toctree-l2"><a class="reference internal" href="Protocol.html">MMBP request</a></li>
-
-<li class="toctree-l2"><a class="reference internal" href="Expiration-Management.html">Expiration Policy</a></li>
-
-<li class="toctree-l2"><a class="reference internal" href="Recovery.html">Config</a></li>
-
+<li class="toctree-l2"><a class="reference internal" href="Config.html">配置文件</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Data-structure.html">数据结构实现及其性能测试</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Cache-Replacement.html">缓冲替换实现</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Protocol.html">协议设计</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Expiration-Management.html">过期管理</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Recovery.html">重启恢复</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Option.html">命令行选项</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../cli/index.html">CLI客户端</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-2"><i class="fa-solid fa-chevron-down"></i></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../cli/CLI%28Command-Line-interface%29.html">Command-line edit</a></li>
-
-<li class="toctree-l2"><a class="reference internal" href="../cli/Commands.html">Common</a></li>
-
-
-
-
-
-
-
+<li class="toctree-l2"><a class="reference internal" href="../cli/CLI%28Command-Line-interface%29.html">支持功能</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cli/Commands.html">支持命令</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../client-api/index.html">客户端API</a></li>
@@ -313,25 +292,12 @@ document.write(`
 <h1>Mmkv Server Documents<a class="headerlink" href="#mmkv-server-documents" title="此标题的永久链接">#</a></h1>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="Config.html">Format</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Config.html#field">Field</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Data-structure.html">ReservedArray</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Data-structure.html#slist">Slist</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Data-structure.html#blist">Blist</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Data-structure.html#hashtable">HashTable</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Data-structure.html#hashset">HashSet</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Data-structure.html#dictionary">Dictionary</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Data-structure.html#avltree">AvlTree</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Data-structure.html#treehashtable">TreeHashTable</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Data-structure.html#avldictionary">AvlDictionary</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Cache-Replacement.html">Config</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Cache-Replacement.html#policy">Policy</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Protocol.html">MMBP request</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Protocol.html#mmbp-response">MMBP response</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Expiration-Management.html">Expiration Policy</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Expiration-Management.html#implementation">Implementation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Recovery.html">Config</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Recovery.html#parser">Parser</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Config.html">配置文件</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Data-structure.html">数据结构实现及其性能测试</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Cache-Replacement.html">缓冲替换实现</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Protocol.html">协议设计</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Expiration-Management.html">过期管理</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Recovery.html">重启恢复</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Option.html">命令行选项</a></li>
 </ul>
 </div>
@@ -360,7 +326,7 @@ document.write(`
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">下一页</p>
-        <p class="prev-next-title">Format</p>
+        <p class="prev-next-title">Configuration</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>

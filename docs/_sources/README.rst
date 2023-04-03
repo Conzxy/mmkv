@@ -9,11 +9,11 @@ Mmkv(Memory Key-Value database/cache)
 .. image:: https://img.shields.io/github/license/conzxy/mmkv
    :target: https://img.shields.io/github/license/conzxy/mmkv
    :alt: license
- 
+
 .. image:: https://img.shields.io/github/languages/top/conzxy/mmkv
    :target: https://img.shields.io/github/languages/top/conzxy/mmkv
    :alt: code-top
- 
+
 .. image:: https://img.shields.io/badge/Standard-C%2B%2B14-red
    :target: https://img.shields.io/badge/Standard-C%2B%2B14-red
    :alt: C++ standard
@@ -36,7 +36,7 @@ Mmkv(Memory Key-Value database/cache)
    :target: https://img.shields.io/github/last-commit/conzxy/mmkv
    :alt: commit-date
 :raw-html-m2r:`<br>`
-其他细节内容参考\ `wiki <https://github.com/Conzxy/mmkv/wiki>`_\ 。
+
 
 Introducation
 -------------

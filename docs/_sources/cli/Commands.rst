@@ -1,6 +1,9 @@
 
+CLI Commands
+============
+
 Common
-======
+------
 
 .. list-table::
    :header-rows: 1
@@ -24,7 +27,7 @@ Common
 
 
 Expiration
-==========
+----------
 
 .. list-table::
    :header-rows: 1
@@ -48,7 +51,7 @@ Expiration
 
 
 CLI(Command line interface)
-===========================
+---------------------------
 
 .. list-table::
    :header-rows: 1
@@ -62,7 +65,7 @@ CLI(Command line interface)
 
 
 string
-======
+------
 
 .. list-table::
    :header-rows: 1
@@ -84,7 +87,7 @@ string
 
 
 list
-====
+----
 
 .. list-table::
    :header-rows: 1
@@ -110,7 +113,7 @@ list
 
 
 sorted set
-==========
+----------
 
 以下的range均是完全闭区间，即\ ``[left, right]``
 
@@ -148,7 +151,7 @@ sorted set
 
 
 hash set
-========
+--------
 
 .. list-table::
    :header-rows: 1
@@ -188,7 +191,7 @@ hash set
 
 
 map
-===
+---
 
 .. list-table::
    :header-rows: 1

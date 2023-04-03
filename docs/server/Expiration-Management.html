@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
-    <title>Expiration Policy &#8212; Mmkv v1.0.0 文档</title>
+    <title>Expiration Management &#8212; Mmkv v1.0.0 文档</title>
   
   
   
@@ -44,8 +44,8 @@
     <script>DOCUMENTATION_OPTIONS.pagename = 'server/Expiration-Management';</script>
     <link rel="index" title="索引" href="../genindex.html" />
     <link rel="search" title="搜索" href="../search.html" />
-    <link rel="next" title="Config" href="Recovery.html" />
-    <link rel="prev" title="MMBP request" href="Protocol.html" />
+    <link rel="next" title="Reboot recovery" href="Recovery.html" />
+    <link rel="prev" title="Protocol design" href="Protocol.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="zh-CN"/>
   </head>
@@ -125,39 +125,18 @@
         <ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="../README.html">Introduction</a></li>
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="index.html">服务端</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-1"><i class="fa-solid fa-chevron-down"></i></label><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="Config.html">Format</a></li>
-
-<li class="toctree-l2"><a class="reference internal" href="Data-structure.html">ReservedArray</a></li>
-
-
-
-
-
-
-
-
-<li class="toctree-l2"><a class="reference internal" href="Cache-Replacement.html">Config</a></li>
-
-<li class="toctree-l2"><a class="reference internal" href="Protocol.html">MMBP request</a></li>
-
-<li class="toctree-l2 current active"><a class="current reference internal" href="#">Expiration Policy</a></li>
-
-<li class="toctree-l2"><a class="reference internal" href="Recovery.html">Config</a></li>
-
+<li class="toctree-l2"><a class="reference internal" href="Config.html">配置文件</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Data-structure.html">数据结构实现及其性能测试</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Cache-Replacement.html">缓冲替换实现</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Protocol.html">协议设计</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">过期管理</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Recovery.html">重启恢复</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Option.html">命令行选项</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../cli/index.html">CLI客户端</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-2"><i class="fa-solid fa-chevron-down"></i></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../cli/CLI%28Command-Line-interface%29.html">Command-line edit</a></li>
-
-<li class="toctree-l2"><a class="reference internal" href="../cli/Commands.html">Common</a></li>
-
-
-
-
-
-
-
+<li class="toctree-l2"><a class="reference internal" href="../cli/CLI%28Command-Line-interface%29.html">支持功能</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cli/Commands.html">支持命令</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../client-api/index.html">客户端API</a></li>
@@ -297,7 +276,7 @@ document.write(`
               
 
 <div id="jb-print-docs-body" class="onlyprint">
-    <h1>Expiration Policy</h1>
+    <h1>Expiration Management</h1>
     <!-- Table of contents -->
     <div id="print-main-content">
         <div id="jb-print-toc">
@@ -307,10 +286,9 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Expiration Policy</a></li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#implementation">Implementation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#expiration-policy">Expiration Policy</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#implementation">Implementation</a></li>
 </ul>
-
             </nav>
         </div>
     </div>
@@ -321,8 +299,10 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article" role="main">
                   
-  <section id="expiration-policy">
-<h1>Expiration Policy<a class="headerlink" href="#expiration-policy" title="此标题的永久链接">#</a></h1>
+  <section id="expiration-management">
+<h1>Expiration Management<a class="headerlink" href="#expiration-management" title="此标题的永久链接">#</a></h1>
+<section id="expiration-policy">
+<h2>Expiration Policy<a class="headerlink" href="#expiration-policy" title="此标题的永久链接">#</a></h2>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">懒惰检测</span></code>(Lazy check): 当client通过读命令获取内容和部分写命令修改内容时，进行对key的检测，如果过期了，直接回收内容并随后返回不存在。</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">主动检测</span></code>(Active check): 以一定的周期(cycle)检测整个DB哪些key过期了。
@@ -331,7 +311,7 @@ document.write(`
 <p>对于主动检测的周期，默认是<code class="docutils literal notranslate"><span class="pre">60</span> <span class="pre">seconds</span></code>，可以通过<code class="docutils literal notranslate"><span class="pre">config</span></code>调整，<code class="docutils literal notranslate"><span class="pre">-1</span></code>表示不进行主动检测。</p>
 </section>
 <section id="implementation">
-<h1>Implementation<a class="headerlink" href="#implementation" title="此标题的永久链接">#</a></h1>
+<h2>Implementation<a class="headerlink" href="#implementation" title="此标题的永久链接">#</a></h2>
 <p>具体来说，显然存储<code class="docutils literal notranslate"><span class="pre">&lt;key</span> <span class="pre">-&gt;</span> <span class="pre">expiration</span> <span class="pre">time&gt;</span></code>需要另开一个字典，因为不是所有key都有过期时间。</p>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">MmkvDb</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="p">...</span>
@@ -341,6 +321,7 @@ document.write(`
 </pre></div>
 </div>
 <p>还有一些相关方法，具体参考<code class="docutils literal notranslate"><span class="pre">mmkd/db/kvdb.h</span></code></p>
+</section>
 </section>
 
 
@@ -358,7 +339,7 @@ document.write(`
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">上一页</p>
-        <p class="prev-next-title">MMBP request</p>
+        <p class="prev-next-title">Protocol design</p>
       </div>
     </a>
     <a class="right-next"
@@ -366,7 +347,7 @@ document.write(`
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">下一页</p>
-        <p class="prev-next-title">Config</p>
+        <p class="prev-next-title">Reboot recovery</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -385,10 +366,9 @@ document.write(`
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Expiration Policy</a></li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#implementation">Implementation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#expiration-policy">Expiration Policy</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#implementation">Implementation</a></li>
 </ul>
-
   </nav></div>
 
 </div></div>

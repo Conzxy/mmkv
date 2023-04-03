@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
-    <title>Config &#8212; Mmkv v1.0.0 文档</title>
+    <title>Reboot recovery &#8212; Mmkv v1.0.0 文档</title>
   
   
   
@@ -44,8 +44,8 @@
     <script>DOCUMENTATION_OPTIONS.pagename = 'server/Recovery';</script>
     <link rel="index" title="索引" href="../genindex.html" />
     <link rel="search" title="搜索" href="../search.html" />
-    <link rel="next" title="Options" href="Option.html" />
-    <link rel="prev" title="Expiration Policy" href="Expiration-Management.html" />
+    <link rel="next" title="Server Options" href="Option.html" />
+    <link rel="prev" title="Expiration Management" href="Expiration-Management.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="zh-CN"/>
   </head>
@@ -125,39 +125,18 @@
         <ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="../README.html">Introduction</a></li>
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="index.html">服务端</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-1"><i class="fa-solid fa-chevron-down"></i></label><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="Config.html">Format</a></li>
-
-<li class="toctree-l2"><a class="reference internal" href="Data-structure.html">ReservedArray</a></li>
-
-
-
-
-
-
-
-
-<li class="toctree-l2"><a class="reference internal" href="Cache-Replacement.html">Config</a></li>
-
-<li class="toctree-l2"><a class="reference internal" href="Protocol.html">MMBP request</a></li>
-
-<li class="toctree-l2"><a class="reference internal" href="Expiration-Management.html">Expiration Policy</a></li>
-
-<li class="toctree-l2 current active"><a class="current reference internal" href="#">Config</a></li>
-
+<li class="toctree-l2"><a class="reference internal" href="Config.html">配置文件</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Data-structure.html">数据结构实现及其性能测试</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Cache-Replacement.html">缓冲替换实现</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Protocol.html">协议设计</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Expiration-Management.html">过期管理</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">重启恢复</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Option.html">命令行选项</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../cli/index.html">CLI客户端</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-2"><i class="fa-solid fa-chevron-down"></i></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../cli/CLI%28Command-Line-interface%29.html">Command-line edit</a></li>
-
-<li class="toctree-l2"><a class="reference internal" href="../cli/Commands.html">Common</a></li>
-
-
-
-
-
-
-
+<li class="toctree-l2"><a class="reference internal" href="../cli/CLI%28Command-Line-interface%29.html">支持功能</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cli/Commands.html">支持命令</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../client-api/index.html">客户端API</a></li>
@@ -297,7 +276,7 @@ document.write(`
               
 
 <div id="jb-print-docs-body" class="onlyprint">
-    <h1>Config</h1>
+    <h1>Reboot recovery</h1>
     <!-- Table of contents -->
     <div id="print-main-content">
         <div id="jb-print-toc">
@@ -307,10 +286,9 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Config</a></li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#parser">Parser</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#config">Config</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#parser">Parser</a></li>
 </ul>
-
             </nav>
         </div>
     </div>
@@ -321,20 +299,23 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article" role="main">
                   
-  <p><code class="docutils literal notranslate"><span class="pre">mmkv</span></code>目前只支持一种Log方式：在执行命令前先写入<code class="docutils literal notranslate"><span class="pre">MMBP</span></code> request。<span class="raw-html-m2r"><br></span>
+  <section id="reboot-recovery">
+<h1>Reboot recovery<a class="headerlink" href="#reboot-recovery" title="此标题的永久链接">#</a></h1>
+<p><code class="docutils literal notranslate"><span class="pre">mmkv</span></code>目前只支持一种Log方式：在执行命令前先写入<code class="docutils literal notranslate"><span class="pre">MMBP</span></code> request。<span class="raw-html-m2r"><br></span>
 日志本身是异步写入的，因此不需要担心因等待IO准备而导致IO线程阻塞。</p>
 <section id="config">
-<h1>Config<a class="headerlink" href="#config" title="此标题的永久链接">#</a></h1>
+<h2>Config<a class="headerlink" href="#config" title="此标题的永久链接">#</a></h2>
 <p>在配置文件中可以指定存放位置和log方式。</p>
 </section>
 <section id="parser">
-<h1>Parser<a class="headerlink" href="#parser" title="此标题的永久链接">#</a></h1>
+<h2>Parser<a class="headerlink" href="#parser" title="此标题的永久链接">#</a></h2>
 <p>由于request log是二进制编码的，因此我预先准备了<code class="docutils literal notranslate"><span class="pre">rlogdump</span></code>来解析该文件并显示：</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>./build.sh<span class="w"> </span>rlogdump
-<span class="c1"># ./release_build.sh rlogdump</span>
+<span class="c1">## ./release_build.sh rlogdump</span>
 </pre></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">rlogdump</span></code>除此之外也有一些选项对log文件做其他处理。</p>
+</section>
 </section>
 
 
@@ -352,7 +333,7 @@ document.write(`
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">上一页</p>
-        <p class="prev-next-title">Expiration Policy</p>
+        <p class="prev-next-title">Expiration Management</p>
       </div>
     </a>
     <a class="right-next"
@@ -360,7 +341,7 @@ document.write(`
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">下一页</p>
-        <p class="prev-next-title">Options</p>
+        <p class="prev-next-title">Server Options</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -379,10 +360,9 @@ document.write(`
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Config</a></li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#parser">Parser</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#config">Config</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#parser">Parser</a></li>
 </ul>
-
   </nav></div>
 
 </div></div>

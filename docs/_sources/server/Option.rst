@@ -1,5 +1,7 @@
-Options
-===========
+
+Server Options
+==============
+
 
 * ``-c/--config``\ ：指定config文件位置
 * ``-i/--ip``\ ：指定ip地址

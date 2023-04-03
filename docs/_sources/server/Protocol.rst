@@ -2,6 +2,9 @@
    :format: html
 
 
+Protocol design
+===============
+
 虽说CLI是输入的文本行，但实际是通过\ `translator <https://github.com/Conzxy/mmkv/blob/main/mmkv/client/translator.h>`_\ 将文本行转换为自定义的二进制协议。
 之所以采用二进制协议，有很多原因：
 
@@ -21,7 +24,7 @@
 协议格式有两种（其实也可以合并为一种，但有些字段实际还是没必要，会占用多余的bit以表示是否设置）
 
 MMBP request
-============
+------------
 
 
 .. image:: https://s2.loli.net/2022/07/07/eAowDHXYmOf4tuB.png
@@ -53,7 +56,7 @@ MMBP request
 * ``range``\ : 2个64位整型构成的范围，之所以是64位，是因为我想把\ ``double``\ 类型塞进去。只要通过\ ``*(uint64_t*)&d``\ 强转就能使\ ``double``\ 的bit mode不变，因此无关乎整型是否，只要底层表示不变。用于实现list和sorted set部分命令。
 
 MMBP response
-=============
+-------------
 
 
 .. image:: https://s2.loli.net/2022/07/07/Kg9cIR3xJ2sm4Xz.png

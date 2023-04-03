@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
-    <title>MMBP request &#8212; Mmkv v1.0.0 文档</title>
+    <title>Protocol design &#8212; Mmkv v1.0.0 文档</title>
   
   
   
@@ -44,8 +44,8 @@
     <script>DOCUMENTATION_OPTIONS.pagename = 'server/Protocol';</script>
     <link rel="index" title="索引" href="../genindex.html" />
     <link rel="search" title="搜索" href="../search.html" />
-    <link rel="next" title="Expiration Policy" href="Expiration-Management.html" />
-    <link rel="prev" title="Config" href="Cache-Replacement.html" />
+    <link rel="next" title="Expiration Management" href="Expiration-Management.html" />
+    <link rel="prev" title="Cache Replacement" href="Cache-Replacement.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="zh-CN"/>
   </head>
@@ -125,39 +125,18 @@
         <ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="../README.html">Introduction</a></li>
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="index.html">服务端</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-1"><i class="fa-solid fa-chevron-down"></i></label><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="Config.html">Format</a></li>
-
-<li class="toctree-l2"><a class="reference internal" href="Data-structure.html">ReservedArray</a></li>
-
-
-
-
-
-
-
-
-<li class="toctree-l2"><a class="reference internal" href="Cache-Replacement.html">Config</a></li>
-
-<li class="toctree-l2 current active"><a class="current reference internal" href="#">MMBP request</a></li>
-
-<li class="toctree-l2"><a class="reference internal" href="Expiration-Management.html">Expiration Policy</a></li>
-
-<li class="toctree-l2"><a class="reference internal" href="Recovery.html">Config</a></li>
-
+<li class="toctree-l2"><a class="reference internal" href="Config.html">配置文件</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Data-structure.html">数据结构实现及其性能测试</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Cache-Replacement.html">缓冲替换实现</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">协议设计</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Expiration-Management.html">过期管理</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Recovery.html">重启恢复</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Option.html">命令行选项</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../cli/index.html">CLI客户端</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-2"><i class="fa-solid fa-chevron-down"></i></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../cli/CLI%28Command-Line-interface%29.html">Command-line edit</a></li>
-
-<li class="toctree-l2"><a class="reference internal" href="../cli/Commands.html">Common</a></li>
-
-
-
-
-
-
-
+<li class="toctree-l2"><a class="reference internal" href="../cli/CLI%28Command-Line-interface%29.html">支持功能</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cli/Commands.html">支持命令</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../client-api/index.html">客户端API</a></li>
@@ -297,7 +276,7 @@ document.write(`
               
 
 <div id="jb-print-docs-body" class="onlyprint">
-    <h1>MMBP request</h1>
+    <h1>Protocol design</h1>
     <!-- Table of contents -->
     <div id="print-main-content">
         <div id="jb-print-toc">
@@ -307,10 +286,9 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">MMBP request</a></li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#mmbp-response">MMBP response</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#mmbp-request">MMBP request</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#mmbp-response">MMBP response</a></li>
 </ul>
-
             </nav>
         </div>
     </div>
@@ -321,7 +299,9 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article" role="main">
                   
-  <p>虽说CLI是输入的文本行，但实际是通过<a class="reference external" href="https://github.com/Conzxy/mmkv/blob/main/mmkv/client/translator.h">translator</a>将文本行转换为自定义的二进制协议。
+  <section id="protocol-design">
+<h1>Protocol design<a class="headerlink" href="#protocol-design" title="此标题的永久链接">#</a></h1>
+<p>虽说CLI是输入的文本行，但实际是通过<a class="reference external" href="https://github.com/Conzxy/mmkv/blob/main/mmkv/client/translator.h">translator</a>将文本行转换为自定义的二进制协议。
 之所以采用二进制协议，有很多原因：</p>
 <ul class="simple">
 <li><p>不需要对特殊字符进行特殊处理，比如空格，换行符</p></li>
@@ -336,7 +316,7 @@ document.write(`
 <p>具体来说，我将该协议命名为<code class="docutils literal notranslate"><span class="pre">MMBP(Memory</span> <span class="pre">binary</span> <span class="pre">protocol)</span></code>。<span class="raw-html-m2r"><br></span>
 协议格式有两种（其实也可以合并为一种，但有些字段实际还是没必要，会占用多余的bit以表示是否设置）</p>
 <section id="mmbp-request">
-<h1>MMBP request<a class="headerlink" href="#mmbp-request" title="此标题的永久链接">#</a></h1>
+<h2>MMBP request<a class="headerlink" href="#mmbp-request" title="此标题的永久链接">#</a></h2>
 <a class="reference external image-reference" href="https://s2.loli.net/2022/07/07/eAowDHXYmOf4tuB.png"><img alt="mmbp1.png" src="https://s2.loli.net/2022/07/07/eAowDHXYmOf4tuB.png" /></a>
 <ul class="simple">
 <li><p><cite>``command`</cite> &lt;<a class="github reference external" href="https://github.com/Conzxy/mmkv/blob/main/mmkv/protocol/command.h">Conzxy/mmkv</a>&gt;`_: 命令类型（16bit的枚举类型）</p></li>
@@ -360,13 +340,14 @@ document.write(`
 </ul>
 </section>
 <section id="mmbp-response">
-<h1>MMBP response<a class="headerlink" href="#mmbp-response" title="此标题的永久链接">#</a></h1>
+<h2>MMBP response<a class="headerlink" href="#mmbp-response" title="此标题的永久链接">#</a></h2>
 <a class="reference external image-reference" href="https://s2.loli.net/2022/07/07/Kg9cIR3xJ2sm4Xz.png"><img alt="mmbp2.png" src="https://s2.loli.net/2022/07/07/Kg9cIR3xJ2sm4Xz.png" /></a>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">status_code</span></code>: 状态码，表示命令执行的结果。<span class="raw-html-m2r"><br></span>
 具体参考protocol/command.h</p></li>
 </ul>
 <p>其他同request。</p>
+</section>
 </section>
 
 
@@ -384,7 +365,7 @@ document.write(`
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">上一页</p>
-        <p class="prev-next-title">Config</p>
+        <p class="prev-next-title">Cache Replacement</p>
       </div>
     </a>
     <a class="right-next"
@@ -392,7 +373,7 @@ document.write(`
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">下一页</p>
-        <p class="prev-next-title">Expiration Policy</p>
+        <p class="prev-next-title">Expiration Management</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -411,10 +392,9 @@ document.write(`
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">MMBP request</a></li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#mmbp-response">MMBP response</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#mmbp-request">MMBP request</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#mmbp-response">MMBP response</a></li>
 </ul>
-
   </nav></div>
 
 </div></div>

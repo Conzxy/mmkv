@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
-    <title>Config &#8212; Mmkv v1.0.0 文档</title>
+    <title>Cache Replacement &#8212; Mmkv v1.0.0 文档</title>
   
   
   
@@ -44,8 +44,8 @@
     <script>DOCUMENTATION_OPTIONS.pagename = 'server/Cache-Replacement';</script>
     <link rel="index" title="索引" href="../genindex.html" />
     <link rel="search" title="搜索" href="../search.html" />
-    <link rel="next" title="MMBP request" href="Protocol.html" />
-    <link rel="prev" title="ReservedArray" href="Data-structure.html" />
+    <link rel="next" title="Protocol design" href="Protocol.html" />
+    <link rel="prev" title="Data strucuture design &amp; benchmark" href="Data-structure.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="zh-CN"/>
   </head>
@@ -125,39 +125,18 @@
         <ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="../README.html">Introduction</a></li>
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="index.html">服务端</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-1"><i class="fa-solid fa-chevron-down"></i></label><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="Config.html">Format</a></li>
-
-<li class="toctree-l2"><a class="reference internal" href="Data-structure.html">ReservedArray</a></li>
-
-
-
-
-
-
-
-
-<li class="toctree-l2 current active"><a class="current reference internal" href="#">Config</a></li>
-
-<li class="toctree-l2"><a class="reference internal" href="Protocol.html">MMBP request</a></li>
-
-<li class="toctree-l2"><a class="reference internal" href="Expiration-Management.html">Expiration Policy</a></li>
-
-<li class="toctree-l2"><a class="reference internal" href="Recovery.html">Config</a></li>
-
+<li class="toctree-l2"><a class="reference internal" href="Config.html">配置文件</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Data-structure.html">数据结构实现及其性能测试</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">缓冲替换实现</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Protocol.html">协议设计</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Expiration-Management.html">过期管理</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Recovery.html">重启恢复</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Option.html">命令行选项</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../cli/index.html">CLI客户端</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-2"><i class="fa-solid fa-chevron-down"></i></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../cli/CLI%28Command-Line-interface%29.html">Command-line edit</a></li>
-
-<li class="toctree-l2"><a class="reference internal" href="../cli/Commands.html">Common</a></li>
-
-
-
-
-
-
-
+<li class="toctree-l2"><a class="reference internal" href="../cli/CLI%28Command-Line-interface%29.html">支持功能</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cli/Commands.html">支持命令</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../client-api/index.html">客户端API</a></li>
@@ -297,7 +276,7 @@ document.write(`
               
 
 <div id="jb-print-docs-body" class="onlyprint">
-    <h1>Config</h1>
+    <h1>Cache Replacement</h1>
     <!-- Table of contents -->
     <div id="print-main-content">
         <div id="jb-print-toc">
@@ -307,10 +286,9 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Config</a></li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#policy">Policy</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#config">Config</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#policy">Policy</a></li>
 </ul>
-
             </nav>
         </div>
     </div>
@@ -321,14 +299,16 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article" role="main">
                   
-  <p>相信学过OS的用户都学习过<code class="docutils literal notranslate"><span class="pre">Cache</span> <span class="pre">Replacement</span> <span class="pre">Algorithm/Policy</span></code>，这些算法在数据库领域也被广泛使用，而不局限于硬件的<code class="docutils literal notranslate"><span class="pre">cache</span></code>。<span class="raw-html-m2r"><br></span>
+  <section id="cache-replacement">
+<h1>Cache Replacement<a class="headerlink" href="#cache-replacement" title="此标题的永久链接">#</a></h1>
+<p>相信学过OS的用户都学习过<code class="docutils literal notranslate"><span class="pre">Cache</span> <span class="pre">Replacement</span> <span class="pre">Algorithm/Policy</span></code>，这些算法在数据库领域也被广泛使用，而不局限于硬件的<code class="docutils literal notranslate"><span class="pre">cache</span></code>。<span class="raw-html-m2r"><br></span>
 我们也可以将数据库视作为一个固定在一个阈值内的<code class="docutils literal notranslate"><span class="pre">cache</span></code>，而替换算法的作用就是选择被逐出的“元素”（e.g. 对于<code class="docutils literal notranslate"><span class="pre">mmkv</span></code>是键值对），对于不同的场景，被逐出的“元素”可能是最优的，也可能是最坏的，因此根据实际情况进行选择是很有必要的。</p>
 <section id="config">
-<h1>Config<a class="headerlink" href="#config" title="此标题的永久链接">#</a></h1>
+<h2>Config<a class="headerlink" href="#config" title="此标题的永久链接">#</a></h2>
 <p>用户可以在配置文件设置<code class="docutils literal notranslate"><span class="pre">最大内存占用</span></code>和<code class="docutils literal notranslate"><span class="pre">替换策略</span></code>从而控制数据库的内存占用。</p>
 </section>
 <section id="policy">
-<h1>Policy<a class="headerlink" href="#policy" title="此标题的永久链接">#</a></h1>
+<h2>Policy<a class="headerlink" href="#policy" title="此标题的永久链接">#</a></h2>
 <ul class="simple">
 <li><p>None: 不进行替换（一般是作为落地数据库使用）</p></li>
 <li><p>LRU: 采用<code class="docutils literal notranslate"><span class="pre">Least-recently-used</span></code>策略来替换旧键。</p></li>
@@ -336,6 +316,7 @@ document.write(`
 <li><p>LFU(TODO): 采用LFU(Least-frequently-used)策略</p></li>
 <li><p>Random(TODO): 随机替换</p></li>
 </ul>
+</section>
 </section>
 
 
@@ -353,7 +334,7 @@ document.write(`
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">上一页</p>
-        <p class="prev-next-title">ReservedArray</p>
+        <p class="prev-next-title">Data strucuture design &amp; benchmark</p>
       </div>
     </a>
     <a class="right-next"
@@ -361,7 +342,7 @@ document.write(`
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">下一页</p>
-        <p class="prev-next-title">MMBP request</p>
+        <p class="prev-next-title">Protocol design</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -380,10 +361,9 @@ document.write(`
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Config</a></li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#policy">Policy</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#config">Config</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#policy">Policy</a></li>
 </ul>
-
   </nav></div>
 
 </div></div>
