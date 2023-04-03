@@ -63,4 +63,3 @@ jobs:
         cd ${{github.workspace}}/build
         cmake --build . --target mmkv-cli --parallel $(nproc)
       shell: bash
-
