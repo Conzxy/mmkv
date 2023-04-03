@@ -1,0 +1,7 @@
+build/
+bin/
+.cache/
+core
+cloc.sh
+idea
+tags
