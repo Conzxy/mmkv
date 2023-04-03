@@ -37,7 +37,7 @@ jobs:
 
     - name: Install dependences
       run: |
-        sudo apt-get install -y lua5.3 liblua5.3-dev liblua5.3-0
+        sudo apt-get install -y liblua5.3-dev
       shell: bash
 
     - name: Configure CMake
