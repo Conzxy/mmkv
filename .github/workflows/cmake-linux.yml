@@ -37,10 +37,11 @@ jobs:
 
     - name: Install dependences
       run: |
+        cd ~
         wget https://www.lua.org/ftp/lua-5.4.4.tar.gz
         tar -xf lua-5.4.4.tar.gz
         cd lua-5.4.4
-        make -j$(nproc) && make install
+        make -j$(nproc) 1>/dev/null && sudo make install
       shell: bash
 
     - name: Configure CMake
@@ -51,19 +52,19 @@ jobs:
         ls
         mkdir build
         cd build
-        cmake .. -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+        cmake .. -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} 1>/dev/null
       shell: bash
 
     - name: Build Mmkv Server
       # Build your program with the given configuration
       run: |
         cd ${{github.workspace}}/build
-        cmake --build . --target mmkv-server --parallel $(nproc)
+        cmake --build . --target mmkv-server --parallel $(nproc) 1>/dev/null
       shell: bash
 
     - name: Build Mmkv Cli
       # Build your program with the given configuration
       run: |
         cd ${{github.workspace}}/build
-        cmake --build . --target mmkv-cli --parallel $(nproc)
+        cmake --build . --target mmkv-cli --parallel $(nproc) 1>/dev/null
       shell: bash
