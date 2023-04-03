@@ -149,9 +149,3 @@ Shell Script
    chmod u+x build.sh
    ./build.sh mmkv-cli
    ./build.sh mmkv-server
-
-FAQ
-^^^
-
-
-* 如果\ ``mmkv-cli``\ 输出了日志信息，可以通过设置环境变量关闭\ ``KANON_DEBUG=0``\ ，server的日志信息也可以通过相同的方法关闭。
