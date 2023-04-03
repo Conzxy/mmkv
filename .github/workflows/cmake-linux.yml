@@ -37,7 +37,10 @@ jobs:
 
     - name: Install dependences
       run: |
-        sudo apt-get install -y liblua5.3-dev
+        wget https://www.lua.org/ftp/lua-5.4.4.tar.gz
+        tar -xf lua-5.4.4.tar.gz
+        cd lua-5.4.4
+        make -j$(nproc) && make install
       shell: bash
 
     - name: Configure CMake
