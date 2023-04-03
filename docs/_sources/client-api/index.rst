@@ -1,4 +1,4 @@
 Client API Documents
 ==========================
 
-请参考\ `mmkv <https://github.com/Conzxy/mmkv>`_\ 。
+请参考\ `mmkvc <https://github.com/Conzxy/mmkvc>`_\ 。

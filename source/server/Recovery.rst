@@ -1,4 +1,8 @@
-``mmkv``\ 目前只支持一种Log方式：在执行命令前先写入\ ``MMBP`` request。
+.. role:: raw-html-m2r(raw)
+   :format: html
+
+
+``mmkv``\ 目前只支持一种Log方式：在执行命令前先写入\ ``MMBP`` request。\ :raw-html-m2r:`<br>`
 日志本身是异步写入的，因此不需要担心因等待IO准备而导致IO线程阻塞。
 
 Config
@@ -9,10 +13,9 @@ Config
 Parser
 ======
 
-由于request
-log是二进制编码的，因此我预先准备了\ ``rlogdump``\ 来解析该文件并显示：
+由于request log是二进制编码的，因此我预先准备了\ ``rlogdump``\ 来解析该文件并显示：
 
-.. code:: shell
+.. code-block:: shell
 
    ./build.sh rlogdump
    # ./release_build.sh rlogdump

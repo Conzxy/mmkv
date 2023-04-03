@@ -1,5 +1,9 @@
-相信学过OS的用户都学习过\ ``Cache Replacement Algorithm/Policy``\ ，这些算法在数据库领域也被广泛使用，而不局限于硬件的\ ``cache``\ 。
-我们也可以将数据库视作为一个固定在一个阈值内的\ ``cache``\ ，而替换算法的作用就是选择被逐出的“元素”（e.g. 对于\ ``mmkv``\ 是键值对），对于不同的场景，被逐出的“元素”可能是最优的，也可能是最坏的，因此根据实际情况进行选择是很有必要的。
+.. role:: raw-html-m2r(raw)
+   :format: html
+
+
+相信学过OS的用户都学习过\ ``Cache Replacement Algorithm/Policy``\ ，这些算法在数据库领域也被广泛使用，而不局限于硬件的\ ``cache``\ 。\ :raw-html-m2r:`<br>`
+我们也可以将数据库视作为一个固定在一个阈值内的\ ``cache``\ ，而替换算法的作用就是选择被逐出的“元素”（e.g. 对于\ ``mmkv``\ 是键值对），对于不同的场景，被逐出的“元素”可能是最优的，也可能是最坏的，因此根据实际情况进行选择是很有必要的。
 
 Config
 ======
@@ -9,8 +13,9 @@ Config
 Policy
 ======
 
--  None: 不进行替换（一般是作为落地数据库使用）
--  LRU: 采用\ ``Least-recently-used``\ 策略来替换旧键。
--  MRU：采用\ ``Most-recently-used``\ 策略
--  LFU(TODO): 采用LFU(Least-frequently-used)策略
--  Random(TODO): 随机替换
+
+* None: 不进行替换（一般是作为落地数据库使用）
+* LRU: 采用\ ``Least-recently-used``\ 策略来替换旧键。
+* MRU：采用\ ``Most-recently-used``\ 策略
+* LFU(TODO): 采用LFU(Least-frequently-used)策略
+* Random(TODO): 随机替换
