@@ -2,6 +2,9 @@
    :format: html
 
 
+Configuration
+=============
+
 配置文件默认是与\ ``mmkv-sever``\ 放在同一个目录的\ ``mmkv.conf``\ 。\ :raw-html-m2r:`<br>`
 当然你也可以指定配置文件的位置：
 
@@ -10,12 +13,12 @@
    $ ./mmkv-server --config/-c location
 
 Format
-======
+------
 
 配置文件的格式是\ ``Field: Value``\ 行构成的
 
 Field
-=====
+-----
 
 
 * ``LogMethod``

@@ -2,6 +2,9 @@
    :format: html
 
 
+Data strucuture design & benchmark
+==================================
+
 ``mmkv``\ 的数据结构都在\ ``/mmkv/algo``\ 中，主要包括：
 
 
@@ -18,7 +21,7 @@
 这些数据结构均是\ ``STL-like``\ 风格，区别在于API命名风格不同。
 
 ReservedArray
-=============
+-------------
 
 
 .. image:: https://s2.loli.net/2022/08/09/MFo5b82DLdj1YzN.png
@@ -35,7 +38,7 @@ ReservedArray
 可见采用\ ``reallocate``\ 带来的性能提升是明显的
 
 Slist
-=====
+-----
 
 
 .. image:: https://s2.loli.net/2022/08/09/PyjZU4oXDd8fkFA.png
@@ -45,7 +48,7 @@ Slist
 ``Slist``\ 是与\ ``std::forward_list``\ 类似的单链表，区别在于\ ``Slist``\ 没有哨兵且没有成环（因为没有哨兵作为尾后迭代器），为了节省空间（哈希表分离列表法可能会有很多空槽占用哨兵）。
 
 Blist
-=====
+-----
 
 
 .. image:: https://s2.loli.net/2022/08/09/iNEuyA4dw3oPB1k.png
@@ -69,7 +72,7 @@ Blist
 虽然\ ``Blist``\ 从操作优劣程度来看，是比\ ``std::list``\ 差的，但是差距不大，作为省空间的代价是可以接受的。
 
 HashTable
-=========
+---------
 
 
 .. image:: https://s2.loli.net/2022/08/09/mIlRe6nvDB3kNFL.png
@@ -81,17 +84,17 @@ HashTable
 不过该哈希表并没有针对迭代进行优化，因为一般这样做会降低\ ``点查询``\ (point query)的性能，因此暂时不考虑这方面的优化。
 
 HashSet
-=======
+-------
 
 ``HashSet``\ 是\ ``HashTable``\ 的子类，除了继承来的方法，还提供了三种方法支持对两个集合的\ ``交集``\ ，\ ``并集``\ ，\ ``差集``\ 的元素进行操作（传递回调）。
 
 Dictionary
-==========
+----------
 
 ``Dictionary``\ 是\ ``HashTable``\ 的子类，差别不大，仅新增了更方便键值对的方法。
 
 AvlTree
-=======
+-------
 
 ``mmkv``\ 的有序集合，我没有选择\ **红黑树**\ 或\ **跳表**\ ，首先，跳表的性能并没有平衡树好，其次，红黑树的高度并不是严格的\ ``O(lg(n))``\ 而是\ ``O(2lg(n+1))``\ 。因此对于\ ``读 > 写``\ 的\ ``mmkv``\ 而言高度更严格平衡的\ ``avl``\ 树更为适合。\ :raw-html-m2r:`<br>`
 
@@ -102,12 +105,12 @@ AvlTree
 与红黑树相比，在插入和删除上更差，但是查询更好。符合预期结果。
 
 TreeHashTable
-=============
+-------------
 
 ``HashTable``\ 采用链表的弊端在\ ``HashTable``\ 中已经讲明。\ ``TreeHashTable``\ 选用的列表类型是\ ``平衡树``\ (balanced-search-tree)，可以使插入，删除，查询的算法复杂度维持在\ ``O(lgn)``\ ，在一定程度上缓解了由于哈希函数和表大小带来的问题。\ :raw-html-m2r:`<br>`
 
 AvlDictionary
-=============
+-------------
 
 ``AvlDictionary``\ 是\ ``AvlTreeMap``\ (\ ``TreeHashTable``\ 的别名)的子类，列表类型是\ ``avl``\ 树。
 
