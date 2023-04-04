@@ -123,22 +123,30 @@ bool MmkvClient::CliCommandProcess(kanon::StringView cmd,
       case CLI_HISTORY:
       {
         const auto history_sz = replxx_history_size(replxx_);
-        int show_cnt = 20;
-        if (history_sz < show_cnt) {
-          show_cnt = history_sz;
-        }
-
         auto *history_scan = replxx_history_scan_start(replxx_);
         ReplxxHistoryEntry history_entry;
+        std::vector<std::string> history_arr(history_sz);
         for (int i = 0; replxx_history_scan_next(replxx_, history_scan,
                                                  &history_entry) == 0;
              ++i)
         {
-          printf("%*d: %s\n",
-                 (int)(prompt_.size() - (sizeof(YELLOW) + sizeof(RESET) - 2)),
-                 i, history_entry.text);
-          if (i == show_cnt) break;
+          history_arr[i] = history_entry.text;
+          if (i == history_sz) break;
         }
+
+        int i = 0;
+        for (auto beg = history_arr.rbegin(); beg != history_arr.rend(); ++beg)
+        {
+          const auto align_padding_size =
+              (int)(prompt_.size() - (sizeof(YELLOW) + sizeof(RESET) - 2));
+          if (i == 0) {
+            printf("%*s: %s\n", align_padding_size, "latest", beg->c_str());
+          } else {
+            printf("%*d: %s\n", align_padding_size, i, beg->c_str());
+          }
+          ++i;
+        }
+        replxx_history_scan_stop(replxx_, history_scan);
       } break;
 
       case CLI_CLEAR:
@@ -146,14 +154,23 @@ bool MmkvClient::CliCommandProcess(kanon::StringView cmd,
         replxx_clear_screen(replxx_);
       } break;
 
+      case CLI_CLEAR_HISTORY:
+      {
+        // This API just clear the memory history record
+        replxx_history_clear(replxx_);
+
+        FILE *file = fopen(COMMAND_HISTORY_LOCATION, "w");
+        replxx_history_save(replxx_, COMMAND_HISTORY_LOCATION);
+        if (file) fclose(file);
+      } break;
       default:
         LOG_FATAL << "Don't implement the handler of "
                   << GetCliCommandString(cli_cmd);
     }
 
-    return false;
+    return true;
   }
-  return true;
+  return false;
 }
 
 bool MmkvClient::ShellCommandProcess(kanon::StringView cmd,
@@ -164,9 +181,9 @@ bool MmkvClient::ShellCommandProcess(kanon::StringView cmd,
     if (::system(line.substr(1).data())) {
       util::ErrorPrintf("Syntax error: no command\n");
     }
-    return false;
+    return true;
   }
-  return true;
+  return false;
 }
 
 int MmkvClient::MmkvCommandProcess(kanon::StringView cmd,
@@ -220,13 +237,6 @@ bool MmkvClient::ConsoleIoProcess()
     util::ErrorPrintf("Syntax error: no command\n");
     return false;
   }
-  // To any input line,
-  // we save it in case user
-  // to reuse line although it is invalid.
-  ::replxx_history_add(replxx_, line);
-  if (::replxx_history_save(replxx_, COMMAND_HISTORY_LOCATION) < 0) {
-    ::fprintf(stderr, "Failed to save the command history\n");
-  }
 
   StringView line_view(line, line_len);
   auto space_pos = line_view.find(' ');
@@ -234,11 +244,23 @@ bool MmkvClient::ConsoleIoProcess()
   auto cmd = line_view.substr(0, space_pos).ToString();
   auto upper_cmd = line_view.substr(0, space_pos).ToUpperString();
 
-  if (!CliCommandProcess(upper_cmd, line_view)) {
+  if (CliCommandProcess(upper_cmd, line_view)) {
     return false;
   }
 
-  if (!ShellCommandProcess(cmd, line_view)) {
+  // * To CLI command line,
+  //   we don't save them since them is redundant.
+  // * To Shell command line,
+  //   we save it in case user
+  //   to reuse line although it is invalid.
+  //
+  // * To Mmkv Command  line, same with shell command.
+  ::replxx_history_add(replxx_, line);
+  if (::replxx_history_save(replxx_, COMMAND_HISTORY_LOCATION) < 0) {
+    ::fprintf(stderr, "Failed to save the command history\n");
+  }
+
+  if (ShellCommandProcess(cmd, line_view)) {
     return false;
   }
   auto err_code = MmkvCommandProcess(upper_cmd, line_view);
@@ -402,9 +424,10 @@ void MmkvClient::InstallLinenoise() KANON_NOEXCEPT
   }
 
   ::replxx_set_indent_multiline(replxx_, prompt_.size());
-  ::replxx_set_max_history_size(replxx_, 10);
+  ::replxx_set_max_history_size(replxx_, 20);
   ::replxx_set_completion_callback(replxx_, &OnCommandCompletion, nullptr);
   ::replxx_set_hint_callback(replxx_, &OnCommandHint, nullptr);
   ::replxx_set_max_hint_rows(replxx_, COMMAND_NUM / 5);
+  ::replxx_set_beep_on_ambiguous_completion(replxx_, true);
   //::replxx_set_modify_callback(replxx_, &OnCommandModify, nullptr);
 }

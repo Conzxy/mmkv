@@ -52,6 +52,7 @@ enum CliCommand {
   CLI_EXIT,
   CLI_HISTORY,
   CLI_CLEAR,
+  CLI_CLEAR_HISTORY,
   CLI_COMMAND_NUM,
 };
 

@@ -16,8 +16,8 @@ using namespace mmkv;
 
 namespace detail {
 
-std::string cli_command_strings[] = {"HELP", "QUIT", "EXIT", "HISTORY",
-                                     "CLEAR"};
+std::string cli_command_strings[] = {"HELP",    "QUIT",  "EXIT",
+                                     "HISTORY", "CLEAR", "CLEARHISTORY"};
 
 std::string help;
 
