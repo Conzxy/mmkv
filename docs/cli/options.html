@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
-    <title>CLI client Documents &#8212; Mmkv v1.0.0 文档</title>
+    <title>Cli Options &#8212; Mmkv v1.0.0 文档</title>
   
   
   
@@ -41,11 +41,11 @@
     <script src="../_static/sphinx_highlight.js"></script>
     <script src="../_static/scripts/sphinx-book-theme.js?digest=5a5c038af52cf7bc1a1ec88eea08e6366ee68824"></script>
     <script src="../_static/translations.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'cli/index';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'cli/options';</script>
     <link rel="index" title="索引" href="../genindex.html" />
     <link rel="search" title="搜索" href="../search.html" />
-    <link rel="next" title="CLI client" href="CLI%28Command-Line-interface%29.html" />
-    <link rel="prev" title="Server Options" href="../server/Option.html" />
+    <link rel="next" title="Client API Documents" href="../client-api/index.html" />
+    <link rel="prev" title="CLI Commands" href="Commands.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="zh-CN"/>
   </head>
@@ -126,24 +126,21 @@
 <li class="toctree-l1"><a class="reference internal" href="../README.html">Introduction</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../server/index.html">服务端</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-1"><i class="fa-solid fa-chevron-down"></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../server/Config.html">配置文件</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../server/Data-structure.html">数据结构设计</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/Data-structure.html">数据结构实现及其性能测试</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../server/Cache-Replacement.html">缓冲替换实现</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/Protocol.html">协议设计</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../server/Expiration-Management.html">过期管理</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../server/Recovery.html">重启恢复</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../server/Option.html">命令行选项</a></li>
 </ul>
 </li>
-<li class="toctree-l1 current active has-children"><a class="current reference internal" href="#">CLI客户端</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-2"><i class="fa-solid fa-chevron-down"></i></label><ul>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="index.html">CLI客户端</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-2"><i class="fa-solid fa-chevron-down"></i></label><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="CLI%28Command-Line-interface%29.html">支持功能</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Commands.html">支持命令</a></li>
-<li class="toctree-l2"><a class="reference internal" href="options.html">命令行选项</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">命令行选项</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../client-api/index.html">客户端API</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../protocol/index.html">协议设计</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-3"><i class="fa-solid fa-chevron-down"></i></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../protocol/Protocol.html">Mmbp协议</a></li>
-</ul>
-</li>
 </ul>
 
     </div>
@@ -198,7 +195,7 @@
       
       
       
-      <li><a href="../_sources/cli/index.rst" target="_blank"
+      <li><a href="../_sources/cli/options.rst" target="_blank"
    class="btn btn-sm btn-download-source-button dropdown-item"
    title="下载源文件"
    data-bs-placement="left" data-bs-toggle="tooltip"
@@ -267,7 +264,9 @@ document.write(`
   </button>
 `);
 </script>
-
+<label class="sidebar-toggle secondary-toggle btn btn-sm" for="__secondary"title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</label>
 </div></div>
       
     </div>
@@ -278,11 +277,19 @@ document.write(`
               
 
 <div id="jb-print-docs-body" class="onlyprint">
-    <h1>CLI client Documents</h1>
+    <h1>Cli Options</h1>
     <!-- Table of contents -->
     <div id="print-main-content">
         <div id="jb-print-toc">
             
+            <div>
+                <h2> 目录 </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id2">日志级别</a></li>
+</ul>
+            </nav>
         </div>
     </div>
 </div>
@@ -292,15 +299,36 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article" role="main">
                   
-  <section id="cli-client-documents">
-<h1>CLI client Documents<a class="headerlink" href="#cli-client-documents" title="此标题的永久链接">#</a></h1>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="CLI%28Command-Line-interface%29.html">支持功能</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Commands.html">支持命令</a></li>
-<li class="toctree-l1"><a class="reference internal" href="options.html">命令行选项</a></li>
+  <section id="cli-options">
+<span id="id1"></span><h1>Cli Options<a class="headerlink" href="#cli-options" title="此标题的永久链接">#</a></h1>
+<p>CLI支持选项如下：
+=== ===
+选项 作用
+— —
+-l/–log | 启动输出日志，一般用于调试
+-p/–port | 欲连接server的端口号
+-h/–host | 欲连接server的域名/IP
+-r/–reconnect | 当Server断开连接后，再次连接Server直到连接上为止
+=== ===</p>
+<section id="id2">
+<h2>日志级别<a class="headerlink" href="#id2" title="此标题的永久链接">#</a></h2>
+<p>由于Mmkv的日志依赖于 <a class="reference external" href="https://github.com/Conzxy/kanon">kanon</a> 的日志模块。
+所以日志级别分为：</p>
+<ul class="simple">
+<li><p>TRACE</p></li>
+<li><p>DEBUG</p></li>
+<li><p>INFO</p></li>
+<li><p>WARN</p></li>
+<li><p>ERROR</p></li>
+<li><p>FATAL</p></li>
+<li><p>OFF</p></li>
 </ul>
+<p>用户可以通过 <code class="docutils literal notranslate"><span class="pre">KANON_LOG</span></code> 指定最低日志级别，小于该级别的日志将不会被输出的。</p>
+<div class="admonition note">
+<p class="admonition-title">注解</p>
+<p><em>FATAL</em> 是不能被禁止的，因为FATAL的行为是输出完成后终止程序，不允许被禁止。</p>
 </div>
+</section>
 </section>
 
 
@@ -313,20 +341,20 @@ document.write(`
                   <!-- Previous / next buttons -->
 <div class="prev-next-area">
     <a class="left-prev"
-       href="../server/Option.html"
+       href="Commands.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">上一页</p>
-        <p class="prev-next-title">Server Options</p>
+        <p class="prev-next-title">CLI Commands</p>
       </div>
     </a>
     <a class="right-next"
-       href="CLI%28Command-Line-interface%29.html"
+       href="../client-api/index.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">下一页</p>
-        <p class="prev-next-title">CLI client</p>
+        <p class="prev-next-title">Client API Documents</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -336,6 +364,20 @@ document.write(`
             </div>
             
             
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> 目录
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id2">日志级别</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
               
             
           </div>

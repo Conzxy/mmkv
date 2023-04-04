@@ -11,3 +11,4 @@ Mmkv Documents
   服务端 <server/index.rst>
   CLI客户端 <cli/index.rst>
   客户端API <client-api/index.rst>
+  协议设计 <protocol/index.rst>

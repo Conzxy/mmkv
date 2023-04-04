@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
-    <title>CLI client Documents &#8212; Mmkv v1.0.0 文档</title>
+    <title>Mmkv protocol &#8212; Mmkv v1.0.0 文档</title>
   
   
   
@@ -41,11 +41,11 @@
     <script src="../_static/sphinx_highlight.js"></script>
     <script src="../_static/scripts/sphinx-book-theme.js?digest=5a5c038af52cf7bc1a1ec88eea08e6366ee68824"></script>
     <script src="../_static/translations.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'cli/index';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'protocol/index';</script>
     <link rel="index" title="索引" href="../genindex.html" />
     <link rel="search" title="搜索" href="../search.html" />
-    <link rel="next" title="CLI client" href="CLI%28Command-Line-interface%29.html" />
-    <link rel="prev" title="Server Options" href="../server/Option.html" />
+    <link rel="next" title="Protocol design" href="Protocol.html" />
+    <link rel="prev" title="Client API Documents" href="../client-api/index.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="zh-CN"/>
   </head>
@@ -133,15 +133,15 @@
 <li class="toctree-l2"><a class="reference internal" href="../server/Option.html">命令行选项</a></li>
 </ul>
 </li>
-<li class="toctree-l1 current active has-children"><a class="current reference internal" href="#">CLI客户端</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-2"><i class="fa-solid fa-chevron-down"></i></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="CLI%28Command-Line-interface%29.html">支持功能</a></li>
-<li class="toctree-l2"><a class="reference internal" href="Commands.html">支持命令</a></li>
-<li class="toctree-l2"><a class="reference internal" href="options.html">命令行选项</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../cli/index.html">CLI客户端</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-2"><i class="fa-solid fa-chevron-down"></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../cli/CLI%28Command-Line-interface%29.html">支持功能</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cli/Commands.html">支持命令</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cli/options.html">命令行选项</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../client-api/index.html">客户端API</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../protocol/index.html">协议设计</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-3"><i class="fa-solid fa-chevron-down"></i></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../protocol/Protocol.html">Mmbp协议</a></li>
+<li class="toctree-l1 current active has-children"><a class="current reference internal" href="#">协议设计</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-3"><i class="fa-solid fa-chevron-down"></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="Protocol.html">Mmbp协议</a></li>
 </ul>
 </li>
 </ul>
@@ -198,7 +198,7 @@
       
       
       
-      <li><a href="../_sources/cli/index.rst" target="_blank"
+      <li><a href="../_sources/protocol/index.rst" target="_blank"
    class="btn btn-sm btn-download-source-button dropdown-item"
    title="下载源文件"
    data-bs-placement="left" data-bs-toggle="tooltip"
@@ -278,7 +278,7 @@ document.write(`
               
 
 <div id="jb-print-docs-body" class="onlyprint">
-    <h1>CLI client Documents</h1>
+    <h1>Mmkv protocol</h1>
     <!-- Table of contents -->
     <div id="print-main-content">
         <div id="jb-print-toc">
@@ -292,13 +292,11 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article" role="main">
                   
-  <section id="cli-client-documents">
-<h1>CLI client Documents<a class="headerlink" href="#cli-client-documents" title="此标题的永久链接">#</a></h1>
+  <section id="mmkv-protocol">
+<h1>Mmkv protocol<a class="headerlink" href="#mmkv-protocol" title="此标题的永久链接">#</a></h1>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="CLI%28Command-Line-interface%29.html">支持功能</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Commands.html">支持命令</a></li>
-<li class="toctree-l1"><a class="reference internal" href="options.html">命令行选项</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Protocol.html">Mmbp协议</a></li>
 </ul>
 </div>
 </section>
@@ -313,20 +311,20 @@ document.write(`
                   <!-- Previous / next buttons -->
 <div class="prev-next-area">
     <a class="left-prev"
-       href="../server/Option.html"
+       href="../client-api/index.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">上一页</p>
-        <p class="prev-next-title">Server Options</p>
+        <p class="prev-next-title">Client API Documents</p>
       </div>
     </a>
     <a class="right-next"
-       href="CLI%28Command-Line-interface%29.html"
+       href="Protocol.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">下一页</p>
-        <p class="prev-next-title">CLI client</p>
+        <p class="prev-next-title">Protocol design</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>

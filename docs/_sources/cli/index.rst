@@ -6,3 +6,4 @@ CLI client Documents
 
    支持功能 <CLI(Command-Line-interface).rst>
    支持命令 <Commands.rst>
+   命令行选项 <options.rst>

@@ -126,9 +126,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../README.html">Introduction</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../server/index.html">服务端</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-1"><i class="fa-solid fa-chevron-down"></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../server/Config.html">配置文件</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../server/Data-structure.html">数据结构实现及其性能测试</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/Data-structure.html">数据结构设计</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../server/Cache-Replacement.html">缓冲替换实现</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../server/Protocol.html">协议设计</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../server/Expiration-Management.html">过期管理</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../server/Recovery.html">重启恢复</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../server/Option.html">命令行选项</a></li>
@@ -137,9 +136,14 @@
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="index.html">CLI客户端</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-2"><i class="fa-solid fa-chevron-down"></i></label><ul class="current">
 <li class="toctree-l2 current active"><a class="current reference internal" href="#">支持功能</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Commands.html">支持命令</a></li>
+<li class="toctree-l2"><a class="reference internal" href="options.html">命令行选项</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../client-api/index.html">客户端API</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../protocol/index.html">协议设计</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-3"><i class="fa-solid fa-chevron-down"></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../protocol/Protocol.html">Mmbp协议</a></li>
+</ul>
+</li>
 </ul>
 
     </div>
@@ -286,8 +290,15 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#command-line-edit">Command-line edit</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#command-line-edit">Command-line edit</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#hint">提示(Hint)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#completion">补全(Completion)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#history-record">历史记录(History record)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#clear-screen">清屏(Clear screen)</a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#shell-command">Shell-command</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#mmkv-command">Mmkv-Command</a></li>
 </ul>
             </nav>
         </div>
@@ -300,16 +311,44 @@ document.write(`
                 <article class="bd-article" role="main">
                   
   <section id="cli-client">
-<h1>CLI client<a class="headerlink" href="#cli-client" title="此标题的永久链接">#</a></h1>
+<span id="id1"></span><h1>CLI client<a class="headerlink" href="#cli-client" title="此标题的永久链接">#</a></h1>
 <p><code class="docutils literal notranslate"><span class="pre">mmkv-cli</span></code>是<code class="docutils literal notranslate"><span class="pre">mmkv</span></code>提供给用户与<code class="docutils literal notranslate"><span class="pre">mmkv-server</span></code>基于命令行进行交互的CLI程序。</p>
 <section id="command-line-edit">
 <h2>Command-line edit<a class="headerlink" href="#command-line-edit" title="此标题的永久链接">#</a></h2>
-<p>由于本CLI想要实现<code class="docutils literal notranslate"><span class="pre">自动补全</span></code>，<code class="docutils literal notranslate"><span class="pre">历史记录</span></code>，<code class="docutils literal notranslate"><span class="pre">命令提示</span></code>，<code class="docutils literal notranslate"><span class="pre">清屏</span></code>这些命令行编辑需求，因此依赖于<a class="reference external" href="https://github.com/antirez/linenoise">linenoise</a>。</p>
+<p>由于本CLI想要实现<code class="docutils literal notranslate"><span class="pre">自动补全</span></code>，<code class="docutils literal notranslate"><span class="pre">历史记录</span></code>，<code class="docutils literal notranslate"><span class="pre">命令提示</span></code>，<code class="docutils literal notranslate"><span class="pre">清屏</span></code>这些命令行编辑需求，因此依赖于<a class="reference external" href="https://github.com/AmokHuginnsson/replxx">replxx</a>。</p>
+<section id="hint">
+<h3>提示(Hint)<a class="headerlink" href="#hint" title="此标题的永久链接">#</a></h3>
+<img alt="hint" src="https://sm.ms/image/5KRXwbWfBaIOsyu" />
+</section>
+<section id="completion">
+<h3>补全(Completion)<a class="headerlink" href="#completion" title="此标题的永久链接">#</a></h3>
+<img alt="completion" src="https://sm.ms/image/c8YThC1237Egntj" />
+</section>
+<section id="history-record">
+<h3>历史记录(History record)<a class="headerlink" href="#history-record" title="此标题的永久链接">#</a></h3>
+<ul class="simple">
+<li><p>HISTORY: 展示20个最新到最旧的历史记录</p></li>
+<li><p>CLEARHISTORY: 清空历史（包括内存和硬盘文件）</p></li>
+</ul>
+<img alt="history record" src="https://sm.ms/image/cqRytFpgVKzIMB9" />
+</section>
+<section id="clear-screen">
+<h3>清屏(Clear screen)<a class="headerlink" href="#clear-screen" title="此标题的永久链接">#</a></h3>
+<ul class="simple">
+<li><p>CLEAR: 清空并刷新当前屏幕</p></li>
+</ul>
+<img alt="clear scree" src="https://sm.ms/image/uL9T4lUx2FvzyOk" />
+</section>
 </section>
 <section id="shell-command">
 <h2>Shell-command<a class="headerlink" href="#shell-command" title="此标题的永久链接">#</a></h2>
 <p>该CLI可以执行shell命令，只需要输入行以<code class="docutils literal notranslate"><span class="pre">!</span></code>开头，后面的输入内容会被视为shell命令及参数传递给<code class="docutils literal notranslate"><span class="pre">/bin/shell</span></code>等shell执行。</p>
-<a class="reference external image-reference" href="https://s2.loli.net/2022/07/29/w3Dk8cBifUXSTWH.png"><img alt="image.png" src="https://s2.loli.net/2022/07/29/w3Dk8cBifUXSTWH.png" /></a>
+<img alt="shell command call" src="https://sm.ms/image/fRUp2JslWgqVNmh" />
+</section>
+<section id="mmkv-command">
+<h2>Mmkv-Command<a class="headerlink" href="#mmkv-command" title="此标题的永久链接">#</a></h2>
+<p>通过与Mmkv对应的Command与Mmkv进行交互。
+具体参考 <a class="reference internal" href="Commands.html#cli-commands"><span class="std std-ref">CLI Commands</span></a> 。</p>
 </section>
 </section>
 
@@ -355,8 +394,15 @@ document.write(`
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#command-line-edit">Command-line edit</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#command-line-edit">Command-line edit</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#hint">提示(Hint)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#completion">补全(Completion)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#history-record">历史记录(History record)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#clear-screen">清屏(Clear screen)</a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#shell-command">Shell-command</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#mmkv-command">Mmkv-Command</a></li>
 </ul>
   </nav></div>
 
