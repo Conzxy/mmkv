@@ -97,19 +97,19 @@ BreakStringLiterals: true
 
 # 如何分隔大括号
 BreakBeforeBraces: Custom # 定制化
-
+#PackConstructorInitializers: Never
 BraceWrapping:
   # 函数大括号换行 - true
   AfterFunction: true
-  AfterCaseLabel: true
+  AfterCaseLabel: false
   AfterClass: false
-  # 控制语句后面的大括号不换行
   AfterControlStatement: MultiLine
   BeforeElse: false
   AfterEnum: false
   AfterNamespace: false
   AfterStruct: false
   AfterUnion: false
+  #BeforeLambdaBody: true
   
   # extern "C"
   AfterExternBlock: false
@@ -119,4 +119,12 @@ BraceWrapping:
   # BeforeWhile: false
 
 IndentCaseLabels: true
+SortIncludes: false
+AlignConsecutiveMacros: true
+StatementMacros: ["Str2Int", "Str2IntForOne", "AppendInt_Macro", "PrependInt_Macro", 
+  "GetReadBeginInt_Macro", "ReadInt_Macro", "Append_Macro", "Prepend_Macro", "GetReadBegin_Macro", 
+  "Read_Macro", "AdvanceRead_Macro"]
+# 自动给宏加上缩进
+# Hash is the '#' sign
+IndentPPDirectives: AfterHash
 

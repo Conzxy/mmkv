@@ -62,8 +62,6 @@ done
 [[ $DEBUG == 1 ]] && MODE="Debug" || MODE="Release"
 [[ $VERBOSE == 1 ]] && VERBOSE="-v" || VERBOSE=""
 
-echo "MODE = $MODE"
-echo "Verbose = $VERBOSE"
 cd ../build
-#cmake .. -DCMAKE_BUILD_TYPE=$MODE
-#cmake --build . --target $TARGET --parallel $(nproc) $VERBOSE
+cmake .. -DCMAKE_BUILD_TYPE=$MODE -GNinja
+cmake --build . --target $TARGET --parallel $(nproc) $VERBOSE

@@ -17,25 +17,34 @@ namespace client {
 
 class MmkvClient {
   DISABLE_EVIL_COPYABLE(MmkvClient)
-  
+
  public:
-  MmkvClient(EventLoop* loop, InetAddr const& server_addr);
+  MmkvClient(EventLoop *loop, InetAddr const &server_addr);
   ~MmkvClient() noexcept;
 
   void Start();
-  
+
   /**
    * \return
    *   true -- 需要等待
    */
   bool ConsoleIoProcess();
-  void IoWait() {
+
+  void IoWait()
+  {
     io_cond_.Wait();
   }
-  
-  KANON_INLINE Replxx *replxx() KANON_NOEXCEPT { return replxx_; }
+
  private:
-  void InstallLinenoise() KANON_NOEXCEPT;   
+  KANON_INLINE bool CliCommandProcess(kanon::StringView cmd,
+                                      kanon::StringView line);
+  KANON_INLINE bool ShellCommandProcess(kanon::StringView cmd,
+                                        kanon::StringView line);
+
+  KANON_INLINE int MmkvCommandProcess(kanon::StringView cmd,
+                                      kanon::StringView line);
+
+  void InstallLinenoise() KANON_NOEXCEPT;
 
   TcpClientPtr client_;
   protocol::MmbpCodec codec_;
@@ -43,14 +52,14 @@ class MmkvClient {
   ResponsePrinter response_printer_;
   kanon::Condition io_cond_;
   kanon::MutexLock mutex_;
-  
+
   std::string prompt_;
-  
+
   Replxx *replxx_;
   protocol::Command current_cmd_;
 };
 
-} // client
-} // mmkv
+} // namespace client
+} // namespace mmkv
 
 #endif // _MMKV_CLIENT_MMKV_CLIENT_H_

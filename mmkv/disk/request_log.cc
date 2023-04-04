@@ -2,8 +2,8 @@
 
 #include <unistd.h>
 
-#include "mmkv/server/config.h"
 #include "mmkv/protocol/mmbp_request.h"
+#include "mmkv/server/config.h"
 
 using namespace mmkv::disk;
 using namespace mmkv::server;
@@ -12,13 +12,14 @@ using namespace kanon;
 
 // RequestLog *mmkv::disk::g_rlog = nullptr;
 
-RequestLog &mmkv::disk::rlog() {
+RequestLog &mmkv::disk::rlog()
+{
   static RequestLog rlog;
   return rlog;
 }
 
-RequestLog::RequestLog() 
-  : empty_cond_(empty_lock_) 
+RequestLog::RequestLog()
+  : empty_cond_(empty_lock_)
   , io_thread_("RequestLogBackground")
   , file_(mmkv_config().request_log_location)
   , fd_(::fileno(file_.fp()))
@@ -27,19 +28,21 @@ RequestLog::RequestLog()
 {
 }
 
-RequestLog::~RequestLog() noexcept {
+RequestLog::~RequestLog() noexcept
+{
   if (running_) Stop();
 }
 
-void RequestLog::Start() {
+void RequestLog::Start()
+{
 
   io_thread_.StartRun([this]() {
     // Wait the first log
-    latch_.Countdown(); 
-    running_ = true; 
+    latch_.Countdown();
+    running_ = true;
 
     while (running_) {
-      std::vector<Block> blks; 
+      std::vector<Block> blks;
       {
         MutexGuard g(empty_lock_);
 
@@ -51,7 +54,7 @@ void RequestLog::Start() {
         blks.swap(blks_);
       }
 
-      for (auto const& blk : blks) {
+      for (auto const &blk : blks) {
         file_.Append(blk.data(), blk.len());
       }
 
@@ -64,7 +67,8 @@ void RequestLog::Start() {
   latch_.Wait();
 }
 
-void RequestLog::AppendDel(String key) {
+void RequestLog::AppendDel(String key)
+{
   MmbpRequest request;
   Buffer buffer;
   request.SetKey();

@@ -15,6 +15,9 @@ void RegisterOptions()
 {
   takina::AddUsage("./mmkv_cli [OPTIONS]");
   takina::AddDescription("Command-line-interface client of mmkv");
+
+  takina::AddOption({"l", "log", "Enable log trace/debug/... message"},
+                    &cli_option().log);
   takina::AddOption({"p", "port", "Port of mmkv server", "PORT"},
                     &cli_option().port);
   takina::AddOption({"h", "host", "Hostname of mmkv server", "HOST"},

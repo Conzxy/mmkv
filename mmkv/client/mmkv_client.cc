@@ -16,8 +16,8 @@
 #include "response_printer.h"
 #include "translator.h"
 
-#include <kanon/string/string_util.h>
 #include <kanon/net/tcp_client.h>
+#include <kanon/string/string_util.h>
 #include <ternary_tree.h>
 #include <third-party/replxx/include/replxx.h>
 
@@ -62,7 +62,7 @@ MmkvClient::MmkvClient(EventLoop *loop, InetAddr const &server_addr)
 
       if (prompt_.empty())
         ::mmkv::util::StrCat(prompt_, YELLOW "mmkv %a> " RESET,
-               server_addr.ToIpPort().c_str());
+                             server_addr.ToIpPort().c_str());
     } else {
       if (is_exit) {
         puts("Disconnect successfully!");
@@ -74,11 +74,11 @@ MmkvClient::MmkvClient(EventLoop *loop, InetAddr const &server_addr)
     }
   });
 
-  codec_.SetErrorCallback(
-      [](TcpConnectionPtr const &conn, MmbpCodec::ErrorCode code) {
-        MMKV_UNUSED(conn);
-        util::ErrorPrintf("ERROR occurred: %s", MmbpCodec::GetErrorString(code));
-      });
+  codec_.SetErrorCallback([](TcpConnectionPtr const &conn,
+                             MmbpCodec::ErrorCode code) {
+    MMKV_UNUSED(conn);
+    util::ErrorPrintf("ERROR occurred: %s", MmbpCodec::GetErrorString(code));
+  });
 
   codec_.SetMessageCallback([this](TcpConnectionPtr const &, Buffer &buffer,
                                    uint32_t, TimeStamp recv_time) {
@@ -104,58 +104,111 @@ MmkvClient::~MmkvClient() noexcept
   replxx_end(replxx_);
 }
 
-bool MmkvClient::ConsoleIoProcess()
+bool MmkvClient::CliCommandProcess(kanon::StringView cmd,
+                                   kanon::StringView line)
 {
-  // line is managed by replxx
-  auto line = ::replxx_input(replxx_, prompt_.c_str());
-  if (!line) {
-    return false;
-  }
+  // Check if line is a cli command
+  auto cli_cmd = GetCliCommand(cmd);
+  if (cli_cmd != CliCommand::CLI_COMMAND_NUM) {
+    switch (cli_cmd) {
+      case CLI_HELP:
+        fwrite(GetHelp().c_str(), 1, GetHelp().size(), stdout);
+        break;
+      case CLI_EXIT:
+      case CLI_QUIT:
+      {
+        is_exit = true;
+        client_->Disconnect();
+      } break;
+      case CLI_HISTORY:
+      {
+        const auto history_sz = replxx_history_size(replxx_);
+        auto *history_scan = replxx_history_scan_start(replxx_);
+        ReplxxHistoryEntry history_entry;
+        std::vector<std::string> history_arr(history_sz);
+        for (int i = 0; replxx_history_scan_next(replxx_, history_scan,
+                                                 &history_entry) == 0;
+             ++i)
+        {
+          history_arr[i] = history_entry.text;
+          if (i == history_sz) break;
+        }
 
-  if (::strcasecmp(line, "clear") == 0) {
-    replxx_clear_screen(replxx_);
-    return false;
-  }
+        int i = 0;
+        for (auto beg = history_arr.rbegin(); beg != history_arr.rend(); ++beg)
+        {
+          const auto align_padding_size =
+              (int)(prompt_.size() - (sizeof(YELLOW) + sizeof(RESET) - 2));
+          if (i == 0) {
+            printf("%*s: %s\n", align_padding_size, "latest", beg->c_str());
+          } else {
+            printf("%*d: %s\n", align_padding_size, i, beg->c_str());
+          }
+          ++i;
+        }
+        replxx_history_scan_stop(replxx_, history_scan);
+      } break;
 
-  ::replxx_history_add(replxx_, line);
-  if (::replxx_history_save(replxx_, COMMAND_HISTORY_LOCATION) < 0) {
-    ::fprintf(stderr, "Failed to save the command history\n");
+      case CLI_CLEAR:
+      {
+        replxx_clear_screen(replxx_);
+      } break;
+
+      case CLI_CLEAR_HISTORY:
+      {
+        // This API just clear the memory history record
+        replxx_history_clear(replxx_);
+
+        FILE *file = fopen(COMMAND_HISTORY_LOCATION, "w");
+        replxx_history_save(replxx_, COMMAND_HISTORY_LOCATION);
+        if (file) fclose(file);
+      } break;
+      default:
+        LOG_FATAL << "Don't implement the handler of "
+                  << GetCliCommandString(cli_cmd);
+    }
+
+    return true;
   }
-  // std::string statement;
-  // getline(std::cin, statement);
+  return false;
+}
+
+bool MmkvClient::ShellCommandProcess(kanon::StringView cmd,
+                                     kanon::StringView line)
+{
+  // Check if line is a shell cmd
+  if (cmd.size() > 0 && cmd[0] == '!') {
+    if (::system(line.substr(1).data())) {
+      util::ErrorPrintf("Syntax error: no command\n");
+    }
+    return true;
+  }
+  return false;
+}
+
+int MmkvClient::MmkvCommandProcess(kanon::StringView cmd,
+                                   kanon::StringView line)
+{
+  // Check if line is a mmkv command
+  auto mmkv_cmd = GetCommand(cmd);
+  if (mmkv_cmd == Command::COMMAND_NUM) {
+    return Translator::E_NO_COMMAND;
+  }
   MmbpRequest request;
-
   Translator translator;
-  auto error_code = translator.Parse(&request, line);
+
+  // const auto first_token_pos = line.find_first_not_of(' ', cmd.size());
+  // line.remove_prefix(std::min(first_token_pos, line.size()));
+
+  line.remove_prefix(cmd.size());
+  LOG_DEBUG << "Mmkv token string: " << line;
+  auto error_code = translator.Parse(&request, mmkv_cmd, line);
   current_cmd_ = (Command)request.command;
 
   switch (error_code) {
-    case Translator::E_INVALID_COMMAND:
-    {
-      // 如果用户多次输入错误，可能导致递归炸栈，因此这里避免递归调用
-      // ConsoleIoProcess();
-      return false;
-    } break;
-
-    case Translator::E_EXIT:
-    {
-      is_exit = true;
-      client_->Disconnect();
-    } break;
-
     case Translator::E_SYNTAX_ERROR:
     {
-      util::ErrorPrintf("Syntax error: %s\n",
-                  GetCommandHint((Command)request.command).c_str());
-      // ConsoleIoProcess();
-      return false;
-    } break;
-
-    case Translator::E_NO_COMMAND:
-    {
-      util::ErrorPrintf("Syntax error: no command\n");
-      // std::cout << GetHelp();
-      return false;
+      return Translator::E_SYNTAX_ERROR;
     } break;
 
     case Translator::E_OK:
@@ -164,14 +217,68 @@ bool MmkvClient::ConsoleIoProcess()
       start_time = util::GetTimeUs();
     } break;
 
-    case Translator::E_SHELL_CMD:
-    {
-      return false;
-    } break;
-    default:;
+    default:
+      LOG_FATAL << "Unknown error code of Translator";
   }
 
-  return true;
+  return Translator::E_OK;
+}
+
+bool MmkvClient::ConsoleIoProcess()
+{
+  // line is managed by replxx
+  auto line = ::replxx_input(replxx_, prompt_.c_str());
+  const auto line_len = strlen(line);
+  if (!line) {
+    return false;
+  }
+
+  if (line_len == 0) {
+    util::ErrorPrintf("Syntax error: no command\n");
+    return false;
+  }
+
+  StringView line_view(line, line_len);
+  auto space_pos = line_view.find(' ');
+  // space_pos is npos is also ok.
+  auto cmd = line_view.substr(0, space_pos).ToString();
+  auto upper_cmd = line_view.substr(0, space_pos).ToUpperString();
+
+  if (CliCommandProcess(upper_cmd, line_view)) {
+    return false;
+  }
+
+  // * To CLI command line,
+  //   we don't save them since them is redundant.
+  // * To Shell command line,
+  //   we save it in case user
+  //   to reuse line although it is invalid.
+  //
+  // * To Mmkv Command  line, same with shell command.
+  ::replxx_history_add(replxx_, line);
+  if (::replxx_history_save(replxx_, COMMAND_HISTORY_LOCATION) < 0) {
+    ::fprintf(stderr, "Failed to save the command history\n");
+  }
+
+  if (ShellCommandProcess(cmd, line_view)) {
+    return false;
+  }
+  auto err_code = MmkvCommandProcess(upper_cmd, line_view);
+  switch (err_code) {
+    case Translator::E_OK:
+      return true;
+    case Translator::E_NO_COMMAND:
+    {
+      util::ErrorPrintf("ERROR: invalid command: %s\n", cmd.c_str());
+    } break;
+    case Translator::E_SYNTAX_ERROR:
+    {
+      util::ErrorPrintf("Syntax error: %s%s\n", cmd.c_str(),
+                        GetCommandHint(GetCommand(cmd)).c_str());
+
+    } break;
+  }
+  return false;
 }
 
 void MmkvClient::Start()
@@ -180,6 +287,31 @@ void MmkvClient::Start()
   printf("Connecting %s...\n", client_->GetServerAddr().ToIpPort().c_str());
 
   client_->Connect();
+}
+
+/*--------------------------------------------------*/
+/* Command linenoise install(replxx)                */
+/*--------------------------------------------------*/
+
+KANON_INLINE void RegisterCommandHints(size_t cmd_count,
+                                       std::string const *cmd_strings,
+                                       std::string const *cmd_hints,
+                                       size_t line_len, char const *command_buf,
+                                       size_t cmd_len, std::string &hint,
+                                       replxx_hints *lc) KANON_NOEXCEPT
+{
+  for (size_t i = 0; i < cmd_count; ++i) {
+    auto cmd_str = cmd_strings[i];
+    auto cmd_hint = cmd_hints[i];
+    if (line_len > cmd_str.size()) continue;
+    /* Although command isn't complete, we also should provide
+       hint message */
+    if (!::memcmp(cmd_str.c_str(), command_buf, cmd_len)) {
+      hint.clear();
+      kanon::StrAppend(hint, cmd_str, cmd_hint);
+      ::replxx_add_hint(lc, hint.c_str());
+    }
+  }
 }
 
 /* Callback of command hint */
@@ -193,11 +325,10 @@ static void OnCommandHint(char const *line, replxx_hints *lc, int *context_len,
 
   /* Although command isn't complete, we also should provide
      hint message */
-  if (blank_pos == StringView::npos)
-    blank_pos = len - 1;
-  
+  if (blank_pos == StringView::npos) blank_pos = len - 1;
+
   const size_t cmd_len = blank_pos + 1;
-  char command_buf[cmd_len+1];
+  char command_buf[cmd_len + 1];
   for (size_t i = 0; i < cmd_len; ++i) {
     command_buf[i] =
         (line[i] <= 'z' && line[i] >= 'a') ? line[i] - 0x20 : line[i];
@@ -222,23 +353,19 @@ static void OnCommandHint(char const *line, replxx_hints *lc, int *context_len,
   auto cmd_strings = GetCommandStrings();
   auto cmd_hints = GetCommandHints();
   auto cmd_count = Command::COMMAND_NUM;
+  auto cli_cmd_hints = GetCliCommandHints();
+  auto cli_cmd_count = CliCommand::CLI_COMMAND_NUM;
+  auto cli_cmd_strings = GetCliCommandStrings();
   std::string hint; /* reserve space */
-  
-  /* Although command isn't complete, we also should provide
-     hint message */
-  for (size_t i = 0; i < cmd_count; ++i) {
-    auto cmd_str = cmd_strings[i];
-    auto cmd_hint = cmd_hints[i];
-    if (len > cmd_str.size()) continue;
-    if (!::memcmp(cmd_str.c_str(), command_buf, cmd_len)) {
-      hint.clear();
-      kanon::StrAppend(hint, cmd_str, cmd_hint);
-      ::replxx_add_hint(lc, hint.c_str());
-    }
-  }
+
+  RegisterCommandHints(cmd_count, cmd_strings, cmd_hints, len, command_buf,
+                       cmd_len, hint, lc);
+  RegisterCommandHints(cli_cmd_count, cli_cmd_strings, cli_cmd_hints, len,
+                       command_buf, cmd_len, hint, lc);
 }
 
-static KANON_DEPRECATED_ATTR void OnCommandModify(char **p_line, int *cursor_pos, void *args)
+static KANON_DEPRECATED_ATTR void OnCommandModify(char **p_line,
+                                                  int *cursor_pos, void *args)
 {
   auto line = *p_line;
   const size_t len = strlen(line);
@@ -253,7 +380,7 @@ static KANON_DEPRECATED_ATTR void OnCommandModify(char **p_line, int *cursor_pos
   if ((cmd = GetCommand({command_buf, len})) != Command::COMMAND_NUM) {
     auto old_line = *p_line;
     auto new_line = ::kanon::StrCat(line, GetCommandHint(cmd));
-    *p_line = (char*)calloc(new_line.size() + 1, 1);
+    *p_line = (char *)calloc(new_line.size() + 1, 1);
     ::strncpy(*p_line, new_line.c_str(), new_line.size());
     ::free(old_line);
   }
@@ -286,9 +413,10 @@ void MmkvClient::InstallLinenoise() KANON_NOEXCEPT
     ternary_add(&command_tst, GetCommandString((Command)i).c_str(), false);
   }
 
-  ternary_add(&command_tst, "EXIT", false);
-  ternary_add(&command_tst, "QUIT", false);
-  ternary_add(&command_tst, "HELP", false);
+  for (size_t i = 0; i < CLI_COMMAND_NUM; ++i) {
+    ternary_add(&command_tst, GetCliCommandString((CliCommand)i).c_str(),
+                false);
+  }
 
   if (::replxx_history_load(replxx_, COMMAND_HISTORY_LOCATION) < 0) {
     ::fprintf(stderr, "Failed to load the command history\n"
@@ -296,9 +424,10 @@ void MmkvClient::InstallLinenoise() KANON_NOEXCEPT
   }
 
   ::replxx_set_indent_multiline(replxx_, prompt_.size());
-  ::replxx_set_max_history_size(replxx_, 10);
+  ::replxx_set_max_history_size(replxx_, 20);
   ::replxx_set_completion_callback(replxx_, &OnCommandCompletion, nullptr);
   ::replxx_set_hint_callback(replxx_, &OnCommandHint, nullptr);
-  ::replxx_set_max_hint_rows(replxx_, COMMAND_NUM/5);
+  ::replxx_set_max_hint_rows(replxx_, COMMAND_NUM / 5);
+  ::replxx_set_beep_on_ambiguous_completion(replxx_, true);
   //::replxx_set_modify_callback(replxx_, &OnCommandModify, nullptr);
 }
