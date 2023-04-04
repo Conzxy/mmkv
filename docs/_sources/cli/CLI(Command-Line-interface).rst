@@ -1,7 +1,7 @@
 .. _cli_client:
 
-CLI client
-==============
+Interactive CLI client
+============================
 
 ``mmkv-cli``\ 是\ ``mmkv``\ 提供给用户与\ ``mmkv-server``\ 基于命令行进行交互的CLI程序。
 
