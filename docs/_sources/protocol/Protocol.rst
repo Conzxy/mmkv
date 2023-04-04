@@ -1,9 +1,8 @@
 .. role:: raw-html-m2r(raw)
    :format: html
 
-
-Protocol design
-===============
+Mmbp protocol design
+==============================
 
 虽说CLI是输入的文本行，但实际是通过\ `translator <https://github.com/Conzxy/mmkv/blob/main/mmkv/client/translator.h>`_\ 将文本行转换为自定义的二进制协议。
 之所以采用二进制协议，有很多原因：
@@ -33,7 +32,7 @@ MMBP request
 
 
 
-* `\ ``command`` <https://github.com/Conzxy/mmkv/blob/main/mmkv/protocol/command.h>`_\ : 命令类型（16bit的枚举类型）
+* `\ command <https://github.com/Conzxy/mmkv/blob/main/mmkv/protocol/command.h>`_\ : 命令类型（16bit的枚举类型）
 
 除了\ ``command``\ 是\ **required**\ 字段，其它均为\ **optional**\ 字段
 
@@ -66,6 +65,6 @@ MMBP response
 
 
 * ``status_code``\ : 状态码，表示命令执行的结果。\ :raw-html-m2r:`<br>`
-  具体参考protocol/command.h
+  具体参考 `protocol/command.h <https://github.com/Conzxy/mmkv/blob/main/mmkv/protocol/command.h>`_ 。
 
 其他同request。

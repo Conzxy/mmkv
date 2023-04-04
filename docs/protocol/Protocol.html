@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
-    <title>Protocol design &#8212; Mmkv v1.0.0 文档</title>
+    <title>Mmbp protocol design &#8212; Mmkv v1.0.0 文档</title>
   
   
   
@@ -279,7 +279,7 @@ document.write(`
               
 
 <div id="jb-print-docs-body" class="onlyprint">
-    <h1>Protocol design</h1>
+    <h1>Mmbp protocol design</h1>
     <!-- Table of contents -->
     <div id="print-main-content">
         <div id="jb-print-toc">
@@ -302,8 +302,8 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article" role="main">
                   
-  <section id="protocol-design">
-<h1>Protocol design<a class="headerlink" href="#protocol-design" title="此标题的永久链接">#</a></h1>
+  <section id="mmbp-protocol-design">
+<h1>Mmbp protocol design<a class="headerlink" href="#mmbp-protocol-design" title="此标题的永久链接">#</a></h1>
 <p>虽说CLI是输入的文本行，但实际是通过<a class="reference external" href="https://github.com/Conzxy/mmkv/blob/main/mmkv/client/translator.h">translator</a>将文本行转换为自定义的二进制协议。
 之所以采用二进制协议，有很多原因：</p>
 <ul class="simple">
@@ -322,7 +322,7 @@ document.write(`
 <h2>MMBP request<a class="headerlink" href="#mmbp-request" title="此标题的永久链接">#</a></h2>
 <a class="reference external image-reference" href="https://s2.loli.net/2022/07/07/eAowDHXYmOf4tuB.png"><img alt="mmbp1.png" src="https://s2.loli.net/2022/07/07/eAowDHXYmOf4tuB.png" /></a>
 <ul class="simple">
-<li><p><cite>``command`</cite> &lt;<a class="github reference external" href="https://github.com/Conzxy/mmkv/blob/main/mmkv/protocol/command.h">Conzxy/mmkv</a>&gt;`_: 命令类型（16bit的枚举类型）</p></li>
+<li><p><a class="reference external" href="https://github.com/Conzxy/mmkv/blob/main/mmkv/protocol/command.h">command</a>: 命令类型（16bit的枚举类型）</p></li>
 </ul>
 <p>除了<code class="docutils literal notranslate"><span class="pre">command</span></code>是<strong>required</strong>字段，其它均为<strong>optional</strong>字段</p>
 <ul class="simple">
@@ -347,7 +347,7 @@ document.write(`
 <a class="reference external image-reference" href="https://s2.loli.net/2022/07/07/Kg9cIR3xJ2sm4Xz.png"><img alt="mmbp2.png" src="https://s2.loli.net/2022/07/07/Kg9cIR3xJ2sm4Xz.png" /></a>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">status_code</span></code>: 状态码，表示命令执行的结果。<span class="raw-html-m2r"><br></span>
-具体参考protocol/command.h</p></li>
+具体参考 <a class="reference external" href="https://github.com/Conzxy/mmkv/blob/main/mmkv/protocol/command.h">protocol/command.h</a> 。</p></li>
 </ul>
 <p>其他同request。</p>
 </section>

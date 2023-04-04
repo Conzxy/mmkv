@@ -23,8 +23,9 @@ Command-line edit
 历史记录(History record)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 相关命令：
+
 * HISTORY: 展示20个最新到最旧的历史记录
-* CLEARHISTORY: 清空历史（包括内存和硬盘文件）
+* CLEARHISTORY: 清空历史（包括内存记录和硬盘记录）
 
 .. image:: https://s2.loli.net/2023/04/04/cqRytFpgVKzIMB9.gif
    :alt: history record
@@ -32,6 +33,7 @@ Command-line edit
 清屏(Clear screen)
 ^^^^^^^^^^^^^^^^^^^^^^
 相关命令：
+
 * CLEAR: 清空并刷新当前屏幕
 
 .. image:: https://s2.loli.net/2023/04/04/uL9T4lUx2FvzyOk.gif
