@@ -14,11 +14,12 @@ class Recover : kanon::noncopyable {
   ~Recover() noexcept;
 
   void ParseFromRequest();
+
  private:
   File file_;
 };
 
-} // disk
-} // mmkv
+} // namespace disk
+} // namespace mmkv
 
-#endif // 
+#endif //

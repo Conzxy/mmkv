@@ -8,13 +8,13 @@ using namespace mmkv::protocol;
 
 CommandType disk::detail::g_command_type[COMMAND_NUM];
 
-int InitCommandType() noexcept {
+int InitCommandType() noexcept
+{
   for (size_t i = 0; i < COMMAND_NUM; ++i) {
     g_command_type[i] = CT_READ;
   }
 
-#define REGISTER_WRITE_CMD(_cmd) \
-  g_command_type[_cmd] = CT_WRITE
+#define REGISTER_WRITE_CMD(_cmd) g_command_type[_cmd] = CT_WRITE
 
   REGISTER_WRITE_CMD(STR_ADD);
   REGISTER_WRITE_CMD(STR_DEL);
@@ -49,7 +49,6 @@ int InitCommandType() noexcept {
   REGISTER_WRITE_CMD(EXPIREM_AFTER);
   REGISTER_WRITE_CMD(SRANDDELM);
   REGISTER_WRITE_CMD(PERSIST);
-
 
   return 0;
 }

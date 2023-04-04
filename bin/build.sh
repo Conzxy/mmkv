@@ -63,5 +63,5 @@ done
 [[ $VERBOSE == 1 ]] && VERBOSE="-v" || VERBOSE=""
 
 cd ../build
-cmake .. -DCMAKE_BUILD_TYPE=$MODE
+cmake .. -DCMAKE_BUILD_TYPE=$MODE -GNinja
 cmake --build . --target $TARGET --parallel $(nproc) $VERBOSE
