@@ -57,5 +57,5 @@ endif()
 
 SetLibName(HKLUA_LIB hklua)
 
-GenTest(MMKV_TEST_SOURCES gtest gtest_main ${MMKV_LIB} kanon_net kanon_base ${HKLUA_LIB} lua)
-GenTest(MMKV_BENCH_SOURCES benchmark benchmark_main ${MMKV_LIB} kanon_net kanon_base ${HKLUA_LIB} lua)
+GenTest(MMKV_TEST_SOURCES gtest gtest_main ${MMKV_LIB} kanon_net kanon_base ${HKLUA_LIB} lua dl)
+GenTest(MMKV_BENCH_SOURCES benchmark benchmark_main ${MMKV_LIB} kanon_net kanon_base ${HKLUA_LIB} lua dl)
