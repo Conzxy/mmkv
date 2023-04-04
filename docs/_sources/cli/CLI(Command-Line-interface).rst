@@ -45,7 +45,7 @@ Shell-command
 .. todo::
    支持用户指定shell类型
 
-.. image:: https://sm.ms/image/fRUp2JslWgqVNmh
+.. image:: https://s2.loli.net/2023/04/04/fRUp2JslWgqVNmh.gif
    :alt: shell command call
 
 Mmkv-Command
