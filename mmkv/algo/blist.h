@@ -17,14 +17,14 @@ namespace algo {
 namespace blist {
 
 // For EBCO
-template<typename T, typename Alloc>
+template <typename T, typename Alloc>
 using BNodeAllocator = typename Alloc::template rebind<BNode<T>>::other;
 
-} // blist
+} // namespace blist
 
 /**
  * \brief Bidirectional linked-list without sentinel node
- * 
+ *
  * 之所以不提供哨兵是因为mmkv本身是内存敏感性应用，其他数据结构也是能省则省
  * 为了能提供end()/cend()以支持迭代，最后一个结点的next并不指向第一个结点
  * 链表结构如下：
@@ -36,43 +36,46 @@ using BNodeAllocator = typename Alloc::template rebind<BNode<T>>::other;
  *   Public class
  *   Should be copyable but not necessary for mmkv
  */
-template<typename T, typename Alloc=LibcAllocatorWithRealloc<T>>
-class Blist : protected blist::BNodeAllocator<T, Alloc>
-            , protected Alloc {
-  using NodeAllocTraits = std::allocator_traits<blist::BNodeAllocator<T, Alloc>>;
+template <typename T, typename Alloc = LibcAllocatorWithRealloc<T>>
+class Blist
+  : protected blist::BNodeAllocator<T, Alloc>
+  , protected Alloc {
+  using NodeAllocTraits =
+      std::allocator_traits<blist::BNodeAllocator<T, Alloc>>;
   using AllocTraits = std::allocator_traits<Alloc>;
 
  public:
   using size_type = size_t;
   using value_type = T;
-  using reference = T&;
-  using const_reference = T const&;
-  using pointer = T*;
-  using const_pointer = T const*;
+  using reference = T &;
+  using const_reference = T const &;
+  using pointer = T *;
+  using const_pointer = T const *;
   using iterator = blist::BlistIterator<T>;
   using const_iterator = blist::BlistConstIterator<T>;
   using Node = blist::BNode<T>;
 
-  Blist() noexcept 
-    : header_(nullptr) 
+  Blist() noexcept
+    : header_(nullptr)
     , count_(0)
   {
   }
 
-  template<typename E>
-  Blist(std::initializer_list<E> il) 
+  template <typename E>
+  Blist(std::initializer_list<E> il)
     : Blist()
   {
     if (il.size() > 0) {
       header_ = CreateNode(std::move(*il.begin()));
-    } else return;
+    } else
+      return;
 
     if (!header_) throw std::bad_alloc{};
 
-    Node* prev = header_;
+    Node *prev = header_;
 
     for (size_t i = 1; i < il.size(); ++i) {
-      auto node = CreateNode(std::move(*(il.begin()+i)));
+      auto node = CreateNode(std::move(*(il.begin() + i)));
       if (!node) throw std::bad_alloc{};
       prev->next = node;
       node->prev = prev;
@@ -84,62 +87,135 @@ class Blist : protected blist::BNodeAllocator<T, Alloc>
     // prev->next = header_;
   }
 
-  ~Blist() noexcept {
+  ~Blist() noexcept
+  {
     Clear();
   }
 
-  Blist(Blist&& other) noexcept 
+  Blist(Blist &&other) noexcept
     : header_(other.header_)
-    , count_(other.count_) 
+    , count_(other.count_)
   {
     other.header_ = nullptr;
     other.count_ = 0;
   }
 
-  Blist& operator=(Blist&& other) noexcept { other.swap(*this); return *this; }
+  Blist &operator=(Blist &&other) noexcept
+  {
+    other.swap(*this);
+    return *this;
+  }
 
-  bool empty() const noexcept { return header_ == nullptr; } 
-  size_type size() const noexcept { return count_; }
-  size_type max_size() const noexcept { return (size_type)-1; }
-  
-  void swap(Blist& o) noexcept {
+  bool empty() const noexcept
+  {
+    return header_ == nullptr;
+  }
+  size_type size() const noexcept
+  {
+    return count_;
+  }
+  size_type max_size() const noexcept
+  {
+    return (size_type)-1;
+  }
+
+  void swap(Blist &o) noexcept
+  {
     std::swap(o.header_, header_);
     std::swap(o.count_, count_);
   }
 
-  iterator begin() noexcept { return header_; }
-  const_iterator begin() const noexcept { return header_; }
-  const_iterator cbegin() const noexcept { return begin(); }
+  iterator begin() noexcept
+  {
+    return header_;
+  }
+  const_iterator begin() const noexcept
+  {
+    return header_;
+  }
+  const_iterator cbegin() const noexcept
+  {
+    return begin();
+  }
 
-  iterator end() noexcept { return nullptr; }
-  const_iterator end() const noexcept { return nullptr; }
-  const_iterator cend() const noexcept { return nullptr; }
+  iterator end() noexcept
+  {
+    return nullptr;
+  }
+  const_iterator end() const noexcept
+  {
+    return nullptr;
+  }
+  const_iterator cend() const noexcept
+  {
+    return nullptr;
+  }
 
-  iterator before_end() noexcept { return header_->prev; }
-  const_iterator before_end() const noexcept { return header_->prev; }
-  const_iterator cbefore_end() const noexcept { return before_end(); }
+  iterator before_end() noexcept
+  {
+    return header_->prev;
+  }
+  const_iterator before_end() const noexcept
+  {
+    return header_->prev;
+  }
+  const_iterator cbefore_end() const noexcept
+  {
+    return before_end();
+  }
 
-  T& Back() noexcept { assert(!empty()); return header_->prev->value; }
-  T const& Back() const noexcept { assert(!empty()); return header_->prev->value; }
-  T& Front() noexcept { assert(!empty()); return header_->value; }
-  T const& Front() const noexcept { assert(!empty()); return header_->value; }
+  T &Back() noexcept
+  {
+    assert(!empty());
+    return header_->prev->value;
+  }
+  T const &Back() const noexcept
+  {
+    assert(!empty());
+    return header_->prev->value;
+  }
+  T &Front() noexcept
+  {
+    assert(!empty());
+    return header_->value;
+  }
+  T const &Front() const noexcept
+  {
+    assert(!empty());
+    return header_->value;
+  }
 
-  Node *FrontNode() noexcept { return header_; }
-  Node const *FrontNode() const noexcept { return header_; }
-  Node *BackNode() noexcept { return header_->prev; }
-  Node const *BackNode() const noexcept { return header_->prev; }
+  Node *FrontNode() noexcept
+  {
+    return header_;
+  }
+  Node const *FrontNode() const noexcept
+  {
+    return header_;
+  }
+  Node *BackNode() noexcept
+  {
+    return header_->prev;
+  }
+  Node const *BackNode() const noexcept
+  {
+    return header_->prev;
+  }
 
-#define PRE_PUSH do {\
-    if (empty()) { \
-      SetHeader(node); \
-      return 1; \
-    } \
-     \
-    if (size() > max_size()) { \
-      return 0; \
-    } } while (0)
+#define PRE_PUSH                                                               \
+  do {                                                                         \
+    if (empty()) {                                                             \
+      SetHeader(node);                                                         \
+      return 1;                                                                \
+    }                                                                          \
+                                                                               \
+    if (size() > max_size()) {                                                 \
+      return 0;                                                                \
+    }                                                                          \
+  } while (0)
 
-  int PushFront(Node *node) noexcept {
+  int PushFront(Node *node) noexcept
+  {
     PRE_PUSH;
 
     /*
@@ -150,7 +226,7 @@ class Blist : protected blist::BNodeAllocator<T, Alloc>
      * First, set node->prev and node->next
      * then set header->prev
      * Last, set header_ to new node
-     */  
+     */
     auto new_node = node;
     new_node->next = header_;
     new_node->prev = header_->prev;
@@ -159,15 +235,16 @@ class Blist : protected blist::BNodeAllocator<T, Alloc>
     header_ = new_node;
 
     return 1;
-
   }
 
-  template<typename... Args>  
-  int PushFront(Args&&... args) {
+  template <typename... Args>
+  int PushFront(Args &&... args)
+  {
     return PushFront(CreateNode(std::forward<Args>(args)...));
   }
 
-  int PushBack(Node *node) noexcept {
+  int PushBack(Node *node) noexcept
+  {
     PRE_PUSH;
 
     /*
@@ -188,23 +265,27 @@ class Blist : protected blist::BNodeAllocator<T, Alloc>
     return 1;
   }
 
-  template<typename... Args>
-  int PushBack(Args&&... args) {
+  template <typename... Args>
+  int PushBack(Args &&... args)
+  {
     return PushBack(CreateNode(std::forward<Args>(args)...));
   }
-  
-  #define PRE_POP do {\
-    if (empty()) { \
-      return 0; \
-    } \
- \
-    if (count_ == 1) { \
-      DropNode(header_); \
-      header_ = nullptr; \
-      return 1; \
-    } } while (0)
 
-  int PopFront() {
+#define PRE_POP                                                                \
+  do {                                                                         \
+    if (empty()) {                                                             \
+      return 0;                                                                \
+    }                                                                          \
+                                                                               \
+    if (count_ == 1) {                                                         \
+      DropNode(header_);                                                       \
+      header_ = nullptr;                                                       \
+      return 1;                                                                \
+    }                                                                          \
+  } while (0)
+
+  int PopFront()
+  {
     PRE_POP;
 
     /*
@@ -218,11 +299,12 @@ class Blist : protected blist::BNodeAllocator<T, Alloc>
     // new_header->prev->next = new_header;
     DropNode(header_);
     header_ = new_header;
-    
+
     return 1;
   }
 
-  int PopBack() {
+  int PopBack()
+  {
     PRE_POP;
 
     /*
@@ -230,7 +312,7 @@ class Blist : protected blist::BNodeAllocator<T, Alloc>
      * ==> header1 -> node1 -> nullptr
      * Steps:
      * First, set old_end = header->prev
-     * then, set old_end->prev->next, header->prev 
+     * then, set old_end->prev->next, header->prev
      */
     auto old_end = header_->prev;
     old_end->prev->next = nullptr;
@@ -241,12 +323,13 @@ class Blist : protected blist::BNodeAllocator<T, Alloc>
     return 1;
   }
 
-  void Extract(Node *node) {
+  void Extract(Node *node)
+  {
     /* Avoid invalid node
      * e.g. Has extracted node */
     if (!node || !node->prev) return;
 
-    /* Handling head node and tail node specially */
+      /* Handling head node and tail node specially */
 #if 0
     if (node == header_) {
       /* The head node is also a tail node */
@@ -269,11 +352,11 @@ class Blist : protected blist::BNodeAllocator<T, Alloc>
      * 1. relink the next only(can't update prev since prev->next = NULL must)
      * 2. update header
      * To tail node,
-     * 1. relink the prev only(The next must be NULL, so can't update the next) 
+     * 1. relink the prev only(The next must be NULL, so can't update the next)
      * 2. relink the prev of header(tail is head node also ok)
      * To regular node,
      * 1. relink prev
-     * 2. relink next 
+     * 2. relink next
      *
      * Summary:
      * Not tail, relink the next otherwise update header->prev
@@ -284,7 +367,7 @@ class Blist : protected blist::BNodeAllocator<T, Alloc>
       assert(!header_->prev->next);
       header_->prev = node->prev;
     }
-  
+
     /* Later process node == head since updating header maybe */
     if (node != header_)
       node->prev->next = node->next;
@@ -295,14 +378,20 @@ class Blist : protected blist::BNodeAllocator<T, Alloc>
     node->next = node->prev = nullptr;
   }
 
-  void Erase(Node *node) {
+  void Erase(Node *node)
+  {
     Extract(node);
     DropNode(node);
   }
-  
-  void DropNode(Node* node) { DestroyNode(node); FreeNode(node); }
 
-  void Clear() {
+  void DropNode(Node *node)
+  {
+    DestroyNode(node);
+    FreeNode(node);
+  }
+
+  void Clear()
+  {
     auto node = header_;
     for (; header_;) {
       node = header_->next;
@@ -311,32 +400,38 @@ class Blist : protected blist::BNodeAllocator<T, Alloc>
     }
     assert(count_ == 0);
   }
+
  private:
-  void SetHeader(Node* header) {
+  void SetHeader(Node *header)
+  {
     header_ = header;
     // header_->next = header_;
     header_->prev = header_;
     assert(header_->next == nullptr);
   }
 
-  Node* AllocateNode() {
+  Node *AllocateNode()
+  {
     ++count_;
     return NodeAllocTraits::allocate(*this, 1);
   }
 
   // deprecated
-  template<typename... Args>
-  void ConstructNode(Node* node, Args&&... args) {
+  template <typename... Args>
+  void ConstructNode(Node *node, Args &&... args)
+  {
     AllocTraits::construct(*this, &node->value, std::forward<Args>(args)...);
-  } 
+  }
 
-  template<typename... Args>
-  Node* CreateNode(Args&&... args) {
+  template <typename... Args>
+  Node *CreateNode(Args &&... args)
+  {
     auto node = AllocateNode();
     try {
       node->prev = node->next = nullptr;
       AllocTraits::construct(*this, &node->value, std::forward<Args>(args)...);
-    } catch (...) {
+    }
+    catch (...) {
       FreeNode(node);
       throw;
     }
@@ -344,15 +439,22 @@ class Blist : protected blist::BNodeAllocator<T, Alloc>
     return node;
   }
 
-  void FreeNode(Node* node) { NodeAllocTraits::deallocate(*this, node, 1); count_--; }
-  void DestroyNode(Node* node) { AllocTraits::destroy(*this, &node->value); }
+  void FreeNode(Node *node)
+  {
+    NodeAllocTraits::deallocate(*this, node, 1);
+    count_--;
+  }
+  void DestroyNode(Node *node)
+  {
+    AllocTraits::destroy(*this, &node->value);
+  }
 
   // Data member:
-  Node* header_;
+  Node *header_;
   size_type count_;
 };
 
-} // algo
-} // mmkv
+} // namespace algo
+} // namespace mmkv
 
 #endif // _MMKV_ALGO_BLIST_H_
