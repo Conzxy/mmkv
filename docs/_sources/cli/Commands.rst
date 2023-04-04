@@ -63,7 +63,12 @@ CLI(Command line interface)
      - 断开与mmkv server的连接，退出进程
    * - help
      - 查看help信息
-
+   * - clear
+     - 清空并刷新当前屏幕
+   * - history
+     - 展示20个最新到最旧的历史记录
+   * - clearhistory
+     - 清空历史（包括内存和硬盘文件）
 
 string
 ------

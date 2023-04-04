@@ -126,9 +126,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../README.html">Introduction</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../server/index.html">服务端</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-1"><i class="fa-solid fa-chevron-down"></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../server/Config.html">配置文件</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../server/Data-structure.html">数据结构实现及其性能测试</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/Data-structure.html">数据结构设计</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../server/Cache-Replacement.html">缓冲替换实现</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../server/Protocol.html">协议设计</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../server/Expiration-Management.html">过期管理</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../server/Recovery.html">重启恢复</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../server/Option.html">命令行选项</a></li>
@@ -141,6 +140,10 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../client-api/index.html">客户端API</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../protocol/index.html">协议设计</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-3"><i class="fa-solid fa-chevron-down"></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../protocol/Protocol.html">Mmbp协议</a></li>
+</ul>
+</li>
 </ul>
 
     </div>
@@ -388,6 +391,15 @@ document.write(`
 </tr>
 <tr class="row-odd"><td><p>help</p></td>
 <td><p>查看help信息</p></td>
+</tr>
+<tr class="row-even"><td><p>clear</p></td>
+<td><p>清空并刷新当前屏幕</p></td>
+</tr>
+<tr class="row-odd"><td><p>history</p></td>
+<td><p>展示20个最新到最旧的历史记录</p></td>
+</tr>
+<tr class="row-even"><td><p>clearhistory</p></td>
+<td><p>清空历史（包括内存和硬盘文件）</p></td>
 </tr>
 </tbody>
 </table>
