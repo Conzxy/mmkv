@@ -95,6 +95,7 @@ target_include_directories(mmkv-server
   PRIVATE ${CHISATO_DIR}
   PRIVATE ${PROJECT_SOURCE_DIR}
   PRIVATE ${XXHASH_DIR}
+  PRIVATE ${HKLUA_DIR}
 )
 
 mmkv_gen_app(rlogdump SOURCES ${RLOG_DUMP_SRC} LIBS ${MMKV_COMMON_LIBS})
