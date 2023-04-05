@@ -4,6 +4,7 @@
 #include "mmkv/server/option.h"
 #include "mmkv/util/conv.h"
 #include "mmkv/util/str_util.h"
+#include "mmkv/version.h"
 
 #include <kanon/init.h>
 #include <kanon/string/string_util.h>
@@ -32,6 +33,9 @@ int main(int argc, char *argv[])
   takina::AddOption(
       {"sp", "sharder-port", "Port number of sharder(default: 19998)"},
       &mmkv_option().sharder_port);
+  takina::AddSection("Version information");
+  takina::AddOption({"v", "version", "Show the current version of mmkv"},
+                    &mmkv_option().version);
   const auto success = takina::Parse(argc, argv, &errmsg);
   if (!success) {
     ::fprintf(stderr, "Failed to parse the options: \n%s\n", errmsg.c_str());
@@ -40,6 +44,10 @@ int main(int argc, char *argv[])
   takina::Teardown();
   LOG_INFO << "Options has parsed successfully";
 
+  if (mmkv_option().version) {
+    printf("mmkv v%s\n", MMKV_VERSION_STR);
+    return 0;
+  }
   // RegisterConfig(mmkv_config());
   // if (!ParseConfig(errmsg)) {
   //   ::fprintf(stderr, "Failed to parse the config file: \n%s\n",
