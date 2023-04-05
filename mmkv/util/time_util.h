@@ -59,7 +59,10 @@ inline double GetTimeFloatSec() noexcept
  *  negative -- failure
  *  otherwise, success
  */
-inline int64_t GetTimeSec() noexcept { return ::time(NULL); }
+inline int64_t GetTimeSec() noexcept
+{
+  return ::time(NULL);
+}
 
 } // namespace util
 
