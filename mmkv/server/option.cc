@@ -5,10 +5,11 @@
 namespace mmkv {
 namespace server {
 
-MmkvOption &mmkv_option() {
+MmkvOption &mmkv_option()
+{
   static MmkvOption option;
   return option;
 }
 
-} // server
-} // mmkv
+} // namespace server
+} // namespace mmkv

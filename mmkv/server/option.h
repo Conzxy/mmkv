@@ -13,11 +13,12 @@ struct MmkvOption {
   int port = 9998;
   std::string ip = "any";
   int sharder_port = port + BACKGROUND_PORT_DIFF;
+  bool version = false;
 };
 
 MmkvOption &mmkv_option();
 
-} // option
-} // mmkv
+} // namespace server
+} // namespace mmkv
 
 #endif
