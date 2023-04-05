@@ -57,8 +57,6 @@ file(GLOB_RECURSE MMKV_CLIENT_SRC
   ${TERNARY_DIR}/ternary_tree.c
 )
 
-#list (APPEND MMKV_CLIENT_SRC ${LINENOISE_DIR}/linenoise.c)
-
 file(GLOB_RECURSE RLOG_DUMP_SRC
   app/rlog_dump.cc
   protocol/command.cc
@@ -69,34 +67,46 @@ file(GLOB_RECURSE RLOG_DUMP_SRC
   ${TAKINA_DIR}/takina.cc
 )
 
-if (${CMAKE_BUILD_TYPE} STREQUAL "Release")
-  set(MMKV_LIB mmkv)
-else ()
-  set(MMKV_LIB mmkv_debug)
+if (MMKV_ON_UNIX)
+  mmkv_gen_lib(mmkv ${MMKV_SRC})
+  target_include_directories(mmkv
+    PUBLIC ${XXHASH_DIR}
+  )
 endif ()
 
-GenLib(${MMKV_LIB} ${MMKV_SRC})
-#target_link_libraries(${MMKV_LIB} PRIVATE linenoise)
-
-target_include_directories(${MMKV_LIB} PRIVATE ${CHISATO_DIR} PRIVATE ${TAKINA_DIR})
-
-set(MMKV_LIB_LIST kanon_net kanon_base xxhash)
-
-# GenLib(mmkv_server_src ${MMKV_SERVER_SRC})
-# GenLib(mmkv_client_src ${MMKV_CLIENT_SRC})
+mmkv_gen_lib(mmkv_xxhash ${XXHASH_DIR}/xxhash.c)
 
 SetLibName(HKLUA_LIB hklua)
-set(MMKV_SERVER_LIBS ${MMKV_LIB_LIST} lua dl ${HKLUA_LIB})
-set(MMKV_CLIENT_LIBS ${MMKV_LIB_LIST} replxx)
+set(MMKV_COMMON_LIBS kanon_net kanon_base mmkv_xxhash)
+set(MMKV_SERVER_LIBS ${MMKV_COMMON_LIBS} lua dl ${HKLUA_LIB})
+set(MMKV_CLIENT_LIBS ${MMKV_COMMON_LIBS} replxx)
 
-GenApplication(mmkv-server MMKV_SERVER_SRC MMKV_SERVER_LIBS)
-target_include_directories(mmkv-server PRIVATE ${TAKINA_DIR} PRIVATE ${CHISATO_DIR})
+mmkv_gen_app(mmkv-cli SOURCES ${MMKV_CLIENT_SRC} LIBS ${MMKV_CLIENT_LIBS})
+target_include_directories(mmkv-cli 
+  PRIVATE ${TAKINA_DIR}
+  PRIVATE ${TERNARY_DIR}
+  PRIVATE ${PROJECT_SOURCE_DIR}
+  PRIVATE ${XXHASH_DIR}
+)
 
-GenApplication(mmkv-cli MMKV_CLIENT_SRC MMKV_CLIENT_LIBS)
-target_include_directories(mmkv-cli PRIVATE ${TAKINA_DIR} PRIVATE ${TERNARY_DIR})
+mmkv_gen_app(mmkv-server SOURCES ${MMKV_SERVER_SRC} LIBS ${MMKV_SERVER_LIBS})
+target_include_directories(mmkv-server 
+  PRIVATE ${TAKINA_DIR}
+  PRIVATE ${CHISATO_DIR}
+  PRIVATE ${PROJECT_SOURCE_DIR}
+  PRIVATE ${XXHASH_DIR}
+)
 
-GenApplication(rlogdump RLOG_DUMP_SRC MMKV_LIB_LIST)
-target_include_directories(rlogdump PRIVATE ${TAKINA_DIR})
+mmkv_gen_app(rlogdump SOURCES ${RLOG_DUMP_SRC} LIBS ${MMKV_COMMON_LIBS})
+target_include_directories(rlogdump 
+  PRIVATE ${TAKINA_DIR}
+  PRIVATE ${PROJECT_SOURCE_DIR}
+  PRIVATE ${XXHASH_DIR}
+)
 
-GenApplication(configd CONFIGD_SRC MMKV_LIB_LIST)
-target_include_directories(configd PRIVATE ${CHISATO_DIR} ${TAKINA_DIR})
+mmkv_gen_app(configd SOURCES ${CONFIGD_SRC} LIBS ${MMKV_COMMON_LIBS})
+target_include_directories(configd 
+  PRIVATE ${CHISATO_DIR} 
+  PRIVATE ${TAKINA_DIR}
+  PRIVATE ${XXHASH_DIR}
+)
