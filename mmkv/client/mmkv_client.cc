@@ -35,7 +35,7 @@ static bool is_exit = false;
 #define COMMAND_HISTORY_LOCATION "./.mmkv-command.history"
 
 #ifdef MAX_LINE
-#undef MAX_LINE
+#  undef MAX_LINE
 #endif
 #define MAX_LINE 4096
 
@@ -43,8 +43,6 @@ static bool is_exit = false;
 static int64_t start_time = 0;
 /* Store the commands and support fast prefix search */
 static TernaryNode *command_tst = nullptr;
-/* Set config of linenoise */
-static void InstallLinenoise();
 
 MmkvClient::MmkvClient(EventLoop *loop, InetAddr const &server_addr)
   : client_(NewTcpClient(loop, server_addr, "Mmkv console client"))
@@ -58,11 +56,15 @@ MmkvClient::MmkvClient(EventLoop *loop, InetAddr const &server_addr)
       codec_.SetUpConnection(conn);
       printf("Connect to %s successfully\n\n", server_addr.ToIpPort().c_str());
       // ConsoleIoProcess();
-      io_cond_.Notify();
+      {
+        KANON_MUTEX_GUARD(mutex_);
+        need_io_wait_ = false;
+        if (prompt_.empty())
+          ::mmkv::util::StrCat(prompt_, YELLOW "mmkv %a> " RESET,
+                               server_addr.ToIpPort().c_str());
+        io_cond_.Notify();
+      }
 
-      if (prompt_.empty())
-        ::mmkv::util::StrCat(prompt_, YELLOW "mmkv %a> " RESET,
-                             server_addr.ToIpPort().c_str());
     } else {
       if (is_exit) {
         puts("Disconnect successfully!");
@@ -91,6 +93,8 @@ MmkvClient::MmkvClient(EventLoop *loop, InetAddr const &server_addr)
                  1000000);
 
     // ConsoleIoProcess();
+    KANON_MUTEX_GUARD(mutex_);
+    need_io_wait_ = false;
     io_cond_.Notify();
   });
 
@@ -115,13 +119,11 @@ bool MmkvClient::CliCommandProcess(kanon::StringView cmd,
         fwrite(GetHelp().c_str(), 1, GetHelp().size(), stdout);
         break;
       case CLI_EXIT:
-      case CLI_QUIT:
-      {
+      case CLI_QUIT: {
         is_exit = true;
         client_->Disconnect();
       } break;
-      case CLI_HISTORY:
-      {
+      case CLI_HISTORY: {
         const auto history_sz = replxx_history_size(replxx_);
         auto *history_scan = replxx_history_scan_start(replxx_);
         ReplxxHistoryEntry history_entry;
@@ -149,13 +151,11 @@ bool MmkvClient::CliCommandProcess(kanon::StringView cmd,
         replxx_history_scan_stop(replxx_, history_scan);
       } break;
 
-      case CLI_CLEAR:
-      {
+      case CLI_CLEAR: {
         replxx_clear_screen(replxx_);
       } break;
 
-      case CLI_CLEAR_HISTORY:
-      {
+      case CLI_CLEAR_HISTORY: {
         // This API just clear the memory history record
         replxx_history_clear(replxx_);
 
@@ -178,7 +178,12 @@ bool MmkvClient::ShellCommandProcess(kanon::StringView cmd,
 {
   // Check if line is a shell cmd
   if (cmd.size() > 0 && cmd[0] == '!') {
-    if (::system(line.substr(1).data())) {
+#if KANON_ON_WIN
+    auto cmd = StrCat("powershell ", line.substr(1));
+#elif defined(KANON_ON_UNIX)
+    auto cmd = line.substr(1);
+#endif
+    if (::system(cmd.data())) {
       util::ErrorPrintf("Syntax error: no command\n");
     }
     return true;
@@ -206,13 +211,11 @@ int MmkvClient::MmkvCommandProcess(kanon::StringView cmd,
   current_cmd_ = (Command)request.command;
 
   switch (error_code) {
-    case Translator::E_SYNTAX_ERROR:
-    {
+    case Translator::E_SYNTAX_ERROR: {
       return Translator::E_SYNTAX_ERROR;
     } break;
 
-    case Translator::E_OK:
-    {
+    case Translator::E_OK: {
       codec_.Send(client_->GetConnection(), &request);
       start_time = util::GetTimeUs();
     } break;
@@ -224,18 +227,18 @@ int MmkvClient::MmkvCommandProcess(kanon::StringView cmd,
   return Translator::E_OK;
 }
 
-bool MmkvClient::ConsoleIoProcess()
+void MmkvClient::ConsoleIoProcess()
 {
   // line is managed by replxx
   auto line = ::replxx_input(replxx_, prompt_.c_str());
   const auto line_len = strlen(line);
   if (!line) {
-    return false;
+    return;
   }
 
   if (line_len == 0) {
     util::ErrorPrintf("Syntax error: no command\n");
-    return false;
+    return;
   }
 
   StringView line_view(line, line_len);
@@ -245,7 +248,7 @@ bool MmkvClient::ConsoleIoProcess()
   auto upper_cmd = line_view.substr(0, space_pos).ToUpperString();
 
   if (CliCommandProcess(upper_cmd, line_view)) {
-    return false;
+    return;
   }
 
   // * To CLI command line,
@@ -261,24 +264,23 @@ bool MmkvClient::ConsoleIoProcess()
   }
 
   if (ShellCommandProcess(cmd, line_view)) {
-    return false;
+    return;
   }
   auto err_code = MmkvCommandProcess(upper_cmd, line_view);
   switch (err_code) {
-    case Translator::E_OK:
-      return true;
-    case Translator::E_NO_COMMAND:
-    {
+    case Translator::E_OK: {
+      need_io_wait_ = true;
+      IoWait();
+    } break;
+    case Translator::E_NO_COMMAND: {
       util::ErrorPrintf("ERROR: invalid command: %s\n", cmd.c_str());
     } break;
-    case Translator::E_SYNTAX_ERROR:
-    {
-      util::ErrorPrintf("Syntax error: %s%s\n", cmd.c_str(),
-                        GetCommandHint(GetCommand(cmd)).c_str());
+    case Translator::E_SYNTAX_ERROR: {
+      util::ErrorPrintf("Syntax error: %s\n",
+                        GetCommandHint(GetCommand(upper_cmd)).c_str());
 
     } break;
   }
-  return false;
 }
 
 void MmkvClient::Start()
@@ -308,7 +310,7 @@ KANON_INLINE void RegisterCommandHints(size_t cmd_count,
        hint message */
     if (!::memcmp(cmd_str.c_str(), command_buf, cmd_len)) {
       hint.clear();
-      kanon::StrAppend(hint, cmd_str, cmd_hint);
+      kanon::StrAppend(hint, cmd_hint);
       ::replxx_add_hint(lc, hint.c_str());
     }
   }
@@ -325,15 +327,9 @@ static void OnCommandHint(char const *line, replxx_hints *lc, int *context_len,
 
   /* Although command isn't complete, we also should provide
      hint message */
-  if (blank_pos == StringView::npos) blank_pos = len - 1;
+  if (blank_pos == StringView::npos) blank_pos = len;
 
-  const size_t cmd_len = blank_pos + 1;
-  char command_buf[cmd_len + 1];
-  for (size_t i = 0; i < cmd_len; ++i) {
-    command_buf[i] =
-        (line[i] <= 'z' && line[i] >= 'a') ? line[i] - 0x20 : line[i];
-  }
-  command_buf[cmd_len] = 0;
+  auto cmd = line_view.substr(0, blank_pos).ToUpperString();
 
   /* Must update context_len, since replxx reset context_len = 0
      when user type space key default.
@@ -358,10 +354,10 @@ static void OnCommandHint(char const *line, replxx_hints *lc, int *context_len,
   auto cli_cmd_strings = GetCliCommandStrings();
   std::string hint; /* reserve space */
 
-  RegisterCommandHints(cmd_count, cmd_strings, cmd_hints, len, command_buf,
-                       cmd_len, hint, lc);
+  RegisterCommandHints(cmd_count, cmd_strings, cmd_hints, len, cmd.data(),
+                       cmd.size(), hint, lc);
   RegisterCommandHints(cli_cmd_count, cli_cmd_strings, cli_cmd_hints, len,
-                       command_buf, cmd_len, hint, lc);
+                       cmd.data(), cmd.size(), hint, lc);
 }
 
 static KANON_DEPRECATED_ATTR void OnCommandModify(char **p_line,

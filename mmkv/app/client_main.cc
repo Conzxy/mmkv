@@ -1,7 +1,8 @@
 #include "mmkv/client/information.h"
 #include "mmkv/client/mmkv_client.h"
 #include "mmkv/client/option.h"
-
+#include "mmkv/version.h"
+#include <kanon/init.h>
 #include <takina.h>
 
 using namespace mmkv::client;
@@ -16,9 +17,15 @@ int main(int argc, char *argv[])
     return 0;
   }
 
+  if (cli_option().version) {
+    printf("mmkv v%s\n", MMKV_VERSION_STR);
+    return 0;
+  }
+
   InstallInformation();
 
   kanon::SetKanonLog(cli_option().log);
+  kanon::KanonInitialize();
   EventLoopThread loop_thread;
   auto loop = loop_thread.StartRun();
 
@@ -26,9 +33,9 @@ int main(int argc, char *argv[])
   MmkvClient client(loop, server_addr);
   client.Start();
 
-  bool need_wait = true;
+  client.ConnectWait();
+
   while (1) {
-    if (need_wait) client.IoWait();
-    need_wait = client.ConsoleIoProcess();
+    client.ConsoleIoProcess();
   }
 }
