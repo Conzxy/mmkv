@@ -1,42 +1,44 @@
 #include "status_code.h"
-#include <sys/socket.h>
 
 using namespace mmkv::protocol;
 
-char const* mmkv::protocol::GetStatusMessage(mmkv::protocol::StatusCode code) noexcept {
+char const *
+mmkv::protocol::GetStatusMessage(mmkv::protocol::StatusCode code) noexcept
+{
   switch (code) {
-  case S_OK:
-    return "OK";
-  case S_EXISTS:
-    return "ERROR: Key already exists";
-  case S_NONEXISTS:
-    return "ERROR: Key doesn't exists";
-  case S_INVALID_MESSAGE:
-    return "ERROR: Invalid message";
-  case S_INVALID_RANGE:
-    return "ERROR: Invalid range";
-  case S_VMEMBER_NONEXISTS:
-    return "ERROR: Member doesn't exists in vset";
-  case S_EXISITS_DIFF_TYPE:
-    return "ERROR: Key exists but with different type" ;
-  case S_FIELD_NONEXISTS:
-    return "ERROR: Field doesn't exists";
-  case S_SET_MEMBER_NONEXISTS:
-    return "ERROR: Member doesn't exists in set";
-  case S_INVALID_REQUEST:
-    return "ERROR: Invalid request(client error)";
-  case S_SET_NO_MEMBER:
-    return "ERROR: No member in the set";
-  case S_DEST_EXISTS:
-    return "ERROR: The destination set already exists";
-  case S_EXPIRE_DISABLE:
-    return "ERROR: The expiration is disable";
+    case S_OK:
+      return "OK";
+    case S_EXISTS:
+      return "ERROR: Key already exists";
+    case S_NONEXISTS:
+      return "ERROR: Key doesn't exists";
+    case S_INVALID_MESSAGE:
+      return "ERROR: Invalid message";
+    case S_INVALID_RANGE:
+      return "ERROR: Invalid range";
+    case S_VMEMBER_NONEXISTS:
+      return "ERROR: Member doesn't exists in vset";
+    case S_EXISITS_DIFF_TYPE:
+      return "ERROR: Key exists but with different type";
+    case S_FIELD_NONEXISTS:
+      return "ERROR: Field doesn't exists";
+    case S_SET_MEMBER_NONEXISTS:
+      return "ERROR: Member doesn't exists in set";
+    case S_INVALID_REQUEST:
+      return "ERROR: Invalid request(client error)";
+    case S_SET_NO_MEMBER:
+      return "ERROR: No member in the set";
+    case S_DEST_EXISTS:
+      return "ERROR: The destination set already exists";
+    case S_EXPIRE_DISABLE:
+      return "ERROR: The expiration is disable";
   }
-  
+
   return "ERROR: Unknown error";
 }
 
-char const* mmkv::protocol::StatusCode2Str(StatusCode code) noexcept {
+char const *mmkv::protocol::StatusCode2Str(StatusCode code) noexcept
+{
   switch (code) {
     case S_OK:
       return "ok";

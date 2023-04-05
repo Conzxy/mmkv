@@ -2,14 +2,6 @@
 file(GLOB MMKV_TEST_SOURCES "${PROJECT_SOURCE_DIR}/test/*/*test*.cc")
 file(GLOB MMKV_BENCH_SOURCES "${PROJECT_SOURCE_DIR}/test/*/*bench*.cc")
 
-#list(APPEND MMKV_TEST_BENCH_SOURCES ${MMKV_TEST_SOURCES} ${MMKV_BENCH_SOURCES})
-
-############################################
-# User can determine whether to build all tests when build target all
-# e.g. cmake --build */mmkv/build [--target all -j 2]
-############################################
-set(BUILD_ALL_TESTS OFF CACHE BOOL "Don't exclude tests from target all")
-
 message(STATUS "mmkv test source files: ${MMKV_TEST_SOURCES}")
 message(STATUS "mmkv bench source files: ${MMKV_BENCH_SOURCES}")
 
@@ -49,13 +41,6 @@ macro (GenTest SRC)
   endforeach (mmkv_test_source ${MMKV_TEST_SOURCES})
 endmacro()
 
-if (${CMAKE_BUILD_TYPE} STREQUAL "Release")
-  set(MMKV_LIB mmkv)
-else ()
-  set(MMKV_LIB mmkv_debug)
-endif()
-
 SetLibName(HKLUA_LIB hklua)
-
-GenTest(MMKV_TEST_SOURCES gtest gtest_main ${MMKV_LIB} kanon_net kanon_base ${HKLUA_LIB} lua dl)
-GenTest(MMKV_BENCH_SOURCES benchmark benchmark_main ${MMKV_LIB} kanon_net kanon_base ${HKLUA_LIB} lua dl)
+GenTest(MMKV_TEST_SOURCES gtest gtest_main mmkv kanon_net kanon_base ${HKLUA_LIB} lua dl)
+GenTest(MMKV_BENCH_SOURCES benchmark benchmark_main mmkv kanon_net kanon_base ${HKLUA_LIB} lua dl)

@@ -11,6 +11,7 @@ struct Option {
   int port = 9998;
   bool reconnect = false;
   bool log = false;
+  bool version = false;
 };
 
 Option &cli_option();

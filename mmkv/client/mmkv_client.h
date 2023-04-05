@@ -24,16 +24,16 @@ class MmkvClient {
 
   void Start();
 
-  /**
-   * \return
-   *   true -- 需要等待
-   */
-  bool ConsoleIoProcess();
+  void ConsoleIoProcess();
 
   void IoWait()
   {
-    io_cond_.Wait();
+    KANON_MUTEX_GUARD(mutex_);
+    while (need_io_wait_)
+      io_cond_.Wait();
   }
+
+  void ConnectWait() { IoWait(); }
 
  private:
   KANON_INLINE bool CliCommandProcess(kanon::StringView cmd,
@@ -52,6 +52,7 @@ class MmkvClient {
   ResponsePrinter response_printer_;
   kanon::Condition io_cond_;
   kanon::MutexLock mutex_;
+  bool need_io_wait_ = true;
 
   std::string prompt_;
 

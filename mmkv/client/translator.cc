@@ -25,7 +25,7 @@ using namespace std;
 
 #define SYNTAX_ERROR_ROUTINE_END                                               \
   do {                                                                         \
-    if (++token_iter != tokenizer.end()) {                                     \
+    if (token_iter != tokenizer.end()) {                                       \
       return E_SYNTAX_ERROR;                                                   \
     }                                                                          \
   } while (0)
@@ -37,6 +37,7 @@ using namespace std;
     SYNTAX_ERROR_ROUTINE;                                                      \
     request->SetKey();                                                         \
     request->key = TO_MMKV_STRING(*token_iter);                                \
+    ++token_iter;                                                              \
   } while (0)
 
 #define SET_VALUE                                                              \
@@ -44,6 +45,7 @@ using namespace std;
     SYNTAX_ERROR_ROUTINE;                                                      \
     request->SetValue();                                                       \
     request->value = TO_MMKV_STRING(*token_iter);                              \
+    ++token_iter;                                                              \
   } while (0)
 
 #define SET_VALUES                                                             \
@@ -57,6 +59,7 @@ using namespace std;
     }                                                                          \
     request->SetValues();                                                      \
     request->values = std::move(values);                                       \
+    ++token_iter;                                                              \
   } while (0)
 
 #define SET_INTEGER(var, msg)                                                  \
@@ -72,6 +75,7 @@ using namespace std;
       ErrorPrintf(msg);                                                        \
       return E_SYNTAX_ERROR;                                                   \
     }                                                                          \
+    ++token_iter;                                                              \
   } while (0)
 
 #define SET_SIGN_INTEGER(var, msg)                                             \
@@ -87,6 +91,7 @@ using namespace std;
       ErrorPrintf(msg);                                                        \
       return E_SYNTAX_ERROR;                                                   \
     }                                                                          \
+    ++token_iter;                                                              \
   } while (0)
 
 #define SET_DOUBLE(var, msg)                                                   \
@@ -101,6 +106,7 @@ using namespace std;
       ErrorPrintf(msg);                                                        \
       return E_SYNTAX_ERROR;                                                   \
     }                                                                          \
+    ++token_iter;                                                              \
   } while (0)
 
 Translator::ErrorCode Translator::Parse(MmbpRequest *request, Command cmd,
@@ -111,46 +117,39 @@ Translator::ErrorCode Translator::Parse(MmbpRequest *request, Command cmd,
   auto token_iter = tokenizer.begin();
 
   switch (GetCommandFormat(cmd)) {
-    case F_NONE:
-    {
+    case F_NONE: {
       if (token_iter != tokenizer.end()) {
         return E_SYNTAX_ERROR;
       }
     } break;
-    case F_VALUE:
-    {
+    case F_VALUE: {
       SET_KEY;
       SET_VALUE;
       SYNTAX_ERROR_ROUTINE_END;
     } break;
-    case F_ONLY_KEY:
-    {
+    case F_ONLY_KEY: {
       SET_KEY;
       SYNTAX_ERROR_ROUTINE_END;
     } break;
-    case F_VALUES:
-    {
+    case F_VALUES: {
       SET_KEY;
       SET_VALUES;
     } break;
 
-    case F_SET_OP:
-    {
+    case F_SET_OP: {
       SET_KEY;
       SET_VALUE;
       SYNTAX_ERROR_ROUTINE_END;
     } break;
 
-    case F_SET_OP_TO:
-    {
+    case F_SET_OP_TO: {
       SET_VALUES;
       if (request->values.size() > 3) {
         return E_SYNTAX_ERROR;
       }
     } break;
 
-    case F_FIELD_VALUE:
-    {
+    case F_FIELD_VALUE: {
       SET_KEY;
 
       auto &values = request->values;
@@ -163,8 +162,7 @@ Translator::ErrorCode Translator::Parse(MmbpRequest *request, Command cmd,
       request->SetValues();
     } break;
 
-    case F_RANGE:
-    {
+    case F_RANGE: {
       SET_KEY;
       SET_SIGN_INTEGER(request->range.left,
                        "ERROR: left bound of range is invalid");
@@ -173,8 +171,7 @@ Translator::ErrorCode Translator::Parse(MmbpRequest *request, Command cmd,
       request->SetRange();
       SYNTAX_ERROR_ROUTINE_END;
     } break;
-    case F_COUNT:
-    {
+    case F_COUNT: {
       SET_KEY;
       // FIXME uint64_t
       uint32_t count;
@@ -183,8 +180,7 @@ Translator::ErrorCode Translator::Parse(MmbpRequest *request, Command cmd,
       request->count = count;
       SYNTAX_ERROR_ROUTINE_END;
     } break;
-    case F_VSET_MEMBERS:
-    {
+    case F_VSET_MEMBERS: {
       SET_KEY;
       auto &vms = request->vmembers;
 
@@ -197,8 +193,7 @@ Translator::ErrorCode Translator::Parse(MmbpRequest *request, Command cmd,
       }
       request->SetVmembers();
     } break;
-    case F_DRANGE:
-    {
+    case F_DRANGE: {
       SET_KEY;
 
       double drange[2];
@@ -209,8 +204,7 @@ Translator::ErrorCode Translator::Parse(MmbpRequest *request, Command cmd,
       SYNTAX_ERROR_ROUTINE_END;
       request->SetWeightRange(drange[0], drange[1]);
     } break;
-    case F_MAP_VALUES:
-    {
+    case F_MAP_VALUES: {
       SET_KEY;
       auto &kvs = request->kvs;
       while (++token_iter != tokenizer.end()) {
@@ -222,15 +216,13 @@ Translator::ErrorCode Translator::Parse(MmbpRequest *request, Command cmd,
       }
       request->SetKvs();
     } break;
-    case F_EXPIRE:
-    {
+    case F_EXPIRE: {
       SET_KEY;
       SET_INTEGER(request->expire_time, "ERROR: expiration time is invalid");
       request->SetExpireTime();
       SYNTAX_ERROR_ROUTINE_END;
     } break;
-    case F_MUL_KEYS:
-    {
+    case F_MUL_KEYS: {
       SET_VALUES;
     } break;
     case F_INVALID:

@@ -1,6 +1,3 @@
-execute_process(COMMAND make
-  WORKING_DIRECTORY ${XXHASH_DIR}
-)
-
 add_subdirectory(hklua)
+add_subdirectory(kanon)
 add_subdirectory(replxx)

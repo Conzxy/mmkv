@@ -2,129 +2,123 @@
 #define _MMKV_UTIL_TCOLOR_MACRO_H_
 
 #ifdef NONE
-#undef NONE
+#  undef NONE
 #endif
-#define NONE "\e[0m"
+#define NONE "\033[0m"
 
 #ifdef RESET
-#undef RESET
+#  undef RESET
 #endif
-#define RESET "\e[0m"
+#define RESET "\033[0m"
 
 #ifdef BLACK
-#undef BLACK
+#  undef BLACK
 #endif
-#define BLACK "\e[0;30m"
+#define BLACK "\033[0;30m"
 
 #ifdef L_BLACK
-#undef L_BLACK
+#  undef L_BLACK
 #endif
-#define L_BLACK "\e[1;30m"
+#define L_BLACK "\033[1;30m"
 
-#ifdef RED 
-#undef RED 
+#ifdef RED
+#  undef RED
 #endif
-#define RED "\e[0;31m"
+#define RED "\033[0;31m"
 
-#ifdef L_RED 
-#undef L_RED 
+#ifdef L_RED
+#  undef L_RED
 #endif
-#define L_RED "\e[1;31m"
+#define L_RED "\033[1;31m"
 
 #ifdef GREEN
-#undef GREEN
+#  undef GREEN
 #endif
-#define GREEN "\e[0;32m"
-
+#define GREEN "\033[0;32m"
 
 #ifdef L_GREEN
-#undef L_GREEN
+#  undef L_GREEN
 #endif
-#define L_GREEN "\e[1;32m"
+#define L_GREEN "\033[1;32m"
 
 #ifdef BROWN
-#undef BROWN
+#  undef BROWN
 #endif
-#define BROWN "\e[0;33m"
-
+#define BROWN "\033[0;33m"
 
 #ifdef YELLOW
-#undef YELLOW
+#  undef YELLOW
 #endif
-#define YELLOW "\e[1;33m"
+#define YELLOW "\033[1;33m"
 
-#ifdef BLUE 
-#undef BLUE 
+#ifdef BLUE
+#  undef BLUE
 #endif
-#define BLUE "\e[0;34m"
+#define BLUE "\033[0;34m"
 
-#ifdef  L_BLUE
-#undef  L_BLUE
+#ifdef L_BLUE
+#  undef L_BLUE
 #endif
-#define L_BLUE "\e[1;34m"
+#define L_BLUE "\033[1;34m"
 
-#ifdef PURPLE 
-#undef PURPLE 
+#ifdef PURPLE
+#  undef PURPLE
 #endif
-#define PURPLE "\e[0;35m"
+#define PURPLE "\033[0;35m"
 
-#ifdef L_PURPLE 
-#undef L_PURPLE 
+#ifdef L_PURPLE
+#  undef L_PURPLE
 #endif
-#define L_PURPLE "\e[1;35m"
+#define L_PURPLE "\033[1;35m"
 
-#ifdef CYAN 
-#undef CYAN 
+#ifdef CYAN
+#  undef CYAN
 #endif
-#define CYAN "\e[0;36m"
+#define CYAN "\033[0;36m"
 
-#ifdef L_CYAN 
-#undef L_CYAN 
+#ifdef L_CYAN
+#  undef L_CYAN
 #endif
-#define L_CYAN "\e[1;36m"
+#define L_CYAN "\033[1;36m"
 
-#ifdef GRAY 
-#undef GRAY 
+#ifdef GRAY
+#  undef GRAY
 #endif
-#define GRAY "\e[0;37m"
+#define GRAY "\033[0;37m"
 
-#ifdef WHITE 
-#undef WHITE
+#ifdef WHITE
+#  undef WHITE
 #endif
-#define WHITE "\e[1;37m"
+#define WHITE "\033[1;37m"
 
-#ifdef BOLD 
-#undef BOLD
+#ifdef BOLD
+#  undef BOLD
 #endif
-#define BOLD "\e[1m"
+#define BOLD "\033[1m"
 
-#ifdef UNDERLINE 
-#undef UNDERLINE
+#ifdef UNDERLINE
+#  undef UNDERLINE
 #endif
-#define UNDERLINE "\e[4m"
+#define UNDERLINE "\033[4m"
 
 #ifdef BLINK
-#undef BLINK
+#  undef BLINK
 #endif
-#define BLINK "\e[5m"
-
+#define BLINK "\033[5m"
 
 #ifdef REVERSE
-#undef REVERSE
+#  undef REVERSE
 #endif
-#define REVERSE "\e[7m"
+#define REVERSE "\033[7m"
 
-
-#ifdef HIDE 
-#undef HIDE 
+#ifdef HIDE
+#  undef HIDE
 #endif
-#define HIDE "\e[8m"
-
+#define HIDE "\033[8m"
 
 #ifdef CLEAR
-#undef CLEAR
+#  undef CLEAR
 #endif
-#define CLEAR "\e[2J"
-
+#define CLEAR "\033[2J"
 
 #endif
