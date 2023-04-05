@@ -18,7 +18,7 @@ int mmkv::util::GetCoreNum()
   static int ret = 1;
 #endif
 #ifdef _SC_NPROCESSORS_ONLN
-  static ret = sysconf(_SC_NPROCESSORS_ONLN);
+  static int ret = sysconf(_SC_NPROCESSORS_ONLN);
 #endif
 
   return ret;
