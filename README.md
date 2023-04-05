@@ -42,7 +42,7 @@
 ### CLI
 - [x] 实现`translator`将输入行翻译成MMBP request
 - [x] 能够输入`命令`(command)和`参数`(arguments)与`mmkv server`进行交互
-- [x] 能够对用户输入的命令的`提示`(hint)，`历史`(history)浏览，以及`补全`(completion)
+- [x] 能够对用户输入的命令的`提示`(hint)，`历史`(history)浏览，以及`补全`(completion)等
 - [x] 实现[ternary-tree](https://github.com/Conzxy/ternary-tree)以优化自动补全
 - [x] 支持通过`!command arguments`执行`shell`命令
 - [x] 对于输入的命令大小写不敏感（可以识别，提示，补全）
@@ -69,5 +69,21 @@ chmod u+x build.sh
 ./build.sh mmkv-server
 ```
 
-### FAQ
-* 如果`mmkv-cli`输出了日志信息，可以通过设置环境变量关闭`KANON_DEBUG=0`，server的日志信息也可以通过相同的方法关闭。
+## Usage
+话不多说，简单部署下 `mmkv-server`：
+
+```shell
+# port default is 9998
+./mmkv-server -p [port]
+```
+
+然后通过 `mmkv-cli` 进行交互吧！
+
+```shell
+./mmkv-cli -h [host ip/domain name] -p [port]
+# 进入mmkv的CLI交互环境
+# 通过help查看命令
+mmkv [...]> help
+```
+
+如有其他问题，请参考 [文档](https://conzxy.github.io/mmkv/)。
