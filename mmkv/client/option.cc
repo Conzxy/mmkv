@@ -25,6 +25,8 @@ void RegisterOptions()
   takina::AddOption(
       {"r", "reconnect", "Reconnect to server when peer close the connection"},
       &cli_option().reconnect);
+  takina::AddOption({"v", "version", "Show current version of mmkv"},
+                    &cli_option().version);
 }
 
 } // namespace client
