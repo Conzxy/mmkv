@@ -9,6 +9,7 @@
 
 #include "kanon/util/macro.h"
 #include "mmkv/protocol/command.h"
+#include "mmkv/version.h"
 
 using mmkv::protocol::Command;
 
@@ -34,6 +35,7 @@ enum CommandFormat : uint8_t {
   "Apache LICENSE Copyright(c) 2022.6 Conzxy\n"                                \
   "Mmkv is an Memory Key-value remote database(or cache)\n"                    \
   "Github page: https://github.com/Conzxy/mmkv\n"                              \
+  "Version: " MMKV_VERSION_STR "\n"                                            \
   "Supported data structure: \n"                                               \
   "[string]\n"                                                                 \
   "[list]\n"                                                                   \
@@ -165,10 +167,7 @@ KANON_INLINE CliCommand GetCliCommand(kanon::StringView cmd)
   return iter->second;
 }
 
-KANON_INLINE std::string const &GetHelp()
-{
-  return detail::help;
-}
+KANON_INLINE std::string const &GetHelp() { return detail::help; }
 
 void InstallInformation() noexcept;
 
