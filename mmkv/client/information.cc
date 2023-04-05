@@ -35,34 +35,34 @@ static KANON_INLINE int GenCommandMetadata() KANON_NOEXCEPT
 {
   for (size_t i = 0; i < COMMAND_NUM; ++i) {
     command_hints[i].clear();
-    command_hints[i] += GetCommandString((Command)i);
+    command_hints[i] = GetCommandString((Command)i);
 
     switch (i) {
       case MEM_STAT:
       case KEYALL:
       case DELALL:
         command_formats[(Command)i] = F_NONE;
-        command_hints[i] = "";
+        command_hints[i] += "";
         break;
       case STR_ADD:
       case STR_SET:
       case STRAPPEND:
         command_formats[(Command)i] = F_VALUE;
-        command_hints[i] = " key value";
+        command_hints[i] += " key value";
         break;
       case MEXISTS:
       case MDEL:
       case MGET:
         command_formats[(Command)i] = F_VALUE;
-        command_hints[i] = " key field";
+        command_hints[i] += " key field";
         break;
       case MGETS:
         command_formats[(Command)i] = F_VALUES;
-        command_hints[i] = " key fields...";
+        command_hints[i] += " key fields...";
         break;
       case MSET:
         command_formats[(Command)i] = F_FIELD_VALUE;
-        command_hints[i] = " key field value";
+        command_hints[i] += " key field value";
         break;
       case SAND:
       case SOR:
@@ -71,17 +71,17 @@ static KANON_INLINE int GenCommandMetadata() KANON_NOEXCEPT
       case SORSIZE:
       case SSUBSIZE:
         command_formats[(Command)i] = F_SET_OP;
-        command_hints[i] = " key1 key2";
+        command_hints[i] += " key1 key2";
         break;
       case SANDTO:
       case SORTO:
       case SSUBTO:
         command_formats[(Command)i] = F_SET_OP_TO;
-        command_hints[i] = " destination key1 key2";
+        command_hints[i] += " destination key1 key2";
         break;
       case SADD:
         command_formats[(Command)i] = F_VALUES;
-        command_hints[i] = " key members...";
+        command_hints[i] += " key members...";
         break;
       case STR_GET:
       case STR_DEL:
@@ -104,31 +104,31 @@ static KANON_INLINE int GenCommandMetadata() KANON_NOEXCEPT
       case EXPIRATION:
       case TTL:
         command_formats[(Command)i] = F_ONLY_KEY;
-        command_hints[i] = " key";
+        command_hints[i] += " key";
         break;
       case LADD:
       case LAPPEND:
       case LPREPEND:
         command_formats[(Command)i] = F_VALUES;
-        command_hints[i] = " key values...";
+        command_hints[i] += " key values...";
         break;
       case STRPOPBACK:
       case LPOPBACK:
       case LPOPFRONT:
         command_formats[(Command)i] = F_COUNT;
-        command_hints[i] = " key count";
+        command_hints[i] += " key count";
         break;
       case LGETRANGE:
         command_formats[(Command)i] = F_RANGE;
-        command_hints[i] = " key index_range(integer)";
+        command_hints[i] += " key index_range(integer)";
         break;
       case VADD:
         command_formats[(Command)i] = F_VSET_MEMBERS;
-        command_hints[i] = " key <weight, member>...";
+        command_hints[i] += " key <weight, member>...";
         break;
       case MADD:
         command_formats[(Command)i] = F_MAP_VALUES;
-        command_hints[i] = " key <field, value>...";
+        command_hints[i] += " key <field, value>...";
         break;
       case VDELM:
       case VWEIGHT:
@@ -137,38 +137,38 @@ static KANON_INLINE int GenCommandMetadata() KANON_NOEXCEPT
       case SDELM:
       case SEXISTS:
         command_formats[(Command)i] = F_VALUE;
-        command_hints[i] = " key member";
+        command_hints[i] += " key member";
         break;
       case VDELMRANGE:
       case VRANGE:
       case VRRANGE:
         command_formats[(Command)i] = F_RANGE;
-        command_hints[i] = " key order_range(integer)";
+        command_hints[i] += " key order_range(integer)";
         break;
       case VDELMRANGEBYWEIGHT:
       case VRANGEBYWEIGHT:
       case VRRANGEBYWEIGHT:
       case VSIZEBYWEIGHT:
         command_formats[(Command)i] = F_DRANGE;
-        command_hints[i] = " key weight_range(double)";
+        command_hints[i] += " key weight_range(double)";
         break;
       case RENAME:
         command_formats[(Command)i] = F_VALUE;
-        command_hints[i] = " key new_name";
+        command_hints[i] += " key new_name";
         break;
       case EXPIRE_AT:
       case EXPIREM_AT:
         command_formats[(Command)i] = F_EXPIRE;
-        command_hints[i] = " key expiration_time";
+        command_hints[i] += " key expiration_time";
         break;
       case EXPIRE_AFTER:
       case EXPIREM_AFTER:
         command_formats[(Command)i] = F_EXPIRE;
-        command_hints[i] = " key time_interval";
+        command_hints[i] += " key time_interval";
         break;
       case DELS:
         command_formats[(Command)i] = F_MUL_KEYS;
-        command_hints[i] = " keys...";
+        command_hints[i] += " keys...";
         break;
       default:
         break;
@@ -176,13 +176,20 @@ static KANON_INLINE int GenCommandMetadata() KANON_NOEXCEPT
   }
 
   for (int i = 0; i < CLI_COMMAND_NUM; ++i) {
+    cli_command_hints[i].clear();
+    cli_command_hints[i] = GetCliCommandString((CliCommand)i);
     switch (i) {
       case CLI_HELP:
       case CLI_QUIT:
       case CLI_EXIT:
       case CLI_HISTORY:
-        cli_command_hints[i] = "";
+      case CLI_CLEAR:
+      case CLI_CLEAR_HISTORY:
+        cli_command_hints[i] += "";
         break;
+
+      default:
+        LOG_FATAL << "Unknown Cli command, unable to register its hint";
     }
   }
   return 0;
