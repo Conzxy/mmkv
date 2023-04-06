@@ -82,7 +82,3 @@ jobs:
         tag: v${{env.TAG_VERSION}}
         artifacts: mmkv-${{env.TAG_VERSION}}-linux-bin.*
         token: ${{secrets.release}}
-      run: |
-        echo "Current directory: $(pwd)"
-        cd ${{github.workspace}}/bin
-      shell: bash
