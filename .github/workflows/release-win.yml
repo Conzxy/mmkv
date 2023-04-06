@@ -63,14 +63,9 @@ jobs:
       with:
         type: 'zip'
         filename: mmkv-${{env.TAG_VERSION}}-win-bin.zip
-        directory: ${{env.workspace}}
+        directory: ${{github.workspace}}
         path: bin/mmkv-cli LICENSE
 
-    - name: Make binary package
-      run: zip 
-      working-directory: bin
-      shell: pwsh
-  
     - name: Make Release v${{env.TAG_VERSION}}
       uses: ncipollo/release-action@v1
       with:
