@@ -32,14 +32,14 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Install dependences
-      run: |
-        cd ~
-        wget https://www.lua.org/ftp/lua-5.4.4.tar.gz
-        tar -xf lua-5.4.4.tar.gz
-        cd lua-5.4.4
-        make -j$(nproc) 1>/dev/null && sudo make install
-      shell: bash
+    # - name: Install dependences
+    #   run: |
+    #     cd ~
+    #     wget https://www.lua.org/ftp/lua-5.4.4.tar.gz
+    #     tar -xf lua-5.4.4.tar.gz
+    #     cd lua-5.4.4
+    #     make -j$(nproc) 1>/dev/null && sudo make install
+    #   shell: bash
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
@@ -71,6 +71,7 @@ jobs:
         cd ${{github.workspace}}/bin
         tar -czvf mmkv-${{env.TAG_VERSION}}-linux-bin.tar.gz mmkv-server mmkv-cli mmkvconf.lua
         zip mmkv-${{env.TAG_VERSION}}-linux-bin.zip mmkv-server mmkv-cli mmkvconf.lua
+        ls .
       shell: bash
   
     - name: Make Release v${{env.TAG_VERSION}}
@@ -80,5 +81,5 @@ jobs:
         artifactErrorsFailBuild: true
         draft: true
         tag: v${{env.TAG_VERSION}}
-        artifacts: mmkv-${{env.TAG_VERSION}}-linux-bin.*
+        artifacts: ${{github.workspace}}/bin/mmkv-${{env.TAG_VERSION}}-linux-bin.*
         token: ${{secrets.release}}
