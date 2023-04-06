@@ -31,6 +31,7 @@ class MmkvClient {
     KANON_MUTEX_GUARD(mutex_);
     while (need_io_wait_)
       io_cond_.Wait();
+    need_io_wait_ = true;
   }
 
   void ConnectWait() { IoWait(); }

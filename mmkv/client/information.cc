@@ -35,7 +35,6 @@ static KANON_INLINE int GenCommandMetadata() KANON_NOEXCEPT
 {
   for (size_t i = 0; i < COMMAND_NUM; ++i) {
     command_hints[i].clear();
-    command_hints[i] = GetCommandString((Command)i);
 
     switch (i) {
       case MEM_STAT:
@@ -177,7 +176,6 @@ static KANON_INLINE int GenCommandMetadata() KANON_NOEXCEPT
 
   for (int i = 0; i < CLI_COMMAND_NUM; ++i) {
     cli_command_hints[i].clear();
-    cli_command_hints[i] = GetCliCommandString((CliCommand)i);
     switch (i) {
       case CLI_HELP:
       case CLI_QUIT:
@@ -200,7 +198,7 @@ static int GenHelp()
   assert(help.empty());
   help = "Help: \n";
   for (int i = 0; i < CLI_COMMAND_NUM; ++i) {
-    StrAppend(help, GREEN, GetCliCommandString(CliCommand(i)), RESET,
+    StrAppend(help, GREEN, GetCliCommandString((CliCommand)i), RESET,
               GetCliCommandHint((CliCommand)i), "\n");
   }
 
