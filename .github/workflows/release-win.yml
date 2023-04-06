@@ -69,7 +69,7 @@ jobs:
     - name: Make binary package
       run : |
         cd ${{github.workspace}}/bin
-        zip mmkv-${{env.TAG_VERSION}}-win-bin.zip mmkv-cli
+        zip mmkv-${{env.TAG_VERSION}}-win-bin.zip mmkv-cli LICENSE
         ls .
       shell: pwsh 
   
@@ -80,5 +80,6 @@ jobs:
         artifactErrorsFailBuild: true
         draft: true
         tag: v${{env.TAG_VERSION}}
-        artifacts: ${{github.workspace}}/bin/mmkv-${{env.TAG_VERSION}}-win-bin.*,LICENSE,release/v${{env.TAG_VERSION}}.md
+        artifacts: ${{github.workspace}}/bin/mmkv-${{env.TAG_VERSION}}-win-bin.*
+        bodyFile: release/v${{env.TAG_VERSION}}.md
         token: ${{secrets.release}}

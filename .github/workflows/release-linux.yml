@@ -69,8 +69,8 @@ jobs:
     - name: Make binary package
       run : |
         cd ${{github.workspace}}/bin
-        tar -czvf mmkv-${{env.TAG_VERSION}}-linux-bin.tar.gz mmkv-server mmkv-cli mmkvconf.lua
-        zip mmkv-${{env.TAG_VERSION}}-linux-bin.zip mmkv-server mmkv-cli mmkvconf.lua
+        tar -czvf mmkv-${{env.TAG_VERSION}}-linux-bin.tar.gz mmkv-server mmkv-cli mmkvconf.lua ../LICENSE
+        zip mmkv-${{env.TAG_VERSION}}-linux-bin.zip mmkv-server mmkv-cli mmkvconf.lua ../LICENSE
         ls .
       shell: bash
   
@@ -81,6 +81,6 @@ jobs:
         artifactErrorsFailBuild: true
         draft: true
         tag: v${{env.TAG_VERSION}}
-        artifacts: ${{github.workspace}}/bin/mmkv-${{env.TAG_VERSION}}-linux-bin.*,LICENSE,release/v${{env.TAG_VERSION}}.md
-        bodyFile: 
+        artifacts: ${{github.workspace}}/bin/mmkv-${{env.TAG_VERSION}}-linux-bin.*
+        bodyFile: release/v${{env.TAG_VERSION}}.md
         token: ${{secrets.release}}
