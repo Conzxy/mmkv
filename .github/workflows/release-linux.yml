@@ -1,15 +1,7 @@
 name: Linux-Release
 
 on:
-  push:
-    branches: ["main", "dist"]
-    tags: 
-      - "v*.*.*"
-
-  pull_request:
-    tags: 
-      - "v*.*.*"
-    branches: ["main", "dist"]
+  workflow_dispatch:
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)

@@ -1,15 +1,7 @@
 name: Win-Release
 
 on:
-  push:
-    branches: ["main", "dist"]
-    tags: 
-      - "v*.*.*"
-
-  pull_request:
-    tags: 
-      - "v*.*.*"
-    branches: ["main", "dist"]
+  workflow_dispatch:
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
@@ -66,11 +58,16 @@ jobs:
         cmake --build . --target mmkv-cli --parallel $(nproc)
       shell: pwsh 
     
-    - name: action-zip
-      uses: montudor/action-zip@v1.0.0
+    - name: Make binary package
+      uses: TheDoctor0/zip-release@0.7.1
+      with:
+        type: 'zip'
+        filename: mmkv-${{env.TAG_VERSION}}-win-bin.zip
+        directory: ${{env.workspace}}
+        path: bin/mmkv-cli LICENSE
 
     - name: Make binary package
-      run: zip mmkv-${{env.TAG_VERSION}}-win-bin.zip mmkv-cli ../LICENSE
+      run: zip 
       working-directory: bin
       shell: pwsh
   
@@ -81,7 +78,7 @@ jobs:
         artifactErrorsFailBuild: true
         draft: true
         tag: v${{env.TAG_VERSION}}
-        artifacts: ${{github.workspace}}/bin/mmkv-${{env.TAG_VERSION}}-win-bin.*
+        artifacts: ${{github.workspace}}/mmkv-${{env.TAG_VERSION}}-win-bin.*
         #removeArtifacts: true
         bodyFile: release/v${{env.TAG_VERSION}}.md
         token: ${{secrets.release}}
