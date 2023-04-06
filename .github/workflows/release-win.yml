@@ -1,4 +1,4 @@
-name: Linux-Release
+name: Win-Release
 
 on:
   push:
@@ -20,7 +20,7 @@ jobs:
     # The CMake configure and build commands are platform agnostic and should work equally well on Windows or Mac.
     # You can convert this to a matrix build if you need cross-platform coverage.
     # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     permissions:
       contents: write
 
@@ -49,30 +49,29 @@ jobs:
         ls
         mkdir build
         cd build
-        cmake .. -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} 1>/dev/null
-      shell: bash
+        cmake .. -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+      shell: pwsh
 
-    - name: Build Mmkv Server
-      # Build your program with the given configuration
-      run: |
-        cd ${{github.workspace}}/build
-        cmake --build . --target mmkv-server --parallel $(nproc) 1>/dev/null
-      shell: bash
+    # - name: Build Mmkv Server
+    #   # Build your program with the given configuration
+    #   run: |
+    #     cd ${{github.workspace}}/build
+    #     cmake --build . --target mmkv-server --parallel $(nproc)
+    #   shell: pwsh
 
     - name: Build Mmkv Cli
       # Build your program with the given configuration
       run: |
         cd ${{github.workspace}}/build
-        cmake --build . --target mmkv-cli --parallel $(nproc) 1>/dev/null
-      shell: bash
+        cmake --build . --target mmkv-cli --parallel $(nproc)
+      shell: pwsh 
     
     - name: Make binary package
       run : |
         cd ${{github.workspace}}/bin
-        tar -czvf mmkv-${{env.TAG_VERSION}}-linux-bin.tar.gz mmkv-server mmkv-cli mmkvconf.lua
-        zip mmkv-${{env.TAG_VERSION}}-linux-bin.zip mmkv-server mmkv-cli mmkvconf.lua
+        zip mmkv-${{env.TAG_VERSION}}-win-bin.zip mmkv-cli
         ls .
-      shell: bash
+      shell: pwsh 
   
     - name: Make Release v${{env.TAG_VERSION}}
       uses: ncipollo/release-action@v1
@@ -81,6 +80,5 @@ jobs:
         artifactErrorsFailBuild: true
         draft: true
         tag: v${{env.TAG_VERSION}}
-        artifacts: ${{github.workspace}}/bin/mmkv-${{env.TAG_VERSION}}-linux-bin.*,LICENSE,release/v${{env.TAG_VERSION}}.md
-        bodyFile: 
+        artifacts: ${{github.workspace}}/bin/mmkv-${{env.TAG_VERSION}}-win-bin.*,LICENSE,release/v${{env.TAG_VERSION}}.md
         token: ${{secrets.release}}
