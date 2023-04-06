@@ -2,11 +2,15 @@ name: Win-Release
 
 on:
   workflow_dispatch:
+    inputs:
+      tag_version:
+        description: "Version of mmkv"
+        type: string
+        required: true
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
-  TAG_VERSION: 1.1.2
 jobs:
   build:
     # The CMake configure and build commands are platform agnostic and should work equally well on Windows or Mac.
@@ -62,18 +66,18 @@ jobs:
       uses: TheDoctor0/zip-release@0.7.1
       with:
         type: 'zip'
-        filename: mmkv-${{env.TAG_VERSION}}-win-bin.zip
+        filename: mmkv-${{inputs.tag_version}}-win-bin.zip
         directory: ${{github.workspace}}
         path: '*/bin/mmkv-cli LICENSE'
         
-    - name: Make Release v${{env.TAG_VERSION}}
+    - name: Make Release v${{inputs.tag_version}}
       uses: ncipollo/release-action@v1
       with:
         allowUpdates: true
         artifactErrorsFailBuild: true
         draft: true
-        tag: v${{env.TAG_VERSION}}
-        artifacts: ${{github.workspace}}/mmkv-${{env.TAG_VERSION}}-win-bin.*
+        tag: v${{inputs.tag_version}}
+        artifacts: ${{github.workspace}}/mmkv-${{inputs.tag_version}}-win-bin.*
         #removeArtifacts: true
-        bodyFile: release/v${{env.TAG_VERSION}}.md
+        bodyFile: release/v${{inputs.tag_version}}.md
         token: ${{secrets.release}}
