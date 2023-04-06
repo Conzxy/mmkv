@@ -93,8 +93,8 @@ extern std::unordered_map<kanon::StringView, CliCommand, StringViewHash>
 
 KANON_INLINE CommandFormat GetCommandFormat(Command command)
 {
-  auto iter = detail::command_formats.find(command);
-  if (iter == detail::command_formats.end()) return F_INVALID;
+  auto iter = ::detail::command_formats.find(command);
+  if (iter == ::detail::command_formats.end()) return F_INVALID;
   return iter->second;
 }
 
@@ -107,8 +107,8 @@ KANON_INLINE CommandFormat GetCommandFormat(Command command)
 KANON_INLINE KANON_DEPRECATED_ATTR bool GetCommand(kanon::StringView command,
                                                    uint16_t &cmd)
 {
-  auto iter = detail::command_map.find(command);
-  if (iter == detail::command_map.end()) return false;
+  auto iter = ::detail::command_map.find(command);
+  if (iter == ::detail::command_map.end()) return false;
   cmd = iter->second;
   return true;
 }
@@ -118,19 +118,20 @@ KANON_INLINE KANON_DEPRECATED_ATTR bool GetCommand(kanon::StringView command,
  */
 KANON_INLINE Command GetCommand(kanon::StringView command)
 {
-  auto iter = detail::command_map.find(command);
-  if (iter == detail::command_map.end()) return Command::COMMAND_NUM;
+  auto iter = ::detail::command_map.find(command);
+  if (iter == ::detail::command_map.end()) return Command::COMMAND_NUM;
   return iter->second;
 }
 
 KANON_INLINE std::string const *GetCommandHints() KANON_NOEXCEPT
 {
-  return detail::command_hints;
+  return ::detail::command_hints;
 }
 
 KANON_INLINE std::string const &GetCommandHint(Command cmd) KANON_NOEXCEPT
 {
-  return detail::command_hints[cmd];
+  assert(cmd >= 0 && cmd < Command::COMMAND_NUM);
+  return ::detail::command_hints[cmd];
 }
 
 /*--------------------------------------------------*/
@@ -140,34 +141,36 @@ KANON_INLINE std::string const &GetCommandHint(Command cmd) KANON_NOEXCEPT
 KANON_INLINE std::string const &
 GetCliCommandString(CliCommand cmd) KANON_NOEXCEPT
 {
-  return detail::cli_command_strings[cmd];
+  assert(cmd > 0 && cmd < CliCommand::CLI_COMMAND_NUM);
+  return ::detail::cli_command_strings[cmd];
 }
 
 KANON_INLINE std::string const *GetCliCommandStrings() KANON_NOEXCEPT
 {
-  return detail::cli_command_strings;
+  return ::detail::cli_command_strings;
 }
 
 KANON_INLINE std::string const &GetCliCommandHint(CliCommand cmd)
 {
-  return detail::cli_command_hints[cmd];
+  assert(cmd > 0 && cmd < CliCommand::CLI_COMMAND_NUM);
+  return ::detail::cli_command_hints[cmd];
 }
 
 KANON_INLINE std::string const *GetCliCommandHints() KANON_NOEXCEPT
 {
-  return detail::cli_command_hints;
+  return ::detail::cli_command_hints;
 }
 
 KANON_INLINE CliCommand GetCliCommand(kanon::StringView cmd)
 {
-  auto iter = detail::cli_command_map.find(cmd);
-  if (iter == detail::cli_command_map.end()) {
+  auto iter = ::detail::cli_command_map.find(cmd);
+  if (iter == ::detail::cli_command_map.end()) {
     return CliCommand::CLI_COMMAND_NUM;
   }
   return iter->second;
 }
 
-KANON_INLINE std::string const &GetHelp() { return detail::help; }
+KANON_INLINE std::string const &GetHelp() { return ::detail::help; }
 
 void InstallInformation() noexcept;
 

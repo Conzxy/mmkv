@@ -276,7 +276,8 @@ void MmkvClient::ConsoleIoProcess()
       util::ErrorPrintf("ERROR: invalid command: %s\n", cmd.c_str());
     } break;
     case Translator::E_SYNTAX_ERROR: {
-      util::ErrorPrintf("Syntax error: %s\n",
+      util::ErrorPrintf("Syntax error: %s%s\n",
+                        GetCommandString(GetCommand(upper_cmd)).c_str(),
                         GetCommandHint(GetCommand(upper_cmd)).c_str());
 
     } break;
@@ -310,7 +311,7 @@ KANON_INLINE void RegisterCommandHints(size_t cmd_count,
        hint message */
     if (!::memcmp(cmd_str.c_str(), command_buf, cmd_len)) {
       hint.clear();
-      kanon::StrAppend(hint, cmd_hint);
+      kanon::StrAppend(hint, cmd_str, cmd_hint);
       ::replxx_add_hint(lc, hint.c_str());
     }
   }
