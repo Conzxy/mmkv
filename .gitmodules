@@ -1,18 +1,24 @@
 [submodule "third-party/ternary-tree"]
-	path = third-party/ternary-tree
+  path = third-party/ternary-tree
+  branch = main
 	url = https://github.com/Conzxy/ternary-tree
 [submodule "third-party/takina"]
 	path = third-party/takina
+  branch = main
 	url = https://github.com/Conzxy/takina
 [submodule "third-party/chisato"]
 	path = third-party/chisato
+  branch = main
 	url = https://github.com/Conzxy/chisato
 [submodule "third-party/kanon"]
 	path = third-party/kanon
+  branch = master
 	url = https://github.com/Conzxy/kanon
 [submodule "third-party/hklua"]
 	path = third-party/hklua
+  branch = main
 	url = https://github.com/Conzxy/hklua
 [submodule "third-party/replxx"]
 	path = third-party/replxx
+  branch = master
 	url = https://github.com/Conzxy/replxx
