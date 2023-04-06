@@ -66,7 +66,7 @@ jobs:
         cmake --build . --target mmkv-cli --parallel $(nproc)
       shell: pwsh 
     
-    - name: Install zip
+    - name: action-zip
       uses: montudor/action-zip@v1.0.0
 
     - name: Make binary package
@@ -82,6 +82,6 @@ jobs:
         draft: true
         tag: v${{env.TAG_VERSION}}
         artifacts: ${{github.workspace}}/bin/mmkv-${{env.TAG_VERSION}}-win-bin.*
-        removeArtifacts: true
+        #removeArtifacts: true
         bodyFile: release/v${{env.TAG_VERSION}}.md
         token: ${{secrets.release}}
