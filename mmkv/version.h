@@ -3,7 +3,7 @@
 
 #define MMKV_VER_MAJOR 1
 #define MMKV_VER_MINOR 1
-#define MMKV_VER_PATCH 0
+#define MMKV_VER_PATCH 2
 
 #define MMKV_VERSION                                                           \
   (MMKV_VER_MAJOR * 10000 + MMKV_VER_MINOR * 100 + MMKV_VER_PATCH)
