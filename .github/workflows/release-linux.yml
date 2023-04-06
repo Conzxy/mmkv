@@ -2,11 +2,16 @@ name: Linux-Release
 
 on:
   workflow_dispatch:
-
+    inputs:
+      tag_version:
+        description: "Version of mmkv"
+        type: string
+        required: true
+      
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
-  TAG_VERSION: 1.1.2
+
 jobs:
   build:
     # The CMake configure and build commands are platform agnostic and should work equally well on Windows or Mac.
@@ -17,8 +22,6 @@ jobs:
       contents: write
 
     steps:
-    - uses: actions/checkout@v3
-
     - name: checkout all the submodules
       uses: actions/checkout@v3
       with:
@@ -61,19 +64,19 @@ jobs:
     - name: Make binary package
       run : |
         cd ${{github.workspace}}/bin
-        tar -czvf mmkv-${{env.TAG_VERSION}}-linux-bin.tar.gz mmkv-server mmkv-cli mmkvconf.lua ../LICENSE
-        zip mmkv-${{env.TAG_VERSION}}-linux-bin.zip mmkv-server mmkv-cli mmkvconf.lua ../LICENSE
+        tar -czvf mmkv-${inputs.tag_version}}-linux-bin.tar.gz mmkv-server mmkv-cli mmkvconf.lua ../LICENSE
+        zip mmkv-${{inputs.tag_version}}-linux-bin.zip mmkv-server mmkv-cli mmkvconf.lua ../LICENSE
         ls .
       shell: bash
   
-    - name: Make Release v${{env.TAG_VERSION}}
+    - name: Make Release v${{inputs.tag_version}}
       uses: ncipollo/release-action@v1
       with:
         allowUpdates: true
         artifactErrorsFailBuild: true
         draft: true
-        tag: v${{env.TAG_VERSION}}
-        artifacts: ${{github.workspace}}/bin/mmkv-${{env.TAG_VERSION}}-linux-bin.*
+        tag: v${{inputs.tag_version}}
+        artifacts: ${{github.workspace}}/bin/mmkv-${{inputs.tag_version}}-linux-bin.*
         #removeArtifacts: true
-        bodyFile: release/v${{env.TAG_VERSION}}.md
+        bodyFile: release/v${{inputs.tag_version}}.md
         token: ${{secrets.release}}
