@@ -68,10 +68,10 @@ MmkvClient::MmkvClient(EventLoop *loop, InetAddr const &server_addr)
     } else {
       if (is_exit) {
         puts("Disconnect successfully!");
-        ::exit(0);
+        ::exit(EXIT_SUCCESS);
       } else {
         puts("\nConnection is closed by peer server");
-        if (!cli_option().reconnect) ::exit(0);
+        if (!cli_option().reconnect) ::exit(EXIT_SUCCESS);
       }
     }
   });
@@ -248,6 +248,7 @@ void MmkvClient::ConsoleIoProcess()
   auto upper_cmd = line_view.substr(0, space_pos).ToUpperString();
 
   if (CliCommandProcess(upper_cmd, line_view)) {
+    if (is_exit) IoWait();
     return;
   }
 
@@ -269,7 +270,6 @@ void MmkvClient::ConsoleIoProcess()
   auto err_code = MmkvCommandProcess(upper_cmd, line_view);
   switch (err_code) {
     case Translator::E_OK: {
-      need_io_wait_ = true;
       IoWait();
     } break;
     case Translator::E_NO_COMMAND: {
