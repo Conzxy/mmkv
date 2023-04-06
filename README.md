@@ -1,7 +1,9 @@
 # Mmkv(Memory Key-Value database/cache)
 ![license](https://img.shields.io/github/license/conzxy/mmkv) ![code-top](https://img.shields.io/github/languages/top/conzxy/mmkv) ![C++ standard](https://img.shields.io/badge/Standard-C%2B%2B14-red)  
-![](https://img.shields.io/badge/Platform-Linux-blue) ![linux-build](https://img.shields.io/github/actions/workflow/status/conzxy/mmkv/cmake-linux.yml?label=Linux%20CI&logo=Linux)  
+![](https://img.shields.io/badge/Platform-Linux%20|%20Windows-blue) ![linux-build](https://img.shields.io/github/actions/workflow/status/conzxy/mmkv/cmake-linux.yml?label=Linux%20CI&logo=linux&logoColor=orange&style=flat-square) ![win-build](https://img.shields.io/github/actions/workflow/status/conzxy/mmkv/cmake-windows.yml?label=Win%20CI&logo=windows&logoColor=blue&style=flat-square)  
 ![version](https://img.shields.io/github/v/tag/conzxy/mmkv) ![commit-date](https://img.shields.io/github/last-commit/conzxy/mmkv)  
+
+> Windows目前仅支持 `mmkv-cli`，即CLI Client
 
 ## Introducation
 `mmkv`是一个基于**内存**的**键值型**数据库（或缓存），支持多种数据结构，包括
