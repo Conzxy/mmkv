@@ -78,7 +78,7 @@ mmkv_gen_lib(mmkv_xxhash ${XXHASH_DIR}/xxhash.c)
 
 SetLibName(HKLUA_LIB hklua)
 set(MMKV_COMMON_LIBS kanon_net kanon_base mmkv_xxhash)
-set(MMKV_SERVER_LIBS ${MMKV_COMMON_LIBS} lua dl ${HKLUA_LIB})
+set(MMKV_SERVER_LIBS ${MMKV_COMMON_LIBS} dl ${HKLUA_LIB})
 set(MMKV_CLIENT_LIBS ${MMKV_COMMON_LIBS} replxx)
 
 mmkv_gen_app(mmkv-cli SOURCES ${MMKV_CLIENT_SRC} LIBS ${MMKV_CLIENT_LIBS})
