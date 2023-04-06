@@ -1,4 +1,4 @@
-name: Release
+name: Linux-Release
 
 on:
   push:
@@ -66,19 +66,23 @@ jobs:
         cmake --build . --target mmkv-cli --parallel $(nproc) 1>/dev/null
       shell: bash
     
-    - name: Make a package of binary
+    - name: Make binary package
       run : |
         cd ${{github.workspace}}/bin
-        tar -czvf mmkv-$${env.TAG_VERSION}-linux-bin.tar.gz mmkv-server mmkv-cli mmkvconf.lua
-        zip mmkv-${{env.TAG_VERSION}}-linux-bin.zip mmkv-sever mmkv-cli mmkvconf.lua
+        tar -czvf mmkv-${{env.TAG_VERSION}}-linux-bin.tar.gz mmkv-server mmkv-cli mmkvconf.lua
+        zip mmkv-${{env.TAG_VERSION}}-linux-bin.zip mmkv-server mmkv-cli mmkvconf.lua
       shell: bash
   
     - name: Make Release v${{env.TAG_VERSION}}
       uses: ncipollo/release-action@v1
       with:
         allowUpdates: true
-        artifactsErrorsFailBuild: true
+        artifactErrorsFailBuild: true
         draft: true
         tag: v${{env.TAG_VERSION}}
         artifacts: mmkv-${{env.TAG_VERSION}}-linux-bin.*
         token: ${{secrets.release}}
+      run: |
+        echo "Current directory: $(pwd)"
+        cd ${{github.workspace}}/bin
+      shell: bash
