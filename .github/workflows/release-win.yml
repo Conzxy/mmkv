@@ -62,20 +62,26 @@ jobs:
         cmake --build . --target mmkv-cli --parallel 2 --config ${{env.BUILD_TYPE}}
       shell: pwsh 
     
+    - name: Move exe to same dir
+      run: |
+        cd ${{github.workspace}}
+        mv bin/*/mmkv-cli.exe .
+      shell: pwsh
+      
     - name: Make binary package
       uses: TheDoctor0/zip-release@0.7.1
       with:
         type: 'zip'
         filename: mmkv-${{inputs.tag_version}}-win-bin.zip
         directory: ${{github.workspace}}
-        path: 'bin/*/mmkv-cli.exe LICENSE'
+        path: 'mmkv-cli.exe LICENSE'
         
     - name: Make Release v${{inputs.tag_version}}
       uses: ncipollo/release-action@v1
       with:
         allowUpdates: true
         artifactErrorsFailBuild: true
-        draft: true
+        draft: false
         tag: v${{inputs.tag_version}}
         artifacts: ${{github.workspace}}/mmkv-${{inputs.tag_version}}-win-bin.*
         #removeArtifacts: true
