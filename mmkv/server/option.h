@@ -11,7 +11,7 @@ namespace server {
 struct MmkvOption {
   std::string config_name = "./mmkvconf.lua";
   int port = 9998;
-  std::string ip = "any";
+  std::string ip = "*";
   int sharder_port = port + BACKGROUND_PORT_DIFF;
   bool version = false;
 };

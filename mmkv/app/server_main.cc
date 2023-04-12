@@ -70,7 +70,9 @@ int main(int argc, char *argv[])
   EventLoop loop;
   std::unique_ptr<InetAddr> addr;
 
-  if (!strcasecmp(mmkv_option().ip.c_str(), "any")) {
+  if (!strcasecmp(mmkv_option().ip.c_str(), "*") ||
+      !StrCaseCompare(mmkv_option().ip.c_str(), "any"))
+  {
     addr.reset(new InetAddr(mmkv_option().port));
   } else if (!strcasecmp(mmkv_option().ip.c_str(), "localhost")) {
     addr.reset(new InetAddr(mmkv_option().port, true));
