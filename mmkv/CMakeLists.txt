@@ -70,8 +70,16 @@ file(GLOB_RECURSE RLOG_DUMP_SRC
 if (MMKV_ON_UNIX)
   mmkv_gen_lib(mmkv ${MMKV_SRC})
   target_include_directories(mmkv
+    PUBLIC ${PROJECT_SOURCE_DIR}
     PUBLIC ${XXHASH_DIR}
+    PUBLIC ${KANON_DIR}
+    PUBLIC ${HKLUA_DIR}
+    PUBLIC ${CHISATO_DIR}
+    PUBLIC ${TAKINA_DIR}
   )
+  SetLibName(HKLUA_LIB hklua)
+  target_link_libraries(mmkv
+    PUBLIC ${HKLUA_LIB})
 endif ()
 
 mmkv_gen_lib(mmkv_xxhash ${XXHASH_DIR}/xxhash.c)
@@ -110,4 +118,5 @@ target_include_directories(configd
   PRIVATE ${CHISATO_DIR} 
   PRIVATE ${TAKINA_DIR}
   PRIVATE ${XXHASH_DIR}
+  PRIVATE ${PROJECT_SOURCE_DIR}
 )
