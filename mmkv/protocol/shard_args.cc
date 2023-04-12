@@ -12,31 +12,31 @@ ShardArgs::ShardArgs() {}
 
 void ShardArgs::SerializeTo(ChunkList &buffer) const
 {
-  SerializeField(operation, buffer);
-  SerializeField(shard_id, buffer);
+  SerializeComponent(operation, buffer);
+  SerializeComponent(shard_id, buffer);
   if (HasRequests()) {
-    SerializeField(requests, buffer);
+    SerializeComponent(requests, buffer);
   }
 }
 
 void ShardArgs::ParseFrom(Buffer &buffer)
 {
-  SetField(operation, buffer);
-  SetField(shard_id, buffer);
+  ParseComponent(operation, buffer);
+  ParseComponent(shard_id, buffer);
   if (HasRequests()) {
-    SetField(requests, buffer);
+    ParseComponent(requests, buffer);
   }
 }
 
 static inline char const *ShardOperation2String(ShardOperation op) noexcept
 {
   switch (op) {
-  case SO_GET_SHARD:
-    return "Get shard";
-  case SO_REM_SHARD:
-    return "Del shard";
-  case SO_PUT_SHARD:
-    return "Put shard";
+    case SO_GET_SHARD:
+      return "Get shard";
+    case SO_REM_SHARD:
+      return "Del shard";
+    case SO_PUT_SHARD:
+      return "Put shard";
   }
   return "unknown ShardOperation";
 }

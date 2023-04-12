@@ -10,109 +10,113 @@ using namespace kanon;
 
 MmbpRequest mmkv::protocol::detail::prototype;
 
-MmbpRequest::MmbpRequest() {
+MmbpRequest::MmbpRequest()
+{
   ::memset(has_bits_, 0, sizeof(has_bits_));
 }
 
-MmbpRequest::~MmbpRequest() noexcept {
+MmbpRequest::~MmbpRequest() noexcept {}
 
-}
+void MmbpRequest::SerializeTo(Buffer &buffer) const
+{
+  SerializeComponent(command, buffer);
+  SerializeComponent(has_bits_[0], buffer);
 
-void MmbpRequest::SerializeTo(Buffer &buffer) const {
-  SerializeField(command, buffer);
-  SerializeField(has_bits_[0], buffer);
-  
   if (HasKey()) {
-    SerializeField(key, buffer, true);
+    SerializeComponent(key, buffer, true);
   }
 
   if (HasValue()) {
-    SerializeField(value, buffer);
+    SerializeComponent(value, buffer);
   } else if (HasValues()) {
-    SerializeField(values, buffer);
+    SerializeComponent(values, buffer);
   } else if (HasKvs()) {
-    SerializeField(kvs, buffer);
+    SerializeComponent(kvs, buffer);
   } else if (HasCount()) {
-    SerializeField(count, buffer);
+    SerializeComponent(count, buffer);
   } else if (HasRange()) {
-    SerializeField((uint64_t)range.left, buffer);
-    SerializeField((uint64_t)range.right, buffer);
+    SerializeComponent((uint64_t)range.left, buffer);
+    SerializeComponent((uint64_t)range.right, buffer);
   } else if (HasVmembers()) {
-    SerializeField(vmembers, buffer);
+    SerializeComponent(vmembers, buffer);
   }
 
   if (HasExpireTime()) {
-    SerializeField(expire_time, buffer);
+    SerializeComponent(expire_time, buffer);
   }
-  
 }
 
-void MmbpRequest::SerializeTo(ChunkList& buffer) const {
-  SerializeField(command, buffer);
-  SerializeField(has_bits_[0], buffer);
-  
+void MmbpRequest::SerializeTo(ChunkList &buffer) const
+{
+  SerializeComponent(command, buffer);
+  SerializeComponent(has_bits_[0], buffer);
+
   if (HasKey()) {
-    SerializeField(key, buffer, true);
+    SerializeComponent(key, buffer, true);
   }
 
   if (HasValue()) {
-    SerializeField(value, buffer);
+    SerializeComponent(value, buffer);
   } else if (HasValues()) {
-    SerializeField(values, buffer);
+    SerializeComponent(values, buffer);
   } else if (HasKvs()) {
-    SerializeField(kvs, buffer);
+    SerializeComponent(kvs, buffer);
   } else if (HasCount()) {
-    SerializeField(count, buffer);
+    SerializeComponent(count, buffer);
   } else if (HasRange()) {
-    SerializeField((uint64_t)range.left, buffer);
-    SerializeField((uint64_t)range.right, buffer);
+    SerializeComponent((uint64_t)range.left, buffer);
+    SerializeComponent((uint64_t)range.right, buffer);
   } else if (HasVmembers()) {
-    SerializeField(vmembers, buffer);
+    SerializeComponent(vmembers, buffer);
   }
 
   if (HasExpireTime()) {
-    SerializeField(expire_time, buffer);
+    SerializeComponent(expire_time, buffer);
   }
-  
 }
 
-void MmbpRequest::ParseFrom(Buffer& buffer) {
-  if (buffer.GetReadableSize() >= sizeof(command)) 
-    SetField(command, buffer);
-  else return;
+void MmbpRequest::ParseFrom(Buffer &buffer)
+{
+  if (buffer.GetReadableSize() >= sizeof(command))
+    ParseComponent(command, buffer);
+  else
+    return;
 
   if (buffer.GetReadableSize() >= sizeof(has_bits_))
-    SetField(has_bits_[0], buffer); 
-  else return;
+    ParseComponent(has_bits_[0], buffer);
+  else
+    return;
 
   if (HasKey()) {
-    SetField(key, buffer, true);
+    ParseComponent(key, buffer, true);
   }
 
   if (HasValue()) {
-    SetField(value, buffer);
+    ParseComponent(value, buffer);
   } else if (HasValues()) {
-    SetField(values, buffer);
+    ParseComponent(values, buffer);
   } else if (HasKvs()) {
-    SetField(kvs, buffer);
+    ParseComponent(kvs, buffer);
   } else if (HasCount()) {
-    SetField(count, buffer);
+    ParseComponent(count, buffer);
   } else if (HasRange()) {
-    SetField(range.left, buffer);
-    SetField(range.right, buffer);
+    ParseComponent(range.left, buffer);
+    ParseComponent(range.right, buffer);
   } else if (HasVmembers()) {
-    SetField(vmembers, buffer);
+    ParseComponent(vmembers, buffer);
   }
 
   if (HasExpireTime()) {
-    SetField(expire_time, buffer);
+    ParseComponent(expire_time, buffer);
   }
 }
 
-void MmbpRequest::DebugPrint() const noexcept {
+void MmbpRequest::DebugPrint() const noexcept
+{
   if (command <= COMMAND_NUM) {
     LOG_DEBUG << "Command: " << GetCommandString((Command)command);
-  } else return;
+  } else
+    return;
 
   if (HasKey()) {
     LOG_DEBUG << "Key: " << key;
@@ -122,20 +126,21 @@ void MmbpRequest::DebugPrint() const noexcept {
     LOG_DEBUG << "Value: " << value;
   } else if (HasValues()) {
     LOG_DEBUG << "Value: ";
-    for (auto const& value : values)
+    for (auto const &value : values)
       LOG_DEBUG << value;
   } else if (HasKvs()) {
     LOG_DEBUG << "KeyValues: ";
-    for (auto const& kv : kvs)
+    for (auto const &kv : kvs)
       LOG_DEBUG << "<" << kv.key << ", " << kv.value << ">";
   } else if (HasRange()) {
     LOG_DEBUG << "Range: [" << range.left << "," << range.right << ")";
-    LOG_DEBUG << "DRange: [" << util::int2double(range.left) << ", " << util::int2double(range.right) << "]";
+    LOG_DEBUG << "DRange: [" << util::int2double(range.left) << ", "
+              << util::int2double(range.right) << "]";
   } else if (HasCount()) {
     LOG_DEBUG << "Count: " << count;
   } else if (HasVmembers()) {
     LOG_DEBUG << "<Weight, Member>: ";
-    for (auto const& wm : vmembers)
+    for (auto const &wm : vmembers)
       LOG_DEBUG << "(" << wm.key << "," << wm.value << ")";
   }
 
@@ -144,7 +149,8 @@ void MmbpRequest::DebugPrint() const noexcept {
   }
 }
 
-void MmbpRequest::Reset() {
+void MmbpRequest::Reset()
+{
   memset(has_bits_, 0, sizeof has_bits_);
   // Don't to call shrink_to_fit()
   // to reuse the old memory space

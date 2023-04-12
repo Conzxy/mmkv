@@ -9,43 +9,46 @@ using namespace mmkv::protocol;
 static TrackRequest s_prototype;
 TrackRequest *TrackRequest::prototype = &s_prototype;
 
-TrackRequest::TrackRequest() noexcept {
+TrackRequest::TrackRequest() noexcept
+{
   memset(has_bits_, 0, sizeof has_bits_);
 }
 
-void TrackRequest::SerializeTo(ChunkList &buffer) const {
-  SerializeField(operation, buffer);
-  SerializeField(has_bits_[0], buffer);
-  if (HasShardId())
-    SerializeField(shard_id, buffer);
-  if (HasNodeId())
-    SerializeField(node_id, buffer);
-  if (HasSharderPort())
-    SerializeField(sharder_port, buffer);
+void TrackRequest::SerializeTo(ChunkList &buffer) const
+{
+  SerializeComponent(operation, buffer);
+  SerializeComponent(has_bits_[0], buffer);
+  if (HasShardId()) SerializeComponent(shard_id, buffer);
+  if (HasNodeId()) SerializeComponent(node_id, buffer);
+  if (HasSharderPort()) SerializeComponent(sharder_port, buffer);
 }
 
-void TrackRequest::ParseFrom(Buffer &buffer) {
-  SetField(operation, buffer);
-  SetField(has_bits_[0], buffer);
-  if (HasShardId())
-    SetField(shard_id, buffer);
-  if (HasNodeId())
-    SetField(node_id, buffer);
-  if (HasSharderPort())
-    SetField(sharder_port, buffer);
+void TrackRequest::ParseFrom(Buffer &buffer)
+{
+  ParseComponent(operation, buffer);
+  ParseComponent(has_bits_[0], buffer);
+  if (HasShardId()) ParseComponent(shard_id, buffer);
+  if (HasNodeId()) ParseComponent(node_id, buffer);
+  if (HasSharderPort()) ParseComponent(sharder_port, buffer);
 }
 
-static char const *TrackOperation2String(TrackOperation op) noexcept {
+static char const *TrackOperation2String(TrackOperation op) noexcept
+{
   switch (op) {
-  case TO_ADD_NODE: return "Add node";
-  case TO_MOVE_SHARD: return "Move shard";
-  case TO_MOVE_FINISH: return "Move finish";
-  case TO_LEAVE: return "Leave";
+    case TO_ADD_NODE:
+      return "Add node";
+    case TO_MOVE_SHARD:
+      return "Move shard";
+    case TO_MOVE_FINISH:
+      return "Move finish";
+    case TO_LEAVE:
+      return "Leave";
   }
   return "Unknown TrackOperation";
 }
 
-void TrackRequest::DebugPrint() {
+void TrackRequest::DebugPrint()
+{
   LOG_DEBUG << "TrackOperation: " << TrackOperation2String(GetOperation());
   LOG_DEBUG << "HasNode: " << HasNodeId();
   if (HasNodeId()) {
@@ -58,6 +61,5 @@ void TrackRequest::DebugPrint() {
   }
 
   LOG_DEBUG << "HasSharderPort: " << HasSharderPort();
-  if (HasSharderPort())
-    LOG_DEBUG << "SharderPort=" << sharder_port;
+  if (HasSharderPort()) LOG_DEBUG << "SharderPort=" << sharder_port;
 }

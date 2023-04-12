@@ -9,41 +9,45 @@ using namespace mmkv::protocol;
 static TrackResponse s_prototype;
 TrackResponse *TrackResponse::prototype = &s_prototype;
 
-static char const* TrackStatusCode2String(TrackStatusCode code) noexcept;
+static char const *TrackStatusCode2String(TrackStatusCode code) noexcept;
 
-TrackResponse::TrackResponse() noexcept {
+TrackResponse::TrackResponse() noexcept
+{
   memset(has_bits_, 0, sizeof has_bits_);
 }
 
-void TrackResponse::SerializeTo(ChunkList &buffer) const {
-  SerializeField(status_code, buffer);
-  SerializeField(has_bits_[0], buffer);
-  if (HasNodeId()) SerializeField(node_id, buffer);
-  if (HasShard2D()) SerializeField(shard_2d, buffer);
-  if (HasAddrs()) { 
-    SerializeField(addrs, buffer);
-    SerializeField(ports, buffer);
-  }
-  if (HasNodes()) {
-    SerializeField(nodes, buffer);
-  }
-}
-
-void TrackResponse::ParseFrom(Buffer &buffer) {
-  SetField(status_code, buffer);
-  SetField(has_bits_[0], buffer);
-  if (HasNodeId()) SetField(node_id, buffer);
-  if (HasShard2D()) SetField(shard_2d, buffer);
+void TrackResponse::SerializeTo(ChunkList &buffer) const
+{
+  SerializeComponent(status_code, buffer);
+  SerializeComponent(has_bits_[0], buffer);
+  if (HasNodeId()) SerializeComponent(node_id, buffer);
+  if (HasShard2D()) SerializeComponent(shard_2d, buffer);
   if (HasAddrs()) {
-    SetField(addrs, buffer);
-    SetField(ports, buffer);
+    SerializeComponent(addrs, buffer);
+    SerializeComponent(ports, buffer);
   }
   if (HasNodes()) {
-    SetField(nodes, buffer);
+    SerializeComponent(nodes, buffer);
   }
 }
 
-void TrackResponse::DebugPrint() {
+void TrackResponse::ParseFrom(Buffer &buffer)
+{
+  ParseComponent(status_code, buffer);
+  ParseComponent(has_bits_[0], buffer);
+  if (HasNodeId()) ParseComponent(node_id, buffer);
+  if (HasShard2D()) ParseComponent(shard_2d, buffer);
+  if (HasAddrs()) {
+    ParseComponent(addrs, buffer);
+    ParseComponent(ports, buffer);
+  }
+  if (HasNodes()) {
+    ParseComponent(nodes, buffer);
+  }
+}
+
+void TrackResponse::DebugPrint()
+{
   LOG_DEBUG << "status_code: " << TrackStatusCode2String(GetStatusCode());
   LOG_DEBUG << "HasAddrs: " << HasAddrs();
   LOG_DEBUG << "HasShard2D: " << HasShard2D();
@@ -51,18 +55,19 @@ void TrackResponse::DebugPrint() {
   LOG_DEBUG << "HasNodes: " << HasNodes();
 }
 
-inline char const* TrackStatusCode2String(TrackStatusCode code) noexcept {
+inline char const *TrackStatusCode2String(TrackStatusCode code) noexcept
+{
   switch (code) {
-  case TS_OK:
-    return "Ok";
-  case TS_WAIT:
-    return "Wait";
-  case TS_ADD_NODE_OK:
-    return "Add node ok";
-  case TS_LEAVE_OK:
-    return "Leave ok";
-  case TS_QUERY_OK:
-    return "Query ok";
+    case TS_OK:
+      return "Ok";
+    case TS_WAIT:
+      return "Wait";
+    case TS_ADD_NODE_OK:
+      return "Add node ok";
+    case TS_LEAVE_OK:
+      return "Leave ok";
+    case TS_QUERY_OK:
+      return "Query ok";
   }
   // Not reached
   return "Unknown TrackStatusCode";
