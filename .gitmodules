@@ -22,3 +22,6 @@
 	path = third-party/replxx
   branch = master
 	url = https://github.com/Conzxy/replxx
+[submodule "mmkv/kraft"]
+	path = mmkv/kraft
+	url = https://github.com/Conzxy/kraft
