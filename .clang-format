@@ -123,7 +123,7 @@ SortIncludes: false
 AlignConsecutiveMacros: true
 StatementMacros: ["Str2Int", "Str2IntForOne", "AppendInt_Macro", "PrependInt_Macro", 
   "GetReadBeginInt_Macro", "ReadInt_Macro", "Append_Macro", "Prepend_Macro", "GetReadBegin_Macro", 
-  "Read_Macro", "AdvanceRead_Macro"]
+  "Read_Macro", "AdvanceRead_Macro", "FIELD_SET_HAS_DEFINE", "DEFINE_FIELD_SET_HAS_METHOD"]
 # 自动给宏加上缩进
 # Hash is the '#' sign
 IndentPPDirectives: AfterHash

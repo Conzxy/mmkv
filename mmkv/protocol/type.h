@@ -21,15 +21,15 @@ using WeightValues = std::vector<KeyValue<Weight, String>>;
 
 namespace detail {
 
-template<typename T>
+template <typename T>
 struct RangeT {
   T left;
   T right;
 };
 
-} // detail
+} // namespace detail
 
-//using Range = detail::RangeT<uint32_t>;
+// using Range = detail::RangeT<uint32_t>;
 using Range = detail::RangeT<int64_t>;
 using DRange = detail::RangeT<double>;
 using WeightRange = DRange;
@@ -37,7 +37,7 @@ using OrderRange = Range;
 
 using Shard = uint32_t;
 
-} // protocol
-} // mmkv
+} // namespace protocol
+} // namespace mmkv
 
 #endif // _MMKV_PROTOCOL_TYPE_H_
