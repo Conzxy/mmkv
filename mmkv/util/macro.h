@@ -23,4 +23,16 @@
 
 #define MMKV_FORWARD(Args__, args__) std::forward<Args__>(args__)...
 
+template <typename T1, typename T2>
+MMKV_INLINE bool MMKV_MIN(T1 const &x, T2 const &y) noexcept
+{
+  return (x < y) ? x : y;
+}
+
+template <typename T1, typename T2>
+MMKV_INLINE bool MMKV_MAX(T1 const &x, T2 const &y) noexcept
+{
+  return (x < y) ? y : x;
+}
+
 #endif // _MMKV_UTIL_MACRO_H_
