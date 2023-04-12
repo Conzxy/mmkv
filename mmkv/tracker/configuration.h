@@ -9,10 +9,13 @@
 namespace mmkv {
 
 /**
- * We call the distribution of shards as a 
+ * We call the distribution of shards as a
  * configuration
  */
 
+/**
+ *
+ */
 struct ConfigurationEntry {
   Node node;
   std::vector<Shard> shards;
@@ -22,7 +25,7 @@ struct ConfigurationEntry {
 
 using Configuration = std::vector<ConfigurationEntry>;
 
-void PrintConfiguartion(Configuration const&config);
+void PrintConfiguartion(Configuration const &config);
 
 } // namespace mmkv
 

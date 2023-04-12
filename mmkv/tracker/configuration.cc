@@ -41,7 +41,7 @@ static std::string FormatShardString(std::vector<Shard> const &shards)
   return ret;
 }
 
-void mmkv::PrintConfiguartion(Configuration const&config)
+void mmkv::PrintConfiguartion(Configuration const &config)
 {
   auto size = config.size();
   printf("%-6s %-22s %s\n", "Node", "Address", "Shards");
