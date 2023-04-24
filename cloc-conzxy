@@ -1,0 +1,9 @@
+cloc cmake/ mmkv/algo mmkv/app mmkv/client mmkv/cluster mmkv/configd mmkv/db  \
+  mmkv/disk mmkv/kraft/kraft mmkv/lua mmkv/protocol mmkv/replacement \
+  mmkv/server mmkv/sharder mmkv/storage mmkv/tracker mmkv/util mmkv/zstl CMakeLists.txt mmkv/version.h test \
+  third-party/hklua/hklua third-party/hklua/test third-party/hklua/CMakeLists.txt \
+  third-party/kanon/CMakeLists.txt third-party/kanon/kanon third-party/kanon/test \
+  third-party/takina/ \
+  third-party/ternary-tree \
+  third-party/kvarint \
+  --include-ext=h,cc,hh,txt,md,cmake,lua,sh,py
