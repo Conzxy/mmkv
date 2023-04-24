@@ -1,0 +1,8 @@
+CompileFlags:
+  Add: [-xc++, -Wall]
+  Compiler: clang++
+
+InlayHints:
+  Enabled: No
+  ParameterNames: No
+  DeducedTypes: No
