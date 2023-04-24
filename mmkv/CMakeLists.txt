@@ -8,6 +8,7 @@ file(GLOB_RECURSE MMKV_SRC
   db/*.cc
   disk/*.cc
   protocol/*.cc
+  ${KVARINT_DIR}/kvarint.c 
   server/*.cc
   storage/*.cc
   util/*.cc
@@ -26,6 +27,7 @@ file(GLOB_RECURSE MMKV_SERVER_SRC
   util/*.cc
   lua/*.cc
   protocol/*.cc
+  ${KVARINT_DIR}/kvarint.c 
   disk/*.cc
   db/*.cc
   storage/*.cc
@@ -40,6 +42,7 @@ file(GLOB_RECURSE CONFIGD_SRC
   server/*.cc
   util/*.cc
   protocol/*.cc
+  ${KVARINT_DIR}/kvarint.c 
   disk/*.cc
   db/*.cc
   storage/*.cc
@@ -51,6 +54,7 @@ file(GLOB_RECURSE CONFIGD_SRC
 file(GLOB_RECURSE MMKV_CLIENT_SRC
   app/client_main.cc
   protocol/*.cc
+  ${KVARINT_DIR}/kvarint.c 
   client/*.cc
   util/*.cc
   ${TAKINA_DIR}/takina.cc
@@ -61,6 +65,7 @@ file(GLOB_RECURSE RLOG_DUMP_SRC
   app/rlog_dump.cc
   protocol/command.cc
   protocol/mmbp_request.cc
+  ${KVARINT_DIR}/kvarint.c 
   disk/file.cc
   disk/log_command.cc
   util/*.cc

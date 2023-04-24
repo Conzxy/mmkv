@@ -26,6 +26,7 @@ set(CHISATO_DIR ${THIRD_PARTY_DIR}/chisato)
 set(TERNARY_DIR ${THIRD_PARTY_DIR}/ternary-tree)
 set(HKLUA_DIR ${THIRD_PARTY_DIR}/hklua)
 set(XXHASH_DIR ${THIRD_PARTY_DIR}/xxHash)
+set(KVARINT_DIR ${THIRD_PARTY_DIR}/kvarint)
 
 add_subdirectory(third-party)
 add_subdirectory(mmkv)
