@@ -1,7 +1,11 @@
 build/
-bin/
+bin/rlogdump
+bin/mmkv-server
+bin/mmkv-cli
+bin/mmkv.conf
+bin/mmkvconf.lua
+bin/*.history
 .cache/
 core
-cloc.sh
 idea
 tags
