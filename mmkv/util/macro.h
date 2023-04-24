@@ -4,6 +4,7 @@
 #include <stdlib.h>
 
 #define MMKV_ASSERT(cond, msg) assert((cond) && (msg))
+#define MMKV_ASSERT1(cond)     assert(cond)
 
 #define MMKV_UNUSED(x) (void)x
 
