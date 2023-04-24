@@ -1,3 +1,4 @@
+// SPDX-LICENSE-IDENTIFIER: Apache-2.0
 #include "log_command.h"
 
 namespace disk = mmkv::disk;

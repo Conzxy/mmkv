@@ -1,3 +1,4 @@
+// SPDX-LICENSE-IDENTIFIER: Apache-2.0
 #include "track_session.h"
 
 #include "mmkv/protocol/track_request.h"

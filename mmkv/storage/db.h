@@ -1,3 +1,4 @@
+// SPDX-LICENSE-IDENTIFIER: Apache-2.0
 #ifndef _MMKV_STORAGE_DB_H_
 #define _MMKV_STORAGE_DB_H_
 

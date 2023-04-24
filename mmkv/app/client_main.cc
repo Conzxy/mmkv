@@ -1,3 +1,4 @@
+// SPDX-LICENSE-IDENTIFIER: Apache-2.0
 #include "mmkv/client/information.h"
 #include "mmkv/client/mmkv_client.h"
 #include "mmkv/client/option.h"

@@ -1,3 +1,4 @@
+// SPDX-LICENSE-IDENTIFIER: Apache-2.0
 #ifndef MMKV_VERSION_H__
 #define MMKV_VERSION_H__
 

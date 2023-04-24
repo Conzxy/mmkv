@@ -1,3 +1,4 @@
+// SPDX-LICENSE-IDENTIFIER: Apache-2.0
 #include "file.h"
 
 #if defined(__linux__) || defined(__unix__)

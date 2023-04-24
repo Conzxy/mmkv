@@ -1,3 +1,4 @@
+// SPDX-LICENSE-IDENTIFIER: Apache-2.0
 #include "tracker_observer.h"
 
 #include <algorithm>

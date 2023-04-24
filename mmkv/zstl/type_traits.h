@@ -1,3 +1,4 @@
+// SPDX-LICENSE-IDENTIFIER: Apache-2.0
 #ifndef _ZSTL_TYPE_TRAITS_H_
 #define _ZSTL_TYPE_TRAITS_H_
 

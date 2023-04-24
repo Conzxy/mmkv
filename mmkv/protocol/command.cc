@@ -1,3 +1,4 @@
+// SPDX-LICENSE-IDENTIFIER: Apache-2.0
 #include "command.h"
 
 using namespace mmkv::protocol;

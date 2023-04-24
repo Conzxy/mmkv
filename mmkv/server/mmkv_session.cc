@@ -1,3 +1,4 @@
+// SPDX-LICENSE-IDENTIFIER: Apache-2.0
 #include "mmkv_session.h"
 
 #include "mmkv/algo/hash_util.h"

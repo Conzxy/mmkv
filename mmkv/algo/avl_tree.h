@@ -1,3 +1,4 @@
+// SPDX-LICENSE-IDENTIFIER: Apache-2.0
 #ifndef _MMKV_ALGO_AVL_TREE_H_
 #define _MMKV_ALGO_AVL_TREE_H_
 

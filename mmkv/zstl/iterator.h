@@ -1,3 +1,4 @@
+// SPDX-LICENSE-IDENTIFIER: Apache-2.0
 #ifndef _ZSTL_ITERATOR_H
 #define _ZSTL_ITERATOR_H
 

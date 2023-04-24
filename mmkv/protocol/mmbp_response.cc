@@ -1,3 +1,4 @@
+// SPDX-LICENSE-IDENTIFIER: Apache-2.0
 #include "mmbp_response.h"
 #include "mmkv/protocol/mmbp_util.h"
 #include "mmkv/protocol/status_code.h"

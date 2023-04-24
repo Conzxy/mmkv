@@ -1,3 +1,4 @@
+// SPDX-LICENSE-IDENTIFIER: Apache-2.0
 #include "vset.h"
 
 #include "mmkv/db/kvdb.h"

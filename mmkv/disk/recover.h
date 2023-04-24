@@ -1,3 +1,4 @@
+// SPDX-LICENSE-IDENTIFIER: Apache-2.0
 #ifndef _MMKV_DISK_RECOVER_H_
 #define _MMKV_DISK_RECOVER_H_
 

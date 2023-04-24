@@ -1,3 +1,4 @@
+// SPDX-LICENSE-IDENTIFIER: Apache-2.0
 #ifndef MMKV_UTIL_CONC_UITL_H__
 #define MMKV_UTIL_CONC_UITL_H__
 

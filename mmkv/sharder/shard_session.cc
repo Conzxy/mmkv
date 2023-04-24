@@ -1,3 +1,4 @@
+// SPDX-LICENSE-IDENTIFIER: Apache-2.0
 #include "shard_session.h"
 
 #include "mmkv/protocol/shard_args.h"

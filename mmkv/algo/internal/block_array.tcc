@@ -1,3 +1,4 @@
+// SPDX-LICENSE-IDENTIFIER: Apache-2.0
 #include "../block_array.h"
 
 #define MMKV_BLOCK_ARRAY_TEMPLATE_LIST  template <typename T, typename A>

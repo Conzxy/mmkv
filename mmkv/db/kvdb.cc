@@ -1,3 +1,4 @@
+// SPDX-LICENSE-IDENTIFIER: Apache-2.0
 /* Cache management:
  * - [x] Type()
  * - [x] Delete()

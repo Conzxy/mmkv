@@ -1,3 +1,4 @@
+// SPDX-LICENSE-IDENTIFIER: Apache-2.0
 #ifndef KANON_ALGO_BARRAY_H__
 #define KANON_ALGO_BARRAY_H__
 

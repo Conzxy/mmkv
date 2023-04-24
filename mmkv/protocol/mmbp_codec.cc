@@ -1,3 +1,4 @@
+// SPDX-LICENSE-IDENTIFIER: Apache-2.0
 #include "mmbp_codec.h"
 #include "mmbp.h"
 #include "mmbp_response.h"

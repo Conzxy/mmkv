@@ -1,3 +1,4 @@
+// SPDX-LICENSE-IDENTIFIER: Apache-2.0
 #include "status_code.h"
 
 using namespace mmkv::protocol;
