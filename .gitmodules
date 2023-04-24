@@ -25,3 +25,6 @@
 [submodule "mmkv/kraft"]
 	path = mmkv/kraft
 	url = https://github.com/Conzxy/kraft
+[submodule "third-party/kvarint"]
+	path = third-party/kvarint
+	url = https://github.com/Conzxy/kvarint
