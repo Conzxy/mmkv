@@ -40,7 +40,7 @@ class File : kanon::noncopyable {
     WRITE = 0x2,
     TRUNC = 0x4,
     APP = 0x8,
-    BIN = 0x16,
+    BIN = 0x10,
   };
 
   File()
@@ -101,46 +101,19 @@ class File : kanon::noncopyable {
     ::fwrite(buf, 1, len, fp_);
   }
 
-  void Flush() noexcept
-  {
-    ::fflush(fp_);
-  }
+  void Flush() noexcept { ::fflush(fp_); }
 
-  bool IsValid() const noexcept
-  {
-    return fp_ != NULL;
-  }
+  bool IsValid() const noexcept { return fp_ != NULL; }
 
-  void Rewind() noexcept
-  {
-    ::rewind(fp_);
-  }
+  void Rewind() noexcept { ::rewind(fp_); }
 
-  void SeekCurrent(long offset) noexcept
-  {
-    Seek(offset, SEEK_CUR);
-  }
-  void SeekBegin(long offset) noexcept
-  {
-    Seek(offset, SEEK_SET);
-  }
-  void SeekEnd(long offset) noexcept
-  {
-    Seek(offset, SEEK_END);
-  }
-  long GetCurrentPosition() noexcept
-  {
-    return ::ftell(fp_);
-  }
+  void SeekCurrent(long offset) noexcept { Seek(offset, SEEK_CUR); }
+  void SeekBegin(long offset) noexcept { Seek(offset, SEEK_SET); }
+  void SeekEnd(long offset) noexcept { Seek(offset, SEEK_END); }
+  long GetCurrentPosition() noexcept { return ::ftell(fp_); }
 
-  FILE *fp() const noexcept
-  {
-    return fp_;
-  }
-  FILE *GetFileHandler() const noexcept
-  {
-    return fp_;
-  }
+  FILE *fp() const noexcept { return fp_; }
+  FILE *GetFileHandler() const noexcept { return fp_; }
 
   size_t GetFileSize() const noexcept;
   static size_t GetFileSize(char const *path) noexcept;
@@ -149,10 +122,7 @@ class File : kanon::noncopyable {
   static const size_t INVALID_RETURN = static_cast<size_t>(-1);
 
  private:
-  void Seek(long offset, int whence) noexcept
-  {
-    ::fseek(fp_, offset, whence);
-  }
+  void Seek(long offset, int whence) noexcept { ::fseek(fp_, offset, whence); }
 
   FILE *fp_;
 };
