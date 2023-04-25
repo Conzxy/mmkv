@@ -79,11 +79,15 @@ ParseComponent(std::basic_string<char, std::char_traits<char>, Alloc> &str,
                Buffer &buffer, bool is_16 = false)
 {
   str.clear();
-  size_t len = -1;
+  size_t len = 0;
   if (is_16) {
-    ParseComponent((uint16_t &)len, buffer);
+    uint16_t out;
+    ParseComponent(out, buffer);
+    len = out;
   } else {
-    ParseComponent((uint32_t &)len, buffer);
+    uint32_t out;
+    ParseComponent(out, buffer);
+    len = out;
   }
   str.reserve(len);
   str.append(buffer.GetReadBegin(), len);
@@ -205,44 +209,46 @@ MMKV_INLINE void ParseComponent(std::unordered_map<K, V> &kv_map,
 /*--------------------------------------------------*/
 /* Serialize API                                    */
 /*--------------------------------------------------*/
+#define MMKV_SERIALIZE_UNSIGNED_(bits_)                                        \
+  kvarint_buf##bits_##_t buf;                                                  \
+  kvarint_encode##bits_(i, &buf);                                              \
+  buffer.Append(buf.buf, buf.len);                                             \
+  LOG_DEBUG << "varint buf size = " << buf.len
+
+#define MMKV_SERIALIZE_SIGNED_(bits_)                                          \
+  kvarint_buf##bits_##_t buf;                                                  \
+  kvarint_encode##bits_##s(i, &buf);                                           \
+  buffer.Append(buf.buf, buf.len);                                             \
+  LOG_DEBUG << "varint buf size = " << buf.len
+
 template <typename BT>
 MMKV_INLINE void SerializeComponent(uint8_t i, BT &buffer)
 {
-  kvarint_buf8_t buf;
-  kvarint_encode8(i, &buf);
-  buffer.Append(buf.buf, buf.len);
+  MMKV_SERIALIZE_UNSIGNED_(8);
 }
 
 template <typename BT>
 MMKV_INLINE void SerializeComponent(uint64_t i, BT &buffer)
 {
-  kvarint_buf16_t buf;
-  kvarint_encode16(i, &buf);
-  buffer.Append(buf.buf, buf.len);
+  MMKV_SERIALIZE_UNSIGNED_(64);
 }
 
 template <typename BT>
 MMKV_INLINE void SerializeComponent(uint32_t i, BT &buffer)
 {
-  kvarint_buf32_t buf;
-  kvarint_encode32(i, &buf);
-  buffer.Append(buf.buf, buf.len);
+  MMKV_SERIALIZE_UNSIGNED_(32);
 }
 
 template <typename BT>
 MMKV_INLINE void SerializeComponent(uint16_t i, BT &buffer)
 {
-  kvarint_buf64_t buf;
-  kvarint_encode64(i, &buf);
-  buffer.Append(buf.buf, buf.len);
+  MMKV_SERIALIZE_UNSIGNED_(16);
 }
 
 template <typename BT>
 MMKV_INLINE void SerializeComponent(int64_t i, BT &buffer)
 {
-  kvarint_buf64_t buf;
-  kvarint_encode64s(i, &buf);
-  buffer.Append(buf.buf, buf.len);
+  MMKV_SERIALIZE_SIGNED_(64);
 }
 
 template <typename Alloc, typename BT>
