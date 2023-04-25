@@ -142,7 +142,7 @@ KANON_INLINE std::string const &GetCommandHint(Command cmd) KANON_NOEXCEPT
 KANON_INLINE std::string const &
 GetCliCommandString(CliCommand cmd) KANON_NOEXCEPT
 {
-  assert(cmd > 0 && cmd < CliCommand::CLI_COMMAND_NUM);
+  assert(cmd >= 0 && cmd < CliCommand::CLI_COMMAND_NUM);
   return ::detail::cli_command_strings[cmd];
 }
 
@@ -153,7 +153,7 @@ KANON_INLINE std::string const *GetCliCommandStrings() KANON_NOEXCEPT
 
 KANON_INLINE std::string const &GetCliCommandHint(CliCommand cmd)
 {
-  assert(cmd > 0 && cmd < CliCommand::CLI_COMMAND_NUM);
+  assert(cmd >= 0 && cmd < CliCommand::CLI_COMMAND_NUM);
   return ::detail::cli_command_hints[cmd];
 }
 
