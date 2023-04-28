@@ -8,7 +8,7 @@
 
 using namespace mmkv::protocol;
 
-static constexpr uint8_t SIZE_LENGTH = sizeof(MmbpCodec::SizeHeaderType);
+// static constexpr uint8_t SIZE_LENGTH = sizeof(MmbpCodec::SizeHeaderType);
 static constexpr uint8_t CHECKSUM_LENGTH = sizeof(MmbpCodec::CheckSumType);
 static constexpr uint32_t MAX_SIZE = 1 << 26; // 64MB
 static constexpr char const MMBP_TAG[] = "MMBP";
@@ -54,22 +54,41 @@ void MmbpCodec::SetUpConnection(TcpConnectionPtr const &conn)
       return;
     }
 
-    while (buffer.GetReadableSize() >= SIZE_LENGTH) {
-      const auto size_header = buffer.GetReadBegin32();
+    uint32_t size_header = 0;
+    size_t size_header_len = 0;
+    while (true) {
+      const auto decode_ret =
+          kvarint_decode32(buffer.GetReadBegin(), buffer.GetReadableSize(),
+                           &size_header_len, &size_header);
+      switch (decode_ret) {
+        case KVARINT_OK:
+          LOG_DEBUG << "This is a valid message encoded by varint";
+          break;
+        case KVARINT_DECODE_BUF_INVALID:
+          error_cb_(conn, E_INVALID_MESSAGE);
+          return;
+        case KVARINT_DECODE_BUF_SHORT:
+#ifndef NDEBUG
+          if (buffer.GetReadableSize() > 0)
+            LOG_DEBUG << "This is a short message, wait complete...";
+#endif
+          return;
+      }
 
       LOG_DEBUG << "Size header = " << size_header;
       LOG_DEBUG << "Current readable size = " << buffer.GetReadableSize();
 
       // BUG FIX:
       // Invalid message length is untrusted.
-      if (size_header < MIN_SIZE || size_header >= MAX_SIZE - SIZE_LENGTH) {
+      if (size_header < MIN_SIZE || size_header >= MAX_SIZE - size_header_len) {
         error_cb_(conn, E_INVALID_SIZE_HEADER);
         break;
       }
 
       // Waiting complete message
-      if (buffer.GetReadableSize() - SIZE_LENGTH < size_header) break;
-      buffer.AdvanceRead32();
+      if (buffer.GetReadableSize() - size_header_len < size_header) break;
+      // buffer.AdvanceRead32();
+      buffer.AdvanceRead(size_header_len);
 
       // BUG FIX:
       // If peer send invalid message whose length over size_header and
@@ -97,19 +116,25 @@ void MmbpCodec::SetUpConnection(TcpConnectionPtr const &conn)
 
 MmbpCodec::ErrorCode MmbpCodec::Parse(Buffer &buffer, MmbpMessage *message)
 {
-  if (buffer.GetReadableSize() >= SIZE_LENGTH) {
+  uint32_t size_header = 0;
+  size_t size_header_len = 0;
+  const auto decode_ret =
+      kvarint_decode32(buffer.GetReadBegin(), buffer.GetReadableSize(),
+                       &size_header_len, &size_header);
+  if (KVARINT_OK == decode_ret) {
     const auto size_header = buffer.GetReadBegin32();
 
     LOG_DEBUG << "Size header = " << size_header;
     LOG_DEBUG << "Current readable size = " << buffer.GetReadableSize();
 
     if (buffer.GetReadableSize() < MIN_SIZE ||
-        buffer.GetReadableSize() >= MAX_SIZE) {
+        buffer.GetReadableSize() >= MAX_SIZE)
+    {
       LOG_DEBUG << "Message length is too short or too long";
       return E_INVALID_MESSAGE;
     }
 
-    if (buffer.GetReadableSize() - SIZE_LENGTH >= size_header) {
+    if (buffer.GetReadableSize() - size_header_len >= size_header) {
       buffer.AdvanceRead32();
 
       if (size_header < MIN_SIZE || size_header >= MAX_SIZE) {
@@ -171,7 +196,9 @@ void MmbpCodec::SerializeTo(MmbpMessage const *message, OutputBuffer &buffer)
 
   buffer.Append32(checksum);
 
-  buffer.Prepend32(buffer.GetReadableSize());
+  kvarint_buf32_t kvarint_buf;
+  kvarint_encode32(buffer.GetReadableSize(), &kvarint_buf);
+  buffer.Prepend(kvarint_buf.buf, kvarint_buf.len);
 }
 
 bool MmbpCodec::VerifyCheckSum(Buffer &buffer, SizeHeaderType size_header)
