@@ -43,7 +43,7 @@ struct DatabaseInstance {
  *  I think this can be noncopyable
  */
 class DatabaseManager : kanon::noncopyable {
-  using instances_t = std::vector<std::unique_ptr<DatabaseInstance>>;
+  using instances_t = std::vector<DatabaseInstance>;
 
  public:
   using Iterator = instances_t::iterator;
@@ -71,7 +71,7 @@ class DatabaseManager : kanon::noncopyable {
 
   DatabaseInstance &GetDatabaseInstance(String const &key) noexcept
   {
-    return *instances_[GetDatabaseInstanceIndex(key)];
+    return instances_[GetDatabaseInstanceIndex(key)];
   }
 
   DatabaseInstance const &GetDatabaseInstance(String const &key) const noexcept

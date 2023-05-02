@@ -148,10 +148,10 @@ DatabaseManager::~DatabaseManager() noexcept
 void DatabaseManager::CheckExpirationCycle()
 {
   auto &instance = instances_[current_index_];
-  auto &db = instance->db;
+  auto &db = instance.db;
 
   {
-    WLockGuard g(instance->lock);
+    WLockGuard g(instance.lock);
 
     if (!db.IsEmpty()) {
       db.CheckExpireCycle();
@@ -734,28 +734,28 @@ void DatabaseManager::Execute(MmbpRequest &request, MmbpResponse *response)
 
 #define RLOCK_ALL                                                              \
   for (auto &instance : instances_) {                                          \
-    instance->lock.RLock();                                                    \
+    instance.lock.RLock();                                                     \
   }
 
 #define RUNLOCK_ALL                                                            \
   for (auto &instance : instances_) {                                          \
-    instance->lock.RUnlock();                                                  \
+    instance.lock.RUnlock();                                                   \
   }
 
 #define WLOCK_ALL                                                              \
   for (auto &instance : instances_) {                                          \
-    instance->lock.WLock();                                                    \
+    instance.lock.WLock();                                                     \
   }
 
 #define WUNLOCK_ALL                                                            \
   for (auto &instance : instances_) {                                          \
-    instance->lock.WUnlock();                                                  \
+    instance.lock.WUnlock();                                                   \
   }
 
     case KEYALL: {
       RLOCK_ALL
       for (auto const &db_instance : instances_) {
-        db_instance->db.GetAllKeys(response->values);
+        db_instance.db.GetAllKeys(response->values);
       }
       response->SetValues();
       response->SetOk();
@@ -780,8 +780,11 @@ void DatabaseManager::Execute(MmbpRequest &request, MmbpResponse *response)
     case DELALL: {
       WLOCK_ALL
       size_t count = 0;
-      for (auto const &db_instance : instances_) {
-        count += db_instance->db.DeleteAll();
+      for (auto &db_instance : instances_) {
+        size_t db_cnt = 0;
+        auto code = db_instance.db.DeleteAll(&db_cnt);
+        if (code == S_SHARD_LOCKED) break;
+        count += db_cnt;
       }
       if (response) {
         response->status_code = S_OK;
