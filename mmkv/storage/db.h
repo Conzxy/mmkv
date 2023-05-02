@@ -14,11 +14,11 @@
 namespace mmkv {
 namespace storage {
 
+using algo::String;
 using db::MmkvDb;
+using kanon::RWLock;
 using protocol::MmbpRequest;
 using protocol::MmbpResponse;
-using kanon::RWLock;
-using algo::String;
 
 struct DatabaseInstance {
   MmkvDb db;
@@ -32,21 +32,26 @@ struct DatabaseInstance {
 
 /**
  * Manage the multiple database instances
- * 
+ *
  * If mmkv configured to distributed,
  * the only one database used.
- * Otherwise, if configured to multithread, 
+ * Otherwise, if configured to multithread,
  * the closest number of Power2(1.5 * thread_num),
  * else only one database used.
  *
  * \note
- *  I think this can be noncopyable 
+ *  I think this can be noncopyable
  */
 class DatabaseManager : kanon::noncopyable {
+  using instances_t = std::vector<std::unique_ptr<DatabaseInstance>>;
+
  public:
+  using Iterator = instances_t::iterator;
+  using ConstIterator = instances_t::const_iterator;
+
   DatabaseManager();
   ~DatabaseManager() noexcept;
- 
+
   void Execute(MmbpRequest &request, MmbpResponse *response);
 
   /**
@@ -54,16 +59,41 @@ class DatabaseManager : kanon::noncopyable {
    * in round-robin method.
    */
   void CheckExpirationCycle();
-  
-  void SetRecvTime(uint64_t tm) noexcept { recv_time_ = tm; }
-  uint64_t recv_time() const noexcept { return recv_time_; }
 
-  DatabaseInstance &GetDatabaseInstance(String const &key) noexcept {
+  void SetRecvTime(uint64_t tm) noexcept
+  {
+    recv_time_ = tm;
+  }
+  uint64_t recv_time() const noexcept
+  {
+    return recv_time_;
+  }
+
+  DatabaseInstance &GetDatabaseInstance(String const &key) noexcept
+  {
     return *instances_[GetDatabaseInstanceIndex(key)];
   }
 
-  DatabaseInstance const &GetDatabaseInstance(String const &key) const noexcept {
-    return const_cast<DatabaseManager*>(this)->GetDatabaseInstance(key);
+  DatabaseInstance const &GetDatabaseInstance(String const &key) const noexcept
+  {
+    return const_cast<DatabaseManager *>(this)->GetDatabaseInstance(key);
+  }
+
+  Iterator begin() noexcept
+  {
+    return instances_.begin();
+  }
+  Iterator end() noexcept
+  {
+    return instances_.end();
+  }
+  ConstIterator begin() const noexcept
+  {
+    return instances_.begin();
+  }
+  ConstIterator end() const noexcept
+  {
+    return instances_.end();
   }
 
  private:
@@ -74,24 +104,24 @@ class DatabaseManager : kanon::noncopyable {
     LOCAL_MULTI_THREAD,
     DISTRIBUTED,
   };
-  
+
   Type type_;
-  std::vector<std::unique_ptr<DatabaseInstance>> instances_;
+  instances_t instances_;
   uint64_t recv_time_;
   uint64_t current_index_; /** Round-robin index */
 };
 
-/* Declare pointer to avoid 
+/* Declare pointer to avoid
  * undefined initailzation sequence
  */
 // extern DatabaseManager *g_database_manager;;
 
 DatabaseManager &database_manager();
 
-// void DbExpireAfter(MmbpRequest &request, uint64_t ms, MmbpResponse *response);
+// void DbExpireAfter(MmbpRequest &request, uint64_t ms, MmbpResponse
+// *response);
 
+} // namespace storage
+} // namespace mmkv
 
-} // server
-} // mmkv
-
-#endif 
+#endif
