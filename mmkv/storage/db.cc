@@ -107,11 +107,13 @@ static inline bool Is2Power(size_t src)
 }
 
 DatabaseManager::DatabaseManager()
-  : type_(server::mmkv_config().SupportDistribution()
-              ? DatabaseManager::DISTRIBUTED
-              : (server::mmkv_config().thread_num == 1
-                     ? DatabaseManager::LOCAL
-                     : DatabaseManager::LOCAL_MULTI_THREAD))
+  : type_(
+        server::mmkv_config().SupportDistribution()
+            ? DatabaseManager::DISTRIBUTED
+            : (server::mmkv_config().thread_num == 1
+                   ? DatabaseManager::LOCAL
+                   : DatabaseManager::LOCAL_MULTI_THREAD)
+    )
   , current_index_(0)
 {
   size_t db_num = 0;
@@ -129,6 +131,7 @@ DatabaseManager::DatabaseManager()
   MMKV_ASSERT(Is2Power(db_num), "The size of instances must be power of 2");
 
   char db_name[128];
+  instances_.reserve(db_num);
   for (size_t i = 0; i < db_num; ++i) {
     snprintf(db_name, sizeof db_name, "Database %zu", i);
     instances_.emplace_back(new DatabaseInstance(db_name));
@@ -213,15 +216,19 @@ void DatabaseManager::Execute(MmbpRequest &request, MmbpResponse *response)
     } break;
 
     case STRAPPEND: {
-      CHECK_INVALID_REQUEST(request.HasKey() && request.HasValue(),
-                            "strappend");
+      CHECK_INVALID_REQUEST(
+          request.HasKey() && request.HasValue(),
+          "strappend"
+      );
       const auto code = DB.StrAppend(request.key, request.value);
       if (response) response->status_code = code;
     } break;
 
     case STRPOPBACK: {
-      CHECK_INVALID_REQUEST(request.HasKey() && request.HasCount(),
-                            "strpopback");
+      CHECK_INVALID_REQUEST(
+          request.HasKey() && request.HasCount(),
+          "strpopback"
+      );
       const auto code = DB.StrPopBack(request.key, request.count);
       if (response) response->status_code = code;
     } break;
@@ -234,8 +241,10 @@ void DatabaseManager::Execute(MmbpRequest &request, MmbpResponse *response)
 
     case LAPPEND:
     case LPREPEND: {
-      CHECK_INVALID_REQUEST(request.HasKey() && request.HasValues(),
-                            "lappend/lprepend");
+      CHECK_INVALID_REQUEST(
+          request.HasKey() && request.HasValues(),
+          "lappend/lprepend"
+      );
 
       StatusCode code;
       switch (request.command) {
@@ -252,8 +261,10 @@ void DatabaseManager::Execute(MmbpRequest &request, MmbpResponse *response)
 
     case LPOPFRONT:
     case LPOPBACK: {
-      CHECK_INVALID_REQUEST(request.HasKey() && request.HasCount(),
-                            "lpopback/popfront");
+      CHECK_INVALID_REQUEST(
+          request.HasKey() && request.HasCount(),
+          "lpopback/popfront"
+      );
 
       StatusCode code;
       switch (request.command) {
@@ -284,8 +295,11 @@ void DatabaseManager::Execute(MmbpRequest &request, MmbpResponse *response)
       CHECK_INVALID_REQUEST(request.HasRange(), "lgetrange");
 
       if ((response->status_code = DB.ListGetRange(
-               request.key, response->values, request.range.left,
-               request.range.right)) == S_OK)
+               request.key,
+               response->values,
+               request.range.left,
+               request.range.right
+           )) == S_OK)
       {
         response->SetValues();
       }
@@ -310,8 +324,11 @@ void DatabaseManager::Execute(MmbpRequest &request, MmbpResponse *response)
     case VADD: {
       CHECK_INVALID_REQUEST(request.HasKey() && request.HasVmembers(), "vadd");
       size_t count = 0;
-      auto code = DB.VsetAdd(std::move(request.key),
-                             std::move(request.vmembers), count);
+      auto code = DB.VsetAdd(
+          std::move(request.key),
+          std::move(request.vmembers),
+          count
+      );
       if (response) {
         SET_XX_ELSE_CODE(SET_OK_COUNT(count))
       }
@@ -334,8 +351,10 @@ void DatabaseManager::Execute(MmbpRequest &request, MmbpResponse *response)
     } break;
 
     case VDELMRANGE: {
-      CHECK_INVALID_REQUEST(request.HasKey() && request.HasRange(),
-                            "vdelmrange");
+      CHECK_INVALID_REQUEST(
+          request.HasKey() && request.HasRange(),
+          "vdelmrange"
+      );
       size_t count = 0;
       auto code = DB.VsetDelRange(request.key, request.range, count);
       if (response) {
@@ -344,8 +363,10 @@ void DatabaseManager::Execute(MmbpRequest &request, MmbpResponse *response)
     } break;
 
     case VDELMRANGEBYWEIGHT: {
-      CHECK_INVALID_REQUEST(request.HasKey() && request.HasRange(),
-                            "vdelmrangebyweight");
+      CHECK_INVALID_REQUEST(
+          request.HasKey() && request.HasRange(),
+          "vdelmrangebyweight"
+      );
       size_t count = 0;
       auto code =
           DB.VsetDelRangeByWeight(request.key, request.GetWeightRange(), count);
@@ -362,8 +383,10 @@ void DatabaseManager::Execute(MmbpRequest &request, MmbpResponse *response)
     } break;
 
     case VSIZEBYWEIGHT: {
-      CHECK_INVALID_REQUEST(request.HasKey() && request.HasRange(),
-                            "vsizebyweight");
+      CHECK_INVALID_REQUEST(
+          request.HasKey() && request.HasRange(),
+          "vsizebyweight"
+      );
       size_t size;
       auto code =
           DB.VsetSizeByWeight(request.key, request.GetWeightRange(), size);
@@ -406,19 +429,29 @@ void DatabaseManager::Execute(MmbpRequest &request, MmbpResponse *response)
     } break;
 
     case VRANGEBYWEIGHT: {
-      CHECK_INVALID_REQUEST(request.HasKey() && request.HasRange(),
-                            "vrangebyweight");
-      auto code = DB.VsetRangeByWeight(request.key, request.GetWeightRange(),
-                                       response->vmembers);
+      CHECK_INVALID_REQUEST(
+          request.HasKey() && request.HasRange(),
+          "vrangebyweight"
+      );
+      auto code = DB.VsetRangeByWeight(
+          request.key,
+          request.GetWeightRange(),
+          response->vmembers
+      );
 
       SET_XX_ELSE_CODE(SET_OK_VMEMBERS_)
     } break;
 
     case VRRANGEBYWEIGHT: {
-      CHECK_INVALID_REQUEST(request.HasKey() && request.HasRange(),
-                            "vrrangebyweight");
-      auto code = DB.VsetRRangeByWeight(request.key, request.GetWeightRange(),
-                                        response->vmembers);
+      CHECK_INVALID_REQUEST(
+          request.HasKey() && request.HasRange(),
+          "vrrangebyweight"
+      );
+      auto code = DB.VsetRRangeByWeight(
+          request.key,
+          request.GetWeightRange(),
+          response->vmembers
+      );
 
       SET_XX_ELSE_CODE(SET_OK_VMEMBERS_)
     } break;
@@ -448,8 +481,11 @@ void DatabaseManager::Execute(MmbpRequest &request, MmbpResponse *response)
 
     case MSET: {
       CHECK_INVALID_REQUEST(request.HasKey() && request.HasValues(), "mset");
-      auto code = DB.MapSet(request.key, std::move(request.values[0]),
-                            std::move(request.values[1]));
+      auto code = DB.MapSet(
+          request.key,
+          std::move(request.values[0]),
+          std::move(request.values[1])
+      );
       if (response) response->status_code = code;
     } break;
 
@@ -549,22 +585,31 @@ void DatabaseManager::Execute(MmbpRequest &request, MmbpResponse *response)
 
     case SANDTO: {
       CHECK_INVALID_REQUEST(request.HasValues(), "sandto");
-      auto code = DB.SetAndTo(request.values[1], request.values[2],
-                              std::move(request.values[0]));
+      auto code = DB.SetAndTo(
+          request.values[1],
+          request.values[2],
+          std::move(request.values[0])
+      );
       if (response) response->status_code = code;
     } break;
 
     case SORTO: {
       CHECK_INVALID_REQUEST(request.HasValues(), "sorto");
-      auto code = DB.SetOrTo(request.values[1], request.values[2],
-                             std::move(request.values[0]));
+      auto code = DB.SetOrTo(
+          request.values[1],
+          request.values[2],
+          std::move(request.values[0])
+      );
       if (response) response->status_code = code;
     } break;
 
     case SSUBTO: {
       CHECK_INVALID_REQUEST(request.HasValues(), "ssubto");
-      auto code = DB.SetSubTo(request.values[1], request.values[2],
-                              std::move(request.values[0]));
+      auto code = DB.SetSubTo(
+          request.values[1],
+          request.values[2],
+          std::move(request.values[0])
+      );
       if (response) response->status_code = code;
     } break;
 
@@ -599,24 +644,33 @@ void DatabaseManager::Execute(MmbpRequest &request, MmbpResponse *response)
     } break;
 
     case EXPIRE_AT: {
-      CHECK_INVALID_REQUEST(request.HasKey() && request.HasExpireTime(),
-                            "expireat");
+      CHECK_INVALID_REQUEST(
+          request.HasKey() && request.HasExpireTime(),
+          "expireat"
+      );
       const auto code =
           DB.ExpireAt(std::move(request.key), request.expire_time);
       if (response) response->status_code = code;
     } break;
 
     case EXPIRE_AFTER: {
-      CHECK_INVALID_REQUEST(request.HasKey() && request.HasExpireTime(),
-                            "expireafter");
-      const auto code = DB.ExpireAfter(std::move(request.key), recv_time_,
-                                       request.expire_time);
+      CHECK_INVALID_REQUEST(
+          request.HasKey() && request.HasExpireTime(),
+          "expireafter"
+      );
+      const auto code = DB.ExpireAfter(
+          std::move(request.key),
+          recv_time_,
+          request.expire_time
+      );
       if (response) response->status_code = code;
     } break;
 
     case EXPIREM_AT: {
-      CHECK_INVALID_REQUEST(request.HasKey() && request.HasExpireTime(),
-                            "expiremat");
+      CHECK_INVALID_REQUEST(
+          request.HasKey() && request.HasExpireTime(),
+          "expiremat"
+      );
       const auto code =
           DB.ExpireAtMs(std::move(request.key), request.expire_time);
       if (response) response->status_code = code;
@@ -624,10 +678,15 @@ void DatabaseManager::Execute(MmbpRequest &request, MmbpResponse *response)
     } break;
 
     case EXPIREM_AFTER: {
-      CHECK_INVALID_REQUEST(request.HasKey() && request.HasExpireTime(),
-                            "expiremafter");
-      const auto code = DB.ExpireAfterMs(std::move(request.key), recv_time_,
-                                         request.expire_time);
+      CHECK_INVALID_REQUEST(
+          request.HasKey() && request.HasExpireTime(),
+          "expiremafter"
+      );
+      const auto code = DB.ExpireAfterMs(
+          std::move(request.key),
+          recv_time_,
+          request.expire_time
+      );
       if (response) response->status_code = code;
     } break;
 
