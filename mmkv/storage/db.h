@@ -28,6 +28,17 @@ struct DatabaseInstance {
     : db(name)
   {
   }
+
+  /**
+   * \brief
+   *
+   * \param request
+   * \param response Can be nullptr if command of request is WRITE type
+   * \param recv_time
+   *
+   * \warning Not thread-safe
+   */
+  void Execute(MmbpRequest &request, MmbpResponse *response, uint64_t recv_time);
 };
 
 /**
@@ -46,12 +57,21 @@ class DatabaseManager : kanon::noncopyable {
   using instances_t = std::vector<DatabaseInstance>;
 
  public:
-  using Iterator = instances_t::iterator;
+  using Iterator      = instances_t::iterator;
   using ConstIterator = instances_t::const_iterator;
 
   DatabaseManager();
   ~DatabaseManager() noexcept;
 
+  /**
+   * \brief
+   *
+   * \param request
+   * \param response
+   *
+   * \note
+   *  Thread-safe
+   */
   void Execute(MmbpRequest &request, MmbpResponse *response);
 
   /**
@@ -60,14 +80,8 @@ class DatabaseManager : kanon::noncopyable {
    */
   void CheckExpirationCycle();
 
-  void SetRecvTime(uint64_t tm) noexcept
-  {
-    recv_time_ = tm;
-  }
-  uint64_t recv_time() const noexcept
-  {
-    return recv_time_;
-  }
+  void     SetRecvTime(uint64_t tm) noexcept { recv_time_ = tm; }
+  uint64_t recv_time() const noexcept { return recv_time_; }
 
   DatabaseInstance &GetDatabaseInstance(String const &key) noexcept
   {
@@ -79,25 +93,25 @@ class DatabaseManager : kanon::noncopyable {
     return const_cast<DatabaseManager *>(this)->GetDatabaseInstance(key);
   }
 
-  Iterator begin() noexcept
+  DatabaseInstance &GetShardDatabaseInstance(shard_id_t id) noexcept
   {
-    return instances_.begin();
-  }
-  Iterator end() noexcept
-  {
-    return instances_.end();
-  }
-  ConstIterator begin() const noexcept
-  {
-    return instances_.begin();
-  }
-  ConstIterator end() const noexcept
-  {
-    return instances_.end();
+    return instances_[GetDatabaseInstanceIndex2(id)];
   }
 
+  DatabaseInstance const &GetShardDatabaseInstance(shard_id_t id) const noexcept
+  {
+    return instances_[GetDatabaseInstanceIndex2(id)];
+  }
+
+  size_t        size() const noexcept { return instances_.size(); }
+  Iterator      begin() noexcept { return instances_.begin(); }
+  Iterator      end() noexcept { return instances_.end(); }
+  ConstIterator begin() const noexcept { return instances_.begin(); }
+  ConstIterator end() const noexcept { return instances_.end(); }
+
  private:
-  size_t GetDatabaseInstanceIndex(String const &key);
+  size_t GetDatabaseInstanceIndex(String const &key) const;
+  size_t GetDatabaseInstanceIndex2(shard_id_t shard_id) const;
 
   enum Type : uint8_t {
     LOCAL,
@@ -105,10 +119,10 @@ class DatabaseManager : kanon::noncopyable {
     DISTRIBUTED,
   };
 
-  Type type_;
+  Type        type_;
   instances_t instances_;
-  uint64_t recv_time_;
-  uint64_t current_index_; /** Round-robin index */
+  uint64_t    recv_time_;
+  uint64_t    current_index_; /** Round-robin index */
 };
 
 /* Declare pointer to avoid
