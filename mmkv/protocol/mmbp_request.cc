@@ -11,10 +11,7 @@ using namespace kanon;
 
 MmbpRequest mmkv::protocol::detail::prototype;
 
-MmbpRequest::MmbpRequest()
-{
-  ::memset(has_bits_, 0, sizeof(has_bits_));
-}
+MmbpRequest::MmbpRequest() { ::memset(has_bits_, 0, sizeof(has_bits_)); }
 
 MmbpRequest::~MmbpRequest() noexcept {}
 
@@ -109,6 +106,42 @@ void MmbpRequest::ParseFrom(Buffer &buffer)
 
   if (HasExpireTime()) {
     ParseComponent(expire_time, buffer);
+  }
+}
+
+void MmbpRequest::ParseFrom(void const **pp_data, size_t len)
+{
+  if (len >= sizeof(command))
+    ParseComponent(command, pp_data, &len);
+  else
+    return;
+
+  if (len >= sizeof(has_bits_))
+    ParseComponent(has_bits_[0], pp_data, &len);
+  else
+    return;
+
+  if (HasKey()) {
+    ParseComponent(key, pp_data, &len, true);
+  }
+
+  if (HasValue()) {
+    ParseComponent(value, pp_data, &len);
+  } else if (HasValues()) {
+    ParseComponent(values, pp_data, &len);
+  } else if (HasKvs()) {
+    ParseComponent(kvs, pp_data, &len);
+  } else if (HasCount()) {
+    ParseComponent(count, pp_data, &len);
+  } else if (HasRange()) {
+    ParseComponent(range.left, pp_data, &len);
+    ParseComponent(range.right, pp_data, &len);
+  } else if (HasVmembers()) {
+    ParseComponent(vmembers, pp_data, &len);
+  }
+
+  if (HasExpireTime()) {
+    ParseComponent(expire_time, pp_data, &len);
   }
 }
 

@@ -16,26 +16,22 @@ namespace protocol {
 // Memory Key-Value binary protocol
 class MmbpMessage {
  public:
-  MmbpMessage() = default;
+  MmbpMessage()          = default;
   virtual ~MmbpMessage() = default;
 
   virtual void SerializeTo(ChunkList &buffer) const = 0;
   virtual void SerializeTo(Buffer &buffer) const {}
 
   virtual void ParseFrom(Buffer &buffer) = 0;
-  virtual MmbpMessage *New() const
-  {
-    return nullptr;
-  }
+  virtual void ParseFrom(void const **pp_data, size_t size) {}
+
+  virtual MmbpMessage *New() const { return nullptr; }
 };
 
 template <int N>
 class MmbpMessageBits {
  public:
-  MMKV_INLINE MmbpMessageBits() noexcept
-  {
-    ::memset(has_bits_, 0, N);
-  }
+  MMKV_INLINE MmbpMessageBits() noexcept { ::memset(has_bits_, 0, N); }
 
   MMKV_INLINE void SerializeBits(ChunkList &buffer) noexcept
   {
@@ -56,14 +52,12 @@ class MmbpMessageBits {
 };
 
 template <>
-class MmbpMessageBits<0> {
-};
+class MmbpMessageBits<0> {};
 
 template <int N>
 class MmbpMessageWithBits
   : public MmbpMessage
-  , public MmbpMessageBits<N> {
-};
+  , public MmbpMessageBits<N> {};
 
 } // namespace protocol
 } // namespace mmkv
