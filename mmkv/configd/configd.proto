@@ -1,0 +1,13 @@
+syntax = "proto2";
+
+enum ConfigOperation {
+  CONF_OP_FETCH = 0;
+}
+
+message ConfigRequest { required ConfigOperation operation = 1; }
+
+enum ConfigStatusCode {
+  CONF_STATUS_OK = 0;
+}
+
+message ConfigResponse { required ConfigStatusCode status = 1; }
