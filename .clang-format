@@ -3,9 +3,6 @@
 # 0表示一个tab
 AccessModifierOffset: -1
 
-# 小括号对齐，用于对齐函数参数和实参
-AlignAfterOpenBracket: Align
-
 # 指针和引用都是void *p形式
 PointerAlignment: Right
 
@@ -21,16 +18,6 @@ AlignEscapedNewlines: Right
 # int long_; //
 AlignTrailingComments: true
 
-# 实参不能填充一行，让实参都放在下一行
-# false:
-# function_call(a,
-#               b,
-#               c)
-#
-AllowAllArgumentsOnNextLine: false
-
-# 类似AllowAllArgumentsOnNextLine，但针对参数
-AllowAllParametersOfDeclarationOnNextLine: false
 
 # 1. while(true) {} 
 # 2. while(true) { continue; }
@@ -55,25 +42,43 @@ AllowShortIfStatementsOnASingleLine: WithoutElse
 # 仅合并空lambda
 AllowShortLambdasOnASingleLine: Empty
 
-# 仅类外定义的返回类型单独一行
-# 由于单独一行如果类型名很短会很多余，因此不强制设置
-#AlwaysBreakAfterReturnType: TopLevelDefinitions
+# 禁止将返回类型另起一行
+AlwaysBreakAfterReturnType: None
+PenaltyReturnTypeOnItsOwnLine: 1000
 
 AlwaysBreakBeforeMultilineStrings: false
 
+# 小括号对齐，用于对齐函数参数和实参
+# 让)放在最后一个参数/实参的下一行
+# 这样更为直观且添加新的参数/实参也很轻松。
+# （试想如果是最后一个参数/实参的正后面，那么需要在)之前回车一下。
+AlignAfterOpenBracket: BlockIndent
+
 # 设为false可以令实参要么一行塞满要么分散为每行一个实参
-# 有时候实参比较短，也会很难看
-BinPackArguments: true
+# 注意，仅当实参/参数足够长的时候，才会分散成一行一个
+# (搭配上面AlignAfterOpenBracket)
+BinPackArguments: false
+# 实参不能填充一行，让实参都放在下一行
+# false:
+# function_call(a,
+#               b,
+#               c)
+#
+
+AllowAllArgumentsOnNextLine: false
 
 # 类似BinPackParameters
 # 我不打算将参数弄得很分散，因为是具名参数
-BinPackParameters: true
+AllowAllParametersOfDeclarationOnNextLine: false
+BinPackParameters: false
 
 # template<>与模板声明必须换行
 AlwaysBreakTemplateDeclarations: Yes
 
 # 80个字符一行是比较令人舒适和便于阅读的
-ColumnLimit: 80
+# 但我认为100 字符一行或许对于宽屏幕为更好
+# 毕竟现在我对于vs分栏没有那么喜欢了
+ColumnLimit: 100
 
 # 构造函数初始值列表缩进
 ConstructorInitializerIndentWidth: 2
@@ -120,6 +125,22 @@ BraceWrapping:
 
 IndentCaseLabels: true
 SortIncludes: false
+
+#########################################
+# Align Configuration
+#########################################
+AlignConsecutiveDeclarations:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: true
+
+AlignConsecutiveAssignments:
+  Enabled: true
+  AlignCompound: true
+  PadOperators: true
+  AcrossEmptyLines: false
+  AcrossComments: true
+
 AlignConsecutiveMacros: true
 StatementMacros: ["Str2Int", "Str2IntForOne", "AppendInt_Macro", "PrependInt_Macro", 
   "GetReadBeginInt_Macro", "ReadInt_Macro", "Append_Macro", "Prepend_Macro", "GetReadBegin_Macro", 
