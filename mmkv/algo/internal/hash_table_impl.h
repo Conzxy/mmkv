@@ -3,27 +3,26 @@
 #define _MMKV_ALGO_INTERNAL_HASH_TABLE_IMPL_H_
 
 #ifndef _MMKV_ALGO_HASH_TABLE_H_
-#include "../hash_table.h"
+#  include "../hash_table.h"
 #endif
 
 #include <assert.h>
 #include <memory>
 
-#define HASH_TABLE_TEMPLATE \
-  template<typename K, typename T, typename HF, typename GK, typename EK, typename A>
+#define HASH_TABLE_TEMPLATE                                                                        \
+  template <typename K, typename T, typename HF, typename GK, typename EK, typename A>
 
-#define HASH_TABLE_CLASS \
-  HashTable<K, T, HF, GK, EK, A>
+#define HASH_TABLE_CLASS HashTable<K, T, HF, GK, EK, A>
 
 #define HASH_MAX(x, y) (((x) > (y)) ? (x) : (y))
-#define TABLE1 tables_[0]
-#define TABLE2 tables_[1]
+#define TABLE1         tables_[0]
+#define TABLE2         tables_[1]
 
 namespace mmkv {
 namespace algo {
 
 HASH_TABLE_TEMPLATE
-HASH_TABLE_CLASS::HashTable() 
+HASH_TABLE_CLASS::HashTable()
 {
   table1().Grow(4);
 #ifdef _DEBUG_HASH_TABLE_
@@ -37,41 +36,41 @@ HASH_TABLE_CLASS::HashTable()
 }
 
 HASH_TABLE_TEMPLATE
-HASH_TABLE_CLASS::~HashTable() noexcept {
-};
+HASH_TABLE_CLASS::~HashTable() noexcept {};
 
 HASH_TABLE_TEMPLATE
-void HASH_TABLE_CLASS::Clone(HashTable const& ht) {
-  auto& table = table1();
+void HASH_TABLE_CLASS::Clone(HashTable const &ht)
+{
+  auto &table = table1();
   if (ht.InRehashing()) {
-    auto& otable1 = ht.table1();
-    auto& otable2 = ht.table2();
+    auto &otable1 = ht.table1();
+    auto &otable2 = ht.table2();
     table.Grow(otable2.size());
 
     for (size_type i = 0; i < otable2.size(); ++i) {
-      auto& lst = table[i];
-      auto& olst = otable2[i];
-      for (auto const& val : olst) {
+      auto &lst  = table[i];
+      auto &olst = otable2[i];
+      for (auto const &val : olst) {
         lst.EmplaceFront(val);
       }
     }
-  
+
     for (size_type i = ht.rehash_move_bucket_index_; i < otable1.size(); ++i) {
-      auto& olst = otable1[i];
-      for (auto const& val : olst) {
+      auto &olst = otable1[i];
+      for (auto const &val : olst) {
         auto hash_val = HASH_FUNC(val);
         table[bucket_index(0, hash_val)].EmplaceFront(val);
       }
-    } 
+    }
   } else {
-    auto& otable = ht.table1();
-    auto n = otable.size();
+    auto &otable = ht.table1();
+    auto  n      = otable.size();
     table.Grow(otable.size());
 
     for (size_type i = 0; i < n; ++i) {
-      auto& lst = table[i];
-      auto& olst = otable[i];
-      for (auto const& val : olst) {
+      auto &lst  = table[i];
+      auto &olst = otable[i];
+      for (auto const &val : olst) {
         lst.EmplaceFront(val);
       }
     }
@@ -81,10 +80,10 @@ void HASH_TABLE_CLASS::Clone(HashTable const& ht) {
 }
 
 HASH_TABLE_TEMPLATE
-template<typename U>
-typename HASH_TABLE_CLASS::value_type* 
-HASH_TABLE_CLASS::Insert_impl(U&& elem) {
-  value_type* duplicate = nullptr;
+template <typename U>
+typename HASH_TABLE_CLASS::value_type *HASH_TABLE_CLASS::Insert_impl(U &&elem)
+{
+  value_type *duplicate = nullptr;
   if (InsertWithDuplicate_impl(std::forward<U>(elem), duplicate)) {
     return duplicate;
   }
@@ -92,28 +91,30 @@ HASH_TABLE_CLASS::Insert_impl(U&& elem) {
 }
 
 HASH_TABLE_TEMPLATE
-template<typename U>
-bool HASH_TABLE_CLASS::InsertWithDuplicate_impl(U&& elem, value_type*& duplicate) {
+template <typename U>
+bool HASH_TABLE_CLASS::InsertWithDuplicate_impl(U &&elem, value_type *&duplicate)
+{
   Rehash();
   IncrementalRehash();
 
-  // Not in rehashing: 
+  // Not in rehashing:
   //   insert to table1
   // In rehashing:
   //   If rehash_move_bucket_index > bucket_index1 ==> table2
   //   otherwise, if bucket_index > table1.size ==> table2
   //              otherwise, tabel1
-  const auto hash_val = HASH_FUNC(GET_KEY(elem));
+  const auto hash_val      = HASH_FUNC(GET_KEY(elem));
   const auto bucket_index1 = bucket_index(0, hash_val);
-  Bucket* bucket = nullptr;
+  Bucket    *bucket        = nullptr;
 
-#define CHECK_AND_SET_DUPLICATE do { \
-    auto iter = GetDuplicate(bucket, elem); \
-    if (iter != bucket->end()) { \
-      duplicate = &*iter; \
-      return false; \
-    } \
-    } while (0)
+#define CHECK_AND_SET_DUPLICATE                                                                    \
+  do {                                                                                             \
+    auto iter = GetDuplicate(bucket, elem);                                                        \
+    if (iter != bucket->end()) {                                                                   \
+      duplicate = &*iter;                                                                          \
+      return false;                                                                                \
+    }                                                                                              \
+  } while (0)
 
   if (!InRehashing()) {
     bucket = &table1()[bucket_index1];
@@ -123,7 +124,7 @@ bool HASH_TABLE_CLASS::InsertWithDuplicate_impl(U&& elem, value_type*& duplicate
 
     // index < rehash_move_bucket_index_ in the table2
     if (rehash_move_bucket_index_ > bucket_index1) {
-      bucket = &table2()[bucket_index2]; 
+      bucket = &table2()[bucket_index2];
       CHECK_AND_SET_DUPLICATE;
     } else {
 #if 0
@@ -138,16 +139,16 @@ bool HASH_TABLE_CLASS::InsertWithDuplicate_impl(U&& elem, value_type*& duplicate
         CHECK_AND_SET_DUPLICATE;
       }
 #else
-        bucket = &table1()[bucket_index1];
-        CHECK_AND_SET_DUPLICATE;
+      bucket = &table1()[bucket_index1];
+      CHECK_AND_SET_DUPLICATE;
 
-        bucket = &table2()[bucket_index2];
-        CHECK_AND_SET_DUPLICATE;
+      bucket = &table2()[bucket_index2];
+      CHECK_AND_SET_DUPLICATE;
 
 #endif
     }
   }
-  
+
   bucket->EmplaceFront(std::forward<U>(elem));
   duplicate = std::addressof(bucket->Front());
 
@@ -158,31 +159,35 @@ bool HASH_TABLE_CLASS::InsertWithDuplicate_impl(U&& elem, value_type*& duplicate
 }
 
 HASH_TABLE_TEMPLATE
-typename HASH_TABLE_CLASS::value_type* 
-HASH_TABLE_CLASS::Find(K const& key) {
+typename HASH_TABLE_CLASS::value_type *HASH_TABLE_CLASS::Find(K const &key)
+{
   auto slot = FindSlot(key);
   return slot ? std::addressof((*slot)->value) : nullptr;
 }
 
 HASH_TABLE_TEMPLATE
-typename HASH_TABLE_CLASS::Slot**
-HASH_TABLE_CLASS::FindSlot(K const& key) {
+typename HASH_TABLE_CLASS::Slot **HASH_TABLE_CLASS::FindSlot(K const &key)
+{
   // No need to call Rehash()
   IncrementalRehash();
-  
-  // 采用最robust的方法（simple is best)
-  Bucket* bucket = nullptr;
-  typename Bucket::Node* slot = nullptr;
 
-  const int table_num = (InRehashing()) ? 2 : 1; 
+  // 采用最robust的方法（simple is best)
+  Bucket                *bucket = nullptr;
+  typename Bucket::Node *slot   = nullptr;
+
+  const int table_num = (InRehashing()) ? 2 : 1;
 
   // 当table为空时，BucetIndex是非法的
   const auto hash_val = HASH_FUNC(key);
   for (int i = 0; i < table_num; ++i) {
     bucket = &table(i)[bucket_index(i, hash_val)];
-    slot = bucket->ExtractNodeIf([this, &key](value_type const& value) { return EQUAL_KEY(GET_KEY(value), key); });
+    slot   = bucket->ExtractNodeIf([this, &key](value_type const &value) {
+      return EQUAL_KEY(GET_KEY(value), key);
+    });
 
-    if (slot) { break; }
+    if (slot) {
+      break;
+    }
   }
 
   if (slot == nullptr) {
@@ -195,15 +200,19 @@ HASH_TABLE_CLASS::FindSlot(K const& key) {
 }
 
 HASH_TABLE_TEMPLATE
-void HASH_TABLE_CLASS::EraseAfterFindSlot(Slot*& slot) {
-  auto old = slot;
-  slot = slot->next;
+void HASH_TABLE_CLASS::EraseAfterFindSlot(Slot *&slot) { EraseAfterFindSlot(&slot); }
+
+HASH_TABLE_TEMPLATE
+void HASH_TABLE_CLASS::EraseAfterFindSlot(Slot **pp_slot)
+{
+  auto old = *pp_slot;
+  *pp_slot = old->next;
   DropNode(old);
 }
 
 HASH_TABLE_TEMPLATE
-inline typename HASH_TABLE_CLASS::size_type 
-HASH_TABLE_CLASS::Erase(K const& key) {
+inline typename HASH_TABLE_CLASS::size_type HASH_TABLE_CLASS::Erase(K const &key)
+{
   auto node = Extract(key);
   if (!node) {
     return 0;
@@ -214,48 +223,50 @@ HASH_TABLE_CLASS::Erase(K const& key) {
 }
 
 HASH_TABLE_TEMPLATE
-typename HASH_TABLE_CLASS::Node* HASH_TABLE_CLASS::Extract(K const& key) noexcept {
+typename HASH_TABLE_CLASS::Node *HASH_TABLE_CLASS::Extract(K const &key) noexcept
+{
   // WARNING Don't support shrink temporarily
   IncrementalRehash();
-  
-  Bucket* bucket = nullptr;
-  Node* node = nullptr;
 
-  const auto hash_val = HASH_FUNC(key);
-  const int table_num = (InRehashing()) ? 2 : 1;
+  Bucket *bucket = nullptr;
+  Node   *node   = nullptr;
+
+  const auto hash_val  = HASH_FUNC(key);
+  const int  table_num = (InRehashing()) ? 2 : 1;
   for (int i = 0; i < table_num; ++i) {
     bucket = &table(i)[bucket_index(i, hash_val)];
-    node = bucket->ExtractNodeIf([this, &key](value_type const& val) {
-        return EQUAL_KEY(GET_KEY(val), key);
-      });
+    node   = bucket->ExtractNodeIf([this, &key](value_type const &val) {
+      return EQUAL_KEY(GET_KEY(val), key);
+    });
 
-    if (node) { 
+    if (node) {
       table1().used--;
-      break; 
+      break;
     }
   }
-  
-  return node; 
+
+  return node;
 }
 
 HASH_TABLE_TEMPLATE
-void HASH_TABLE_CLASS::Rehash() {
-  if (!InRehashing() && 
-      table1().used >= table1().size()) {
+void HASH_TABLE_CLASS::Rehash()
+{
+  if (!InRehashing() && table1().used >= table1().size()) {
     table2().Grow(table1().size() << 1);
     rehash_move_bucket_index_ = 0;
   }
 }
 
 HASH_TABLE_TEMPLATE
-void HASH_TABLE_CLASS::Clear() {
+void HASH_TABLE_CLASS::Clear()
+{
   // size_type n = table1().size();
 
   table1().Shrink(4);
   for (size_type i = 0; i < 4; ++i)
     table1()[i].Clear();
   table1().used = 0;
-  
+
   if (InRehashing()) {
     table2().Shrink(0);
     // for (size_type i = 0; i < n; ++i)
@@ -265,14 +276,15 @@ void HASH_TABLE_CLASS::Clear() {
 }
 
 HASH_TABLE_TEMPLATE
-void HASH_TABLE_CLASS::IncrementalRehash() {
+void HASH_TABLE_CLASS::IncrementalRehash()
+{
   if (!InRehashing()) {
     return;
   }
-  
-  auto& bucket1 = table1().table[rehash_move_bucket_index_];
 
-  typename Bucket::Node* slot = nullptr;
+  auto &bucket1 = table1().table[rehash_move_bucket_index_];
+
+  typename Bucket::Node *slot = nullptr;
   while (!bucket1.empty()) {
     // Calculate the new bucket index in the table2
     slot = bucket1.ExtractFront();
@@ -293,30 +305,35 @@ void HASH_TABLE_CLASS::IncrementalRehash() {
 }
 
 HASH_TABLE_TEMPLATE
-void HASH_TABLE_CLASS::DebugPrint() {
+void HASH_TABLE_CLASS::DebugPrint()
+{
 #ifdef _DEBUG_HASH_TABLE_
   printf("====== Hash table metadata =====\n");
   printf("used count = %zu\n", table1().used);
   printf("size(table1) = %zu\nsize(table2) = %zu\n", table1().size(), table2().size());
-  printf("sizemask(table1) = %zu\nsizemask(table2) = %zu\n", table1().size_mask, table2().size_mask);
+  printf(
+      "sizemask(table1) = %zu\nsizemask(table2) = %zu\n",
+      table1().size_mask,
+      table2().size_mask
+  );
   printf("rehash_move_bucket_index = %zu\n", rehash_move_bucket_index_);
   printf("====== View of hash table =====\n");
 
   int longthest_list_size = 0;
 
   for (int i = 0; i < 2; ++i) {
-    auto size = table(i).size();
-    Bucket* bucket = nullptr;
-    printf("===== table%d ======\n", i+1);
+    auto    size   = table(i).size();
+    Bucket *bucket = nullptr;
+    printf("===== table%d ======\n", i + 1);
 
     for (size_type j = 0; j < size; ++j) {
       printf("[%zu]: ", j);
       bucket = &table(i)[j];
       assert(bucket);
-      
+
       int list_size = 0;
       if (!bucket->empty()) {
-        for (auto const& e : *bucket) {
+        for (auto const &e : *bucket) {
           std::cout << e << " -> ";
           list_size++;
         }
@@ -327,7 +344,7 @@ void HASH_TABLE_CLASS::DebugPrint() {
       printf("(nil)\n");
     }
 
-    printf("$$$$$ table%d $$$$$\n\n", i+1);
+    printf("$$$$$ table%d $$$$$\n\n", i + 1);
   }
 
   printf("The longest list size = %d\n", longthest_list_size);
