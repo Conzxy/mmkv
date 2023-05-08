@@ -49,6 +49,44 @@ using replacement::CacheInterface;
 class MmkvDb {
   DISABLE_EVIL_COPYABLE(MmkvDb)
 
+  /****** Data members *******/
+  using Dict   = AvlDictionary<String, MmkvData, Comparator<String>>;
+  using ExDict = AvlDictionary<String, uint64_t, Comparator<String>>;
+
+  using ShardIdSet = HashSet<String const *>;
+  using ShardDict  = AvlDictionary<shard_id_t, ShardIdSet, Comparator<shard_id_t>>;
+
+  std::string name_; /* For log */
+
+  /* Store all key-value records. */
+  Dict dict_;
+
+  /* Store the expiration time of key.
+   * ExDict的键类型不是String*（在dict_中的拷贝）而是String
+   * （存储键本身）。
+   * 如果采用String*作为键类型，那么每次都得先获取在dict_的key地址
+   * 对于一些操作是这是没有必要的。
+   * 尽管采用String作为键需要耗费更多空间
+   * FIXME
+   * 采用String*作为键实现 */
+  ExDict exp_dict_; /** expire dictionary */
+
+  std::unique_ptr<CacheInterface<String const *>> cache_;
+
+  /* Record the shard => keys
+   * 保存的是在dict_中key的拷贝 */
+  ShardDict sdict_;
+
+  /**
+   * Add node:
+   * To new node that added to cluster, if the pulled shard data
+   * is incomplete, it is necessary to lock the shard.
+   *
+   * Leave node:
+   * To old node, the pushed shard must be locked.
+   */
+  HashSet<shard_id_t> locked_shard_id_set_;
+
  public:
   explicit MmkvDb(std::string name);
 
@@ -61,6 +99,8 @@ class MmkvDb {
 
   // MmkvDb(MmkvDb &&) = default;
   // MmkvDb &operator=(MmkvDb &&) = default;
+
+  void SetName(std::string name) { name_ = std::move(name); }
 
   /*----------------------------------------------*/
   /* Common API                                   */
@@ -707,12 +747,29 @@ class MmkvDb {
   /* Shard Management                                 */
   /*--------------------------------------------------*/
 
+  ShardDict::iterator       ShardBegin() noexcept { return sdict_.begin(); }
+  ShardDict::iterator       ShardEnd() noexcept { return sdict_.end(); }
+  ShardDict::const_iterator ShardBegin() const noexcept { return sdict_.begin(); }
+  ShardDict::const_iterator ShardEnd() const noexcept { return sdict_.end(); }
+
+  void DeleteAllShard();
+  void UnlockAllShard();
+
   /**
    * \brief
    *
    * \param shard_id
    */
   void LockShard(shard_id_t shard_id);
+
+  /**
+   * \brief
+   *
+   * \param shard_id
+   *
+   * \return
+   */
+  bool IsShardLocked(shard_id_t shard_id) const noexcept;
 
   /**
    * \brief
@@ -729,12 +786,16 @@ class MmkvDb {
    */
   void RemoveShard(shard_id_t shard_id);
 
+  bool HasShard(shard_id_t shard);
+
   /**
    * Get all keys in the mapped shard
    */
   ShardCode GetShardKeys(shard_id_t shard_id, std::vector<String const *> &keys);
 
   String GetShardInfo();
+
+  bool is_ignore_locked_shard = false;
 
  private:
   /*----------------------------------------------*/
@@ -773,7 +834,6 @@ class MmkvDb {
   /* Shard management API                         */
   /*----------------------------------------------*/
 
-  MMKV_INLINE bool IsShardLocked(shard_id_t shard_id) const noexcept;
   MMKV_INLINE bool HasShardLocked() const noexcept;
 
   /**
@@ -787,44 +847,6 @@ class MmkvDb {
    * \param key Exists in the database
    */
   void RemoveKeyFromShard(String const &key);
-
-  /****** Data members *******/
-  using Dict   = AvlDictionary<String, MmkvData, Comparator<String>>;
-  using ExDict = AvlDictionary<String, uint64_t, Comparator<String>>;
-
-  using ShardIdSet = HashSet<String const *>;
-  using ShardDict  = AvlDictionary<shard_id_t, ShardIdSet, Comparator<shard_id_t>>;
-
-  std::string name_; /* For log */
-
-  /* Store all key-value records. */
-  Dict dict_;
-
-  /* Store the expiration time of key.
-   * ExDict的键类型不是String*（在dict_中的拷贝）而是String
-   * （存储键本身）。
-   * 如果采用String*作为键类型，那么每次都得先获取在dict_的key地址
-   * 对于一些操作是这是没有必要的。
-   * 尽管采用String作为键需要耗费更多空间
-   * FIXME
-   * 采用String*作为键实现 */
-  ExDict exp_dict_; /** expire dictionary */
-
-  std::unique_ptr<CacheInterface<String const *>> cache_;
-
-  /* Record the shard => keys
-   * 保存的是在dict_中key的拷贝 */
-  ShardDict sdict_;
-
-  /**
-   * Add node:
-   * To new node that added to cluster, if the pulled shard data
-   * is incomplete, it is necessary to lock the shard.
-   *
-   * Leave node:
-   * To old node, the pushed shard must be locked.
-   */
-  HashSet<shard_id_t> locked_shard_id_set_;
 };
 
 } // namespace db

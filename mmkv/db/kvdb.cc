@@ -40,27 +40,26 @@ using namespace mmkv::replacement;
 using namespace mmkv::util;
 using namespace kanon;
 
-#define CHECK_SHARD_IS_LOCKED_KEY(key_)                                        \
-  do {                                                                         \
-    auto shard_id = MakeShardId(key_);                                         \
-    if (IsShardLocked(shard_id)) {                                             \
-      return S_SHARD_LOCKED;                                                   \
-    }                                                                          \
+#define CHECK_SHARD_IS_LOCKED_KEY(key_)                                                            \
+  do {                                                                                             \
+    auto shard_id = MakeShardId(key_);                                                             \
+    if (IsShardLocked(shard_id) && !is_ignore_locked_shard) {                                      \
+      return S_SHARD_LOCKED;                                                                       \
+    }                                                                                              \
   } while (0)
 
-#define CHECK_HAS_SHARD_LOCKED_KEY                                             \
-  do {                                                                         \
-    if (HasShardLocked()) {                                                    \
-      return S_SHARD_LOCKED;                                                   \
-    }                                                                          \
+#define CHECK_HAS_SHARD_LOCKED_KEY                                                                 \
+  do {                                                                                             \
+    if (HasShardLocked() && !is_ignore_locked_shard) {                                             \
+      return S_SHARD_LOCKED;                                                                       \
+    }                                                                                              \
   } while (0)
 
 MmkvDb::MmkvDb(std::string name)
   : name_(std::move(name))
   , cache_(nullptr)
 {
-  if (mmkv_config().replace_policy == RP_LRU)
-    cache_.reset(new LruCache<String const *>(-1));
+  if (mmkv_config().replace_policy == RP_LRU) cache_.reset(new LruCache<String const *>(-1));
 
   LOG_INFO << "Database " << name_ << " created";
 }
@@ -134,7 +133,7 @@ StatusCode MmkvDb::Rename(String const &old_name, String &&new_name)
 
   auto pkey = &node->value.key;
   TryReplacekey(pkey);
-  *pkey = std::move(new_name);
+  *pkey        = std::move(new_name);
   // FIXME Efficiently push without check of unique key
   auto success = dict_.Push(node);
   (void)success;
@@ -153,7 +152,7 @@ StatusCode MmkvDb::InsertStr(String k, String v)
   TryReplacekey(nullptr);
 
   MmkvData data = {
-      .type = D_STRING,
+      .type     = D_STRING,
       .any_data = nullptr, // dummy
   };
 
@@ -171,8 +170,8 @@ StatusCode MmkvDb::EraseStr(String const &k)
 {
   CHECK_SHARD_IS_LOCKED_KEY(k);
   typename Dict::Bucket *bucket = nullptr;
-  auto slot = dict_.FindNode(k, &bucket);
-  auto &str = (slot)->value.value;
+  auto                   slot   = dict_.FindNode(k, &bucket);
+  auto                  &str    = (slot)->value.value;
 
   if (slot) {
     if (str.type == D_STRING) {
@@ -210,7 +209,7 @@ StatusCode MmkvDb::GetStr(String const &k, String *&str) noexcept
 StatusCode MmkvDb::StrAppend(String const &key, String const &str)
 {
   CHECK_SHARD_IS_LOCKED_KEY(key);
-  String *pstr = nullptr;
+  String    *pstr = nullptr;
   const auto code = GetStr(key, pstr);
   if (code == S_OK) {
     // Reserve to avoid allocate more space
@@ -226,7 +225,7 @@ StatusCode MmkvDb::StrAppend(String const &key, String const &str)
 StatusCode MmkvDb::StrPopBack(String const &key, size_t count)
 {
   CHECK_SHARD_IS_LOCKED_KEY(key);
-  String *pstr = nullptr;
+  String    *pstr = nullptr;
   const auto code = GetStr(key, pstr);
   if (code == S_OK) {
     pstr->erase(pstr->size() - count, count);
@@ -240,9 +239,9 @@ StatusCode MmkvDb::SetStr(String k, String v)
   if (CheckExpire(k)) return S_NONEXISTS;
 
   Dict::value_type *duplicate = nullptr;
-  MmkvData data = {
-      .type = D_STRING,
-      .any_data = nullptr,
+  MmkvData          data      = {
+                    .type     = D_STRING,
+                    .any_data = nullptr,
   };
 
   auto success = dict_.InsertKvWithDuplicate(std::move(k), data, duplicate);
@@ -262,19 +261,19 @@ StatusCode MmkvDb::SetStr(String k, String v)
   return S_OK;
 }
 
-#define LIST_ERROR_ROUTINE                                                     \
-  auto kv = dict_.Find(k);                                                     \
-  if (!kv) return S_NONEXISTS;                                                 \
+#define LIST_ERROR_ROUTINE                                                                         \
+  auto kv = dict_.Find(k);                                                                         \
+  if (!kv) return S_NONEXISTS;                                                                     \
   if (kv->value.type != D_STRLIST) return S_EXISITS_DIFF_TYPE
 
-#define CHECK_EXPIRE_ROUTINE(key)                                              \
+#define CHECK_EXPIRE_ROUTINE(key)                                                                  \
   if (CheckExpire(key)) return S_NONEXISTS
 
 StatusCode MmkvDb::ListAdd(String k, StrValues &elems)
 {
   CHECK_SHARD_IS_LOCKED_KEY(k);
   MmkvData data = {
-      .type = D_STRLIST,
+      .type     = D_STRLIST,
       .any_data = nullptr, // dummy
   };
 
@@ -325,7 +324,7 @@ StatusCode MmkvDb::ListGetSize(String const &k, size_t &size)
   LIST_ERROR_ROUTINE;
 
   auto lst = (StrList *)kv->value.any_data;
-  size = lst->size();
+  size     = lst->size();
   return S_OK;
 }
 
@@ -345,12 +344,7 @@ StatusCode MmkvDb::ListGetAll(String const &k, StrValues &values)
   return S_OK;
 }
 
-StatusCode MmkvDb::ListGetRange(
-    String const &k,
-    StrValues &values,
-    int64_t l,
-    int64_t r
-)
+StatusCode MmkvDb::ListGetRange(String const &k, StrValues &values, int64_t l, int64_t r)
 {
   if (CheckExpire(k)) return S_NONEXISTS;
   LIST_ERROR_ROUTINE;
@@ -405,7 +399,7 @@ StatusCode MmkvDb::ListPopFront(String const &k, uint32_t count)
   LIST_ERROR_ROUTINE;
 
   auto lst = (StrList *)kv->value.any_data;
-  count = DB_MIN(count, lst->size());
+  count    = DB_MIN(count, lst->size());
 
   // FIXME implement PopFront(count)
   while (count--) {
@@ -423,7 +417,7 @@ StatusCode MmkvDb::ListPopBack(String const &k, uint32_t count)
   LIST_ERROR_ROUTINE;
 
   auto lst = (StrList *)kv->value.any_data;
-  count = DB_MIN(count, lst->size());
+  count    = DB_MIN(count, lst->size());
   while (count--) {
     lst->PopBack();
   }
@@ -436,8 +430,8 @@ StatusCode MmkvDb::ListDel(String const &k)
   CHECK_SHARD_IS_LOCKED_KEY(k);
 
   Dict::Bucket *bucket = nullptr;
-  auto slot = dict_.FindNode(k, &bucket);
-  auto &str = (slot)->value.value;
+  auto          slot   = dict_.FindNode(k, &bucket);
+  auto         &str    = (slot)->value.value;
 
   if (slot) {
     if (str.type == D_STRLIST) {
@@ -460,18 +454,17 @@ StatusCode MmkvDb::VsetAdd(String &&key, WeightValues &&wms, size_t &count)
   CHECK_SHARD_IS_LOCKED_KEY(key);
 
   MmkvData data{
-      .type = D_SORTED_SET,
+      .type     = D_SORTED_SET,
       .any_data = nullptr, // dummy
   };
 
   Dict::value_type *duplicate = nullptr;
-  auto success =
-      dict_.InsertKvWithDuplicate(std::move(key), std::move(data), duplicate);
+  auto success = dict_.InsertKvWithDuplicate(std::move(key), std::move(data), duplicate);
 
   if (success || duplicate->value.type == D_SORTED_SET) {
     Vset *vset = nullptr;
     if (success) {
-      vset = new Vset();
+      vset                      = new Vset();
       duplicate->value.any_data = vset;
     } else {
       vset = TO_VSET(duplicate);
@@ -488,13 +481,13 @@ StatusCode MmkvDb::VsetAdd(String &&key, WeightValues &&wms, size_t &count)
   return S_EXISITS_DIFF_TYPE;
 }
 
-#define ERROR_ROUTINE(_var, _type)                                             \
-  if (!(_var)) return S_NONEXISTS;                                             \
+#define ERROR_ROUTINE(_var, _type)                                                                 \
+  if (!(_var)) return S_NONEXISTS;                                                                 \
   if ((_var)->value.type != (_type)) return S_EXISITS_DIFF_TYPE;
 
-#define ERROR_ROUTINE_KV(_type)                                                \
-  auto kv = dict_.Find(key);                                                   \
-  if (!kv) return S_NONEXISTS;                                                 \
+#define ERROR_ROUTINE_KV(_type)                                                                    \
+  auto kv = dict_.Find(key);                                                                       \
+  if (!kv) return S_NONEXISTS;                                                                     \
   if (kv->value.type != (_type)) return S_EXISITS_DIFF_TYPE
 
 StatusCode MmkvDb::VsetDel(String const &key, String const &member)
@@ -509,11 +502,7 @@ StatusCode MmkvDb::VsetDel(String const &key, String const &member)
   return S_VMEMBER_NONEXISTS;
 }
 
-StatusCode MmkvDb::VsetDelRange(
-    String const &key,
-    OrderRange range,
-    size_t &count
-)
+StatusCode MmkvDb::VsetDelRange(String const &key, OrderRange range, size_t &count)
 {
   CHECK_SHARD_IS_LOCKED_KEY(key);
 
@@ -523,11 +512,7 @@ StatusCode MmkvDb::VsetDelRange(
   return S_OK;
 }
 
-StatusCode MmkvDb::VsetDelRangeByWeight(
-    String const &key,
-    WeightRange range,
-    size_t &count
-)
+StatusCode MmkvDb::VsetDelRangeByWeight(String const &key, WeightRange range, size_t &count)
 {
   CHECK_SHARD_IS_LOCKED_KEY(key);
 
@@ -545,11 +530,7 @@ StatusCode MmkvDb::VsetSize(String const &key, size_t &count)
   return S_OK;
 }
 
-StatusCode MmkvDb::VsetSizeByWeight(
-    String const &key,
-    WeightRange range,
-    size_t &count
-)
+StatusCode MmkvDb::VsetSizeByWeight(String const &key, WeightRange range, size_t &count)
 {
   CHECK_EXPIRE_ROUTINE(key);
   ERROR_ROUTINE_KV(D_SORTED_SET);
@@ -557,11 +538,7 @@ StatusCode MmkvDb::VsetSizeByWeight(
   return S_OK;
 }
 
-StatusCode MmkvDb::VsetWeight(
-    String const &key,
-    String const &member,
-    Weight &w
-)
+StatusCode MmkvDb::VsetWeight(String const &key, String const &member, Weight &w)
 {
   CHECK_EXPIRE_ROUTINE(key);
   ERROR_ROUTINE_KV(D_SORTED_SET);
@@ -571,11 +548,7 @@ StatusCode MmkvDb::VsetWeight(
     return S_VMEMBER_NONEXISTS;
 }
 
-StatusCode MmkvDb::VsetOrder(
-    String const &key,
-    String const &member,
-    size_t &order
-)
+StatusCode MmkvDb::VsetOrder(String const &key, String const &member, size_t &order)
 {
   CHECK_EXPIRE_ROUTINE(key);
   ERROR_ROUTINE_KV(D_SORTED_SET);
@@ -585,11 +558,7 @@ StatusCode MmkvDb::VsetOrder(
     return S_VMEMBER_NONEXISTS;
 }
 
-StatusCode MmkvDb::VsetROrder(
-    String const &key,
-    String const &member,
-    size_t &order
-)
+StatusCode MmkvDb::VsetROrder(String const &key, String const &member, size_t &order)
 {
   CHECK_EXPIRE_ROUTINE(key);
   ERROR_ROUTINE_KV(D_SORTED_SET);
@@ -607,11 +576,7 @@ StatusCode MmkvDb::VsetAll(String const &key, WeightValues &wms)
   return S_OK;
 }
 
-StatusCode MmkvDb::VsetRange(
-    String const &key,
-    OrderRange range,
-    WeightValues &wms
-)
+StatusCode MmkvDb::VsetRange(String const &key, OrderRange range, WeightValues &wms)
 {
   CHECK_EXPIRE_ROUTINE(key);
   ERROR_ROUTINE_KV(D_SORTED_SET);
@@ -619,11 +584,7 @@ StatusCode MmkvDb::VsetRange(
   return S_OK;
 }
 
-StatusCode MmkvDb::VsetRangeByWeight(
-    String const &key,
-    WeightRange range,
-    WeightValues &wms
-)
+StatusCode MmkvDb::VsetRangeByWeight(String const &key, WeightRange range, WeightValues &wms)
 {
   CHECK_EXPIRE_ROUTINE(key);
   ERROR_ROUTINE_KV(D_SORTED_SET);
@@ -631,11 +592,7 @@ StatusCode MmkvDb::VsetRangeByWeight(
   return S_OK;
 }
 
-StatusCode MmkvDb::VsetRRange(
-    String const &key,
-    OrderRange range,
-    WeightValues &wms
-)
+StatusCode MmkvDb::VsetRRange(String const &key, OrderRange range, WeightValues &wms)
 {
   CHECK_EXPIRE_ROUTINE(key);
   ERROR_ROUTINE_KV(D_SORTED_SET);
@@ -644,11 +601,7 @@ StatusCode MmkvDb::VsetRRange(
   return S_OK;
 }
 
-StatusCode MmkvDb::VsetRRangeByWeight(
-    String const &key,
-    WeightRange range,
-    WeightValues &wms
-)
+StatusCode MmkvDb::VsetRRangeByWeight(String const &key, WeightRange range, WeightValues &wms)
 {
   CHECK_EXPIRE_ROUTINE(key);
   ERROR_ROUTINE_KV(D_SORTED_SET);
@@ -661,18 +614,17 @@ StatusCode MmkvDb::MapAdd(String &&key, StrKvs &&kvs, size_t &count)
   CHECK_SHARD_IS_LOCKED_KEY(key);
 
   MmkvData data{
-      .type = D_MAP,
+      .type     = D_MAP,
       .any_data = nullptr,
   };
 
   Dict::value_type *duplicate = nullptr;
 
-  auto success =
-      dict_.InsertKvWithDuplicate(std::move(key), std::move(data), duplicate);
+  auto success = dict_.InsertKvWithDuplicate(std::move(key), std::move(data), duplicate);
   if (success || duplicate->value.type == D_MAP) {
     Map *map = nullptr;
     if (success) {
-      map = new Map();
+      map                       = new Map();
       duplicate->value.any_data = map;
     } else {
       map = (Map *)duplicate->value.any_data;
@@ -696,7 +648,7 @@ StatusCode MmkvDb::MapGet(String const &key, String const &field, String &value)
   ERROR_ROUTINE_KV(D_MAP);
 
   auto map = TO_MAP;
-  auto fv = map->Find(field);
+  auto fv  = map->Find(field);
 
   if (fv) {
     value = fv->value;
@@ -706,11 +658,7 @@ StatusCode MmkvDb::MapGet(String const &key, String const &field, String &value)
   return S_FIELD_NONEXISTS;
 }
 
-StatusCode MmkvDb::MapGets(
-    String const &key,
-    StrValues const &fields,
-    StrValues &values
-)
+StatusCode MmkvDb::MapGets(String const &key, StrValues const &fields, StrValues &values)
 {
   CHECK_EXPIRE_ROUTINE(key);
   ERROR_ROUTINE_KV(D_MAP);
@@ -742,8 +690,8 @@ StatusCode MmkvDb::MapSet(String const &key, String &&field, String &&value)
   Map::value_type *duplicate = nullptr;
   // auto success = map->InsertKvWithDuplicate(std::move(field),
   // std::move(value), duplicate);
-  StrKeyValue fv{std::move(field), std::move(value)};
-  auto success = map->InsertWithDuplicate(std::move(fv), duplicate);
+  StrKeyValue      fv{std::move(field), std::move(value)};
+  auto             success = map->InsertWithDuplicate(std::move(fv), duplicate);
 
   if (!success) {
     duplicate->value = std::move(fv.value);
@@ -829,18 +777,17 @@ StatusCode MmkvDb::SetAdd(String &&key, StrValues &members, size_t &count)
   CHECK_SHARD_IS_LOCKED_KEY(key);
 
   MmkvData data{
-      .type = D_SET,
+      .type     = D_SET,
       .any_data = nullptr,
   };
 
   Dict::value_type *duplicate = nullptr;
 
-  auto success =
-      dict_.InsertKvWithDuplicate(std::move(key), std::move(data), duplicate);
+  auto success = dict_.InsertKvWithDuplicate(std::move(key), std::move(data), duplicate);
   if (success || duplicate->value.type == D_SET) {
     Set *set = nullptr;
     if (success) {
-      set = new Set();
+      set                       = new Set();
       duplicate->value.any_data = set;
     } else {
       set = (Set *)duplicate->value.any_data;
@@ -909,19 +856,15 @@ StatusCode MmkvDb::SetAll(String const &key, StrValues &members)
   return S_OK;
 }
 
-#define SET_OP_ROUTINE                                                         \
-  auto kv1 = dict_.Find(key1);                                                 \
-  ERROR_ROUTINE(kv1, D_SET);                                                   \
-  auto kv2 = dict_.Find(key2);                                                 \
-  ERROR_ROUTINE(kv2, D_SET);                                                   \
-  auto set1 = TO_SET(kv1->value);                                              \
+#define SET_OP_ROUTINE                                                                             \
+  auto kv1 = dict_.Find(key1);                                                                     \
+  ERROR_ROUTINE(kv1, D_SET);                                                                       \
+  auto kv2 = dict_.Find(key2);                                                                     \
+  ERROR_ROUTINE(kv2, D_SET);                                                                       \
+  auto set1 = TO_SET(kv1->value);                                                                  \
   auto set2 = TO_SET(kv2->value)
 
-StatusCode MmkvDb::SetAnd(
-    String const &key1,
-    String const &key2,
-    StrValues &members
-)
+StatusCode MmkvDb::SetAnd(String const &key1, String const &key2, StrValues &members)
 {
   // FIXME
   CHECK_EXPIRE_ROUTINE(key1);
@@ -935,33 +878,25 @@ StatusCode MmkvDb::SetAnd(
   return S_OK;
 }
 
-#define SET_OP_TO_ROUTINE                                                      \
-  MmkvData data{                                                               \
-      .type = D_SET,                                                           \
-      .any_data = nullptr,                                                     \
-  };                                                                           \
-                                                                               \
-  Dict::value_type *duplicate = nullptr;                                       \
-  auto success = dict_.InsertKvWithDuplicate(                                  \
-      std::move(dest),                                                         \
-      std::move(data),                                                         \
-      duplicate                                                                \
-  );                                                                           \
-                                                                               \
-  Set *dest_set = nullptr;                                                     \
-  if (success) {                                                               \
-    dest_set = new Set();                                                      \
-    duplicate->value.any_data = dest_set;                                      \
-  } else {                                                                     \
-    if (duplicate->value.type != D_SET) return S_DEST_EXISTS;                  \
-    dest_set = TO_SET(duplicate->value);                                       \
+#define SET_OP_TO_ROUTINE                                                                          \
+  MmkvData data{                                                                                   \
+      .type     = D_SET,                                                                           \
+      .any_data = nullptr,                                                                         \
+  };                                                                                               \
+                                                                                                   \
+  Dict::value_type *duplicate = nullptr;                                                           \
+  auto success = dict_.InsertKvWithDuplicate(std::move(dest), std::move(data), duplicate);         \
+                                                                                                   \
+  Set *dest_set = nullptr;                                                                         \
+  if (success) {                                                                                   \
+    dest_set                  = new Set();                                                         \
+    duplicate->value.any_data = dest_set;                                                          \
+  } else {                                                                                         \
+    if (duplicate->value.type != D_SET) return S_DEST_EXISTS;                                      \
+    dest_set = TO_SET(duplicate->value);                                                           \
   }
 
-StatusCode MmkvDb::SetAndTo(
-    String const &key1,
-    String const &key2,
-    String &&dest
-)
+StatusCode MmkvDb::SetAndTo(String const &key1, String const &key2, String &&dest)
 {
   CHECK_SHARD_IS_LOCKED_KEY(dest);
 
@@ -977,11 +912,7 @@ StatusCode MmkvDb::SetAndTo(
   return S_OK;
 }
 
-StatusCode MmkvDb::SetSub(
-    String const &key1,
-    String const &key2,
-    StrValues &members
-)
+StatusCode MmkvDb::SetSub(String const &key1, String const &key2, StrValues &members)
 {
   CHECK_EXPIRE_ROUTINE(key1);
   CHECK_EXPIRE_ROUTINE(key2);
@@ -994,11 +925,7 @@ StatusCode MmkvDb::SetSub(
   return S_OK;
 }
 
-StatusCode MmkvDb::SetSubTo(
-    String const &key1,
-    String const &key2,
-    String &&dest
-)
+StatusCode MmkvDb::SetSubTo(String const &key1, String const &key2, String &&dest)
 {
   CHECK_SHARD_IS_LOCKED_KEY(dest);
 
@@ -1014,11 +941,7 @@ StatusCode MmkvDb::SetSubTo(
   return S_OK;
 }
 
-StatusCode MmkvDb::SetOr(
-    String const &key1,
-    String const &key2,
-    StrValues &members
-)
+StatusCode MmkvDb::SetOr(String const &key1, String const &key2, StrValues &members)
 {
   CHECK_EXPIRE_ROUTINE(key1);
   CHECK_EXPIRE_ROUTINE(key2);
@@ -1031,11 +954,7 @@ StatusCode MmkvDb::SetOr(
   return S_OK;
 }
 
-StatusCode MmkvDb::SetOrTo(
-    String const &key1,
-    String const &key2,
-    String &&dest
-)
+StatusCode MmkvDb::SetOrTo(String const &key1, String const &key2, String &&dest)
 {
   CHECK_SHARD_IS_LOCKED_KEY(dest);
 
@@ -1051,11 +970,7 @@ StatusCode MmkvDb::SetOrTo(
   return S_OK;
 }
 
-StatusCode MmkvDb::SetAndSize(
-    String const &key1,
-    String const &key2,
-    size_t &count
-)
+StatusCode MmkvDb::SetAndSize(String const &key1, String const &key2, size_t &count)
 {
   CHECK_EXPIRE_ROUTINE(key1);
   CHECK_EXPIRE_ROUTINE(key2);
@@ -1068,11 +983,7 @@ StatusCode MmkvDb::SetAndSize(
   return S_OK;
 }
 
-StatusCode MmkvDb::SetOrSize(
-    String const &key1,
-    String const &key2,
-    size_t &count
-)
+StatusCode MmkvDb::SetOrSize(String const &key1, String const &key2, size_t &count)
 {
   CHECK_EXPIRE_ROUTINE(key1);
   CHECK_EXPIRE_ROUTINE(key2);
@@ -1085,11 +996,7 @@ StatusCode MmkvDb::SetOrSize(
   return S_OK;
 }
 
-StatusCode MmkvDb::SetSubSize(
-    String const &key1,
-    String const &key2,
-    size_t &count
-)
+StatusCode MmkvDb::SetSubSize(String const &key1, String const &key2, size_t &count)
 {
   CHECK_EXPIRE_ROUTINE(key1);
   CHECK_EXPIRE_ROUTINE(key2);
@@ -1111,14 +1018,13 @@ StatusCode MmkvDb::ExpireAtMs(String &&key, uint64_t expire)
   if (!kv) return S_NONEXISTS;
 
   ExDict::value_type *duplicate = nullptr;
-  const uint64_t cur_ms = util::GetTimeMs();
+  const uint64_t      cur_ms    = util::GetTimeMs();
 
   LOG_DEBUG << "current ms: " << cur_ms;
   LOG_DEBUG << "expire: " << expire;
   LOG_DEBUG << "diff: " << expire - cur_ms;
   if (cur_ms < expire) {
-    const auto success =
-        exp_dict_.InsertKvWithDuplicate(std::move(key), expire, duplicate);
+    const auto success = exp_dict_.InsertKvWithDuplicate(std::move(key), expire, duplicate);
     if (!success) duplicate->value = expire;
   }
 
@@ -1150,7 +1056,7 @@ StatusCode MmkvDb::GetTimeToLive(String const &key, uint64_t &ttl)
   const uint64_t cur_ms = util::GetTimeMs();
   /* Avoid unsigned integer underflow
      0 indicates the key is expired */
-  ttl = (cur_ms >= exp_key->value) ? 0 : exp_key->value - cur_ms;
+  ttl                   = (cur_ms >= exp_key->value) ? 0 : exp_key->value - cur_ms;
   return S_OK;
 }
 
@@ -1160,8 +1066,7 @@ StatusCode MmkvDb::GetTimeToLive(String const &key, uint64_t &ttl)
 
 void MmkvDb::TryReplacekey(String const *key)
 {
-  if (!cache_ || mmkv_config().max_memory_usage > memory_stat().memory_usage)
-    return;
+  if (!cache_ || mmkv_config().max_memory_usage > memory_stat().memory_usage) return;
 
   auto const shard_id = MakeShardId(*key);
   if (IsShardLocked(shard_id)) {
@@ -1178,8 +1083,7 @@ void MmkvDb::TryReplacekey(String const *key)
   auto node = dict_.Extract(**victim);
   assert(node);
   cache_->DelVictim();
-  if (mmkv_config().log_method == server::LM_REQUEST)
-    rlog().AppendDel(std::move(node->value.key));
+  if (mmkv_config().log_method == server::LM_REQUEST) rlog().AppendDel(std::move(node->value.key));
   DeleteMmkvData(node->value.value);
   dict_.DropNode(node);
 }
@@ -1208,8 +1112,8 @@ void MmkvDb::CacheUpdate(String const *key)
 void MmkvDb::CheckExpireCycle()
 {
   std::vector<String> expire_keys;
-  const uint64_t cur_ms = util::GetTimeMs();
-  Dict::Node *node = nullptr;
+  const uint64_t      cur_ms = util::GetTimeMs();
+  Dict::Node         *node   = nullptr;
 
   for (auto const &k_exp : exp_dict_) {
     if (k_exp.value <= cur_ms) {
@@ -1227,10 +1131,10 @@ void MmkvDb::CheckExpireCycle()
 
   if (mmkv_config().log_method == LM_REQUEST) {
     MmbpRequest request;
-    Buffer buffer;
+    Buffer      buffer;
     for (auto &key : expire_keys) {
       request.SetKey();
-      request.key = std::move(key);
+      request.key     = std::move(key);
       request.command = DEL;
       request.SerializeTo(buffer);
       buffer.Prepend32(buffer.GetReadableSize());
@@ -1245,7 +1149,7 @@ bool MmkvDb::CheckExpire(String const &key)
 {
   if (!mmkv_config().lazy_expiration) return false;
   ExDict::Bucket *bucket = nullptr;
-  const auto node = exp_dict_.FindNode(key, &bucket);
+  const auto      node   = exp_dict_.FindNode(key, &bucket);
   if (!node) return false;
   assert(bucket);
 
@@ -1292,17 +1196,23 @@ void MmkvDb::AddShard(shard_id_t shard_id)
   }
 }
 
-void MmkvDb::RemoveShard(Shard shard_id)
+void MmkvDb::RemoveShard(shard_id_t shard_id)
 {
   if (mmkv_config().IsSharder()) {
+    auto *p_shard_key_set = sdict_.Find(shard_id);
+    assert(p_shard_key_set);
+    auto &key_set = p_shard_key_set->value;
+    for (auto const &key : key_set) {
+      // FIXME don't compute again
+      Delete(*key);
+    }
     sdict_.Erase(shard_id);
   }
 }
 
-ShardCode MmkvDb::GetShardKeys(
-    Shard shard_id,
-    std::vector<String const *> &keys
-)
+bool MmkvDb::HasShard(shard_id_t shard_id) { return sdict_.Find(shard_id); }
+
+ShardCode MmkvDb::GetShardKeys(shard_id_t shard_id, std::vector<String const *> &keys)
 {
   if (!mmkv_config().IsSharder()) return SC_NOT_SHARD_SERVER;
 
@@ -1310,6 +1220,7 @@ ShardCode MmkvDb::GetShardKeys(
   if (!shard_keys) return SC_NO_SHARD;
 
   auto &_keys = shard_keys->value;
+  keys.reserve(_keys.size());
   for (auto &key : _keys) {
     keys.push_back(key);
   }
@@ -1320,12 +1231,12 @@ ShardCode MmkvDb::GetShardKeys(
 String MmkvDb::GetShardInfo()
 {
   String ret;
-  char buf[64];
+  char   buf[64];
   for (auto &shard_keys : sdict_) {
-    auto shard = shard_keys.key;
-    auto &keys = shard_keys.value;
-    ret += "shard ";
-    snprintf(buf, sizeof buf, "%u", shard);
+    auto  shard = shard_keys.key;
+    auto &keys  = shard_keys.value;
+    ret         += "shard ";
+    snprintf(buf, sizeof buf, "%lu", shard);
     ret += buf;
     ret += " :";
     for (auto key : keys) {
@@ -1335,6 +1246,10 @@ String MmkvDb::GetShardInfo()
   }
   return ret;
 }
+
+void MmkvDb::DeleteAllShard() { sdict_.Clear(); }
+
+void MmkvDb::UnlockAllShard() { locked_shard_id_set_.Clear(); }
 
 void MmkvDb::LockShard(shard_id_t shard_id)
 {
@@ -1353,7 +1268,4 @@ bool MmkvDb::IsShardLocked(shard_id_t shard_id) const noexcept
   return locked_shard_id_set_.Find(shard_id);
 }
 
-bool MmkvDb::HasShardLocked() const noexcept
-{
-  return !locked_shard_id_set_.empty();
-}
+bool MmkvDb::HasShardLocked() const noexcept { return !locked_shard_id_set_.empty(); }
