@@ -30,6 +30,31 @@ struct ShardControllerClient::Impl {
     self->codec_.Send(self->cli_->GetConnection(), msg);
   }
 
+  MMKV_INLINE static void SendAllPeersRequest(
+      Self                *clt,
+      size_t               peer_num,
+      SharderClient::State state
+  )
+  {
+    clt->shard_clis_.reserve(peer_num);
+    for (size_t i = 0; i < peer_num; ++i) {
+      const auto &node_info = clt->node_infos_[i];
+      clt->shard_clis_.emplace_back(
+          clt->shard_cli_loop_thr_.GetLoop(),
+          InetAddr(node_info.host(), node_info.port()),
+          clt
+      );
+      clt->shard_clis_[i].SetUp(
+          &clt->sharder_,
+          clt->node_infos_[i].shard_ids().data(),
+          clt->node_infos_[i].shard_ids_size(),
+          &clt->sharder_codec_
+      );
+      clt->shard_clis_[i].SetState(state);
+      clt->shard_clis_[i].Connect();
+    }
+  }
+
   MMKV_INLINE static void HandleJoinOk(
       ShardControllerClient    *clt,
       ControllerResponse const &response
@@ -49,28 +74,20 @@ struct ShardControllerClient::Impl {
       clt->node_id_ = response.node_id();
       SetAllShardNode(clt);
     } else {
-      clt->shard_clis_.reserve(peer_num);
-      for (size_t i = 0; i < peer_num; ++i) {
-        const auto &node_info = clt->node_infos_[i];
-        clt->shard_clis_.emplace_back(
-            clt->shard_cli_loop_thr_.GetLoop(),
-            InetAddr(node_info.host(), node_info.port()),
-            clt
-        );
-        clt->shard_clis_[i].SetUp(
-            &clt->sharder_,
-            clt->node_infos_[i].shard_ids().data(),
-            clt->node_infos_[i].shard_ids_size(),
-            &clt->sharder_codec_
-        );
-        clt->shard_clis_[i].SetState(SharderClient::ADDING);
-        clt->shard_clis_[i].Connect();
-      }
+      SendAllPeersRequest(clt, peer_num, SharderClient::ADDING);
     }
   }
 
   MMKV_INLINE static void HandleLeaveOk(ShardControllerClient *clt, ControllerResponse const &resp)
   {
+    const size_t peer_num = clt->node_infos_.size();
+
+    if (peer_num == 0) {
+      LOG_DEBUG << "This is the last node of the cluster";
+      clt->NotifyLeaveFinish();
+    } else {
+      SendAllPeersRequest(clt, peer_num, SharderClient::LEAVING);
+    }
   }
 
   MMKV_INLINE static void HandleJoinConfChange(ShardControllerClient *clt)
