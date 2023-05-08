@@ -1,0 +1,25 @@
+syntax = "proto2";
+
+package mmkv;
+
+enum ForwardOperation {
+  FWD_MSG_JOIN  = 0;
+  FWD_MSG_LEAVE = 1;
+}
+
+message ForwardRequest
+{
+  required ForwardOperation operation       = 1;
+  optional string           controller_host = 2;
+  optional uint32           controller_port = 3;
+}
+
+enum ForwardStatusCode {
+  FWD_STATUS_OK              = 0;
+  FWD_STATUS_NODE_HAS_ADDED  = 1;
+  FWD_STATUS_NODE_FULL       = 2;
+  FWD_STATUS_NODE_NON_EXISTS = 3;
+  FWD_STATUS_INVALID_MSG     = 4;
+}
+
+message ForwardResponse { required ForwardStatusCode status = 1; }
