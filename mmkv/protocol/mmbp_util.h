@@ -144,7 +144,7 @@ MMKV_INLINE void ParseComponent(
     len = out;
   }
   str.reserve(len);
-  str.append(pp_data, len);
+  str.append(*pp_data8, len);
   *pp_data8 += len;
 }
 

@@ -33,6 +33,7 @@ class MmbpRequest : public MmbpMessage {
 
   void ParseFrom(Buffer &buffer) override;
   void ParseFrom(void const **pp_data, size_t len) override;
+  // using MmbpMessage::ParseFrom;
 
   void Reset();
 
