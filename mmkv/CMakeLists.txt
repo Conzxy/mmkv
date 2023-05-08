@@ -1,9 +1,10 @@
-mmkv_gen_proto_code(PROTOC_PATH "protoc" FILES "${CMAKE_CURRENT_SOURCE_DIR}/sharder/sharder.proto")
 mmkv_gen_proto_code(PROTOC_PATH "protoc" FILES 
-  ${CMAKE_CURRENT_SOURCE_DIR}/tracker/controller.proto 
-  ${CMAKE_CURRENT_SOURCE_DIR}/tracker/configuration.proto)
-mmkv_gen_proto_code(PROTOC_PATH "protoc" FILES
-  ${CMAKE_CURRENT_SOURCE_DIR}/forwarder/forwarder.proto)
+  "${CMAKE_CURRENT_SOURCE_DIR}/tracker/controller.proto"
+  "${CMAKE_CURRENT_SOURCE_DIR}/tracker/configuration.proto"
+  "${CMAKE_CURRENT_SOURCE_DIR}/sharder/sharder.proto"
+  "${CMAKE_CURRENT_SOURCE_DIR}/forwarder/forwarder.proto"
+  "${CMAKE_CURRENT_SOURCE_DIR}/configd/configd.proto"
+)
 
 set(PB_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}")
 message(STATUS "mmkv pb output dir = ${PB_OUTPUT_DIR}")
@@ -44,6 +45,7 @@ file(GLOB MMKV_SERVER_SRC
   tracker/*.cc
   sharder/*.cc
   forwarder/*.cc
+  configd/*.cc
   ${TAKINA_DIR}/takina.cc
   ${CHISATO_DIR}/chisato.cc
 )
@@ -54,6 +56,7 @@ list(APPEND
   ${PB_OUTPUT_DIR}/configuration.pb.cc
   ${PB_OUTPUT_DIR}/controller.pb.cc
   ${PB_OUTPUT_DIR}/forwarder.pb.cc
+  ${PB_OUTPUT_DIR}/configd.pb.cc
 )
 
 file(GLOB CONFIGD_SRC
