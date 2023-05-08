@@ -8,13 +8,13 @@ mmkv_gen_proto_code(PROTOC_PATH "protoc" FILES
 set(PB_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}")
 message(STATUS "mmkv pb output dir = ${PB_OUTPUT_DIR}")
 
-file(GLOB_RECURSE DISTRIBUTION_SRC
+file(GLOB DISTRIBUTION_SRC
   tracker/*.cc
   configd/*.cc
   sharder/*.cc
 )
 
-file(GLOB_RECURSE MMKV_SRC
+file(GLOB MMKV_SRC
   db/*.cc
   disk/*.cc
   protocol/*.cc
@@ -56,7 +56,7 @@ list(APPEND
   ${PB_OUTPUT_DIR}/forwarder.pb.cc
 )
 
-file(GLOB_RECURSE CONFIGD_SRC
+file(GLOB CONFIGD_SRC
   app/configd_main.cc
   server/*.cc
   util/*.cc
@@ -70,7 +70,7 @@ file(GLOB_RECURSE CONFIGD_SRC
   ${CHISATO_DIR}/chisato.cc
 )
 
-file(GLOB_RECURSE MMKV_CLIENT_SRC
+file(GLOB MMKV_CLIENT_SRC
   app/client_main.cc
   protocol/*.cc
   ${KVARINT_DIR}/kvarint.c 
@@ -80,7 +80,7 @@ file(GLOB_RECURSE MMKV_CLIENT_SRC
   ${TERNARY_DIR}/ternary_tree.c
 )
 
-file(GLOB_RECURSE RLOG_DUMP_SRC
+file(GLOB RLOG_DUMP_SRC
   app/rlog_dump.cc
   protocol/command.cc
   protocol/mmbp_request.cc
