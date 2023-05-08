@@ -4,10 +4,10 @@
 
 #include <kanon/net/user_client.h>
 
-#include "mmkv/protocol/mmbp_codec.h"
 #include "mmkv/server/config.h"
 
-#include "mmkv/sharder/shard_client.h"
+#include "controller.pb.h"
+#include "mmkv/sharder/sharder_client.h"
 #include "mmkv/sharder/sharder.h"
 
 namespace mmkv {
@@ -20,85 +20,97 @@ namespace server {
  * 2. Leave the cluster
  * 3. Move shard between new or leaved node
  */
-class TrackerClient : kanon::noncopyable {
+class ShardControllerClient : kanon::noncopyable {
+  using Codec = ::kanon::protobuf::ProtobufCodec2;
+
  public:
+  enum State {
+    IDLE = 0,
+    JOINING,
+    LEAVING,
+  };
+
   /**
    * \param addr Address of the tracker
    * \param shard_port Port of the sharder
    * \param name Name of the tracker client
    * \param sharder_name Name of the thread name of the sharder
    */
-  explicit TrackerClient(EventLoop *loop, InetAddr const &addr, 
-    InetAddr const &shard_addr,
-    std::string const &name = "TrackerClient",
-    std::string const &sharder_name = "Sharder");
+  explicit ShardControllerClient(
+      EventLoop         *loop,
+      InetAddr const    &addr,
+      InetAddr const    &shard_addr,
+      std::string const &name         = "ShardControllerClient",
+      std::string const &sharder_name = "Sharder"
+  );
 
   void Connect() { cli_->Connect(); }
+
   void DisConnect() { cli_->Disconnect(); }
-  
+
   /*---------------------------------------*/
   /* Operation                             */
   /*---------------------------------------*/
 
-  void Join();
-  void Leave();
-  void MoveShardNode(uint32_t shard_id);
-  
-  /** Notify the tracker the operation is complete */
-  void NotifyMoveFinish();
+  void Join(Codec *codec, TcpConnection *const conn);
+  void Leave(Codec *codec, TcpConnection *const conn);
 
-  /** 
-   * Start the sharder instance 
-   * 
+  /**
+   * Start the sharder instance
+   *
    * \note
    *  Must be called after the all new shards have been
    *  moved from other sharder
    */
   void StartSharder();
-  
-  /**
-   * Only be called when the node is the first node of the cluster.
-   * Because the first node no need to get shards from other sharder,
-   * only notify the tracker.
-   */
-  void SetAllShardNode();
- private:
-  /** Determine the node is the first node of the cluster */
-  bool IsTheFirstNode() const noexcept;
 
-  TcpClientPtr cli_;
+  shard_id_t GetShardNum() const noexcept { return mmkv_config().shard_num; }
+  size_t     GetPeerNum() const noexcept { return shard_clis_.size(); }
+  State      state() const noexcept { return state_; }
+
+  void NotifyPullFinish();
+  void NotifyPushFinish();
+  void NotifyJoinFinish();
+  void NotifyLeaveFinish();
+
+ private:
+  friend struct Impl;
+  struct Impl;
+
+  TcpClientPtr   cli_;
   TcpConnection *conn_;
-  protocol::MmbpCodec codec_;
-  
+  Codec          codec_;
+
   /*------------------------------------*/
   /* Shards metadata                    */
   /*------------------------------------*/
 
-  std::vector<std::vector<uint32_t>> shard_2d_;
-  std::vector<std::string> addrs_;
-  std::vector<uint16_t> ports_;
+  uint32_t  finish_node_num_ = 0;
+  node_id_t node_id_; /** The id of the node */
 
-  uint32_t finish_node_num_ = 0;
-  uint32_t node_id_; /** The id of the node(for identify and debugging) */
-  
   /*------------------------------------*/
   /* Sharder Clients                      */
   /*------------------------------------*/
 
-  EventLoopThread shard_cli_loop_thr_;
+  Codec                                                  sharder_codec_;
+  ::google::protobuf::RepeatedPtrField<::mmkv::NodeInfo> node_infos_;
+
+  EventLoopThread            shard_cli_loop_thr_;
   // std::vector<std::unique_ptr<ShardClient>> shard_clis_;
-  std::vector<ShardClient> shard_clis_;
-  
+  std::vector<SharderClient> shard_clis_;
+
   /*------------------------------------*/
   /* Sharder                            */
   /*------------------------------------*/
 
   EventLoopThread sharder_loop_thr_;
-  Sharder sharder_;
-  uint16_t sharder_port_;
+  Sharder         sharder_;
+  uint16_t        sharder_port_;
+
+  State state_;
 };
 
-} // client
-} // mmkv
+} // namespace server
+} // namespace mmkv
 
 #endif

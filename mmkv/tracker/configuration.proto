@@ -1,0 +1,12 @@
+syntax = "proto2";
+
+package mmkv;
+
+message NodeConf
+{
+  required uint32 port = 1;
+  required string host = 2;
+  repeated uint64 shard_ids = 3;
+}
+
+message Configuration { map<uint64, NodeConf> node_conf_map = 1; }

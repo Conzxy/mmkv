@@ -1,0 +1,45 @@
+syntax = "proto2";
+
+package mmkv;
+
+enum ControllerOperation {
+  CONTROL_OP_ADD_NODE            = 0;
+  CONTROL_OP_LEAVE_NODE          = 1;
+  CONTROL_OP_ADD_NODE_COMPLETE   = 2;
+  CONTROL_OP_LEAVE_NODE_COMPLETE = 3;
+}
+
+message ControllerRequest
+{
+  required ControllerOperation operation    = 1;
+  required uint64              node_id      = 2;
+  optional uint32              sharder_port = 3;
+}
+
+enum ControllerStatusCode {
+  CONTROL_STATUS_OK              = 0;
+  CONTROL_STATUS_WAIT            = 1;
+  CONTROL_STATUS_HB              = 2; // HeartBeat
+  CONTROL_STATUS_NODE_HAS_ADDED  = 3;
+  CONTROL_STATUS_NODE_FULL       = 4;
+  CONTROL_STATUS_NODE_NON_EXISTS = 5;
+  CONTROL_STATUS_INVALID_MSG     = 6;
+  CONTROL_STATUS_CONF_CHANGE     = 7;
+}
+
+message NodeInfo
+{
+  required uint64 node_id   = 1;
+  required uint32 port      = 2;
+  required string host      = 3;
+  repeated uint64 shard_ids = 4;
+  required bool   is_push   = 5;
+}
+
+message ControllerResponse
+{
+  required ControllerStatusCode status     = 1;
+  optional uint64               node_id    = 2;
+  repeated NodeInfo             node_infos = 3;
+  optional uint64               shard_num  = 4;
+}
