@@ -18,7 +18,7 @@ enum LogMethod : uint8_t {
 
 /** The policy to replace key when maximum allowed memory usage is reached */
 enum ReplacePolicy : uint8_t {
-  RP_LRU = 0,     /** Least-recently-used */
+  RP_LRU = 0, /** Least-recently-used */
   RP_NONE,
 };
 
@@ -26,33 +26,32 @@ struct MmkvConfig {
   /* Set defalut value in case the field is not found in config file.
    * (Not found is also valid, use its default value)
    */
-  LogMethod log_method = LM_NONE;
-  ReplacePolicy replace_policy = RP_NONE;
-  bool lazy_expiration = false;
-  uint64_t max_memory_usage = 0;
-  long expiration_check_cycle = 0;
-  std::string request_log_location = "/tmp/.mmkv-request.log";
-  std::string diagnostic_log_dir = "";
-  std::string config_server_endpoint = "0.0.0.0:9997";
-  std::string tracker_endpoint = "0.0.0.0:19997";
-  long shard_num = DEFAULT_SHARD_NUM;
+  LogMethod                log_method                = LM_NONE;
+  ReplacePolicy            replace_policy            = RP_NONE;
+  bool                     lazy_expiration           = false;
+  uint64_t                 max_memory_usage          = 0;
+  long                     expiration_check_cycle    = 0;
+  std::string              request_log_location      = "/tmp/.mmkv-request.log";
+  std::string              diagnostic_log_dir        = "";
+  std::string              config_server_endpoint    = "";
+  std::string              shard_controller_endpoint = "*:19997";
+  std::string              sharder_endpoint          = "*:19998";
+  std::string              forwarder_endpoint        = "*:9994";
+  long                     shard_num                 = DEFAULT_SHARD_NUM;
+  int                      thread_num                = 1;
   std::vector<std::string> nodes;
-  int thread_num = 1;
 
-  bool inline IsExpirationDisable() const noexcept {
+  bool inline IsExpirationDisable() const noexcept
+  {
     return !lazy_expiration && expiration_check_cycle <= 0;
   }
 
   /* If the address of router exists,
    * the server split keys into shards
    */
-  bool inline IsSharder() const noexcept {
-    return !config_server_endpoint.empty();
-  }
+  bool inline IsSharder() const noexcept { return !shard_controller_endpoint.empty(); }
 
-  bool inline SupportDistribution() const noexcept {
-    return !config_server_endpoint.empty();
-  }
+  bool inline SupportDistribution() const noexcept { return !shard_controller_endpoint.empty(); }
 };
 
 MmkvConfig &mmkv_config();
@@ -63,7 +62,6 @@ bool ParseConfig(std::string &errmsg);
 bool ParseLuaConfig(kanon::StringArg filename, MmkvConfig &config);
 
 void PrintMmkvConfig(MmkvConfig const &config);
-
 
 } // namespace server
 } // namespace mmkv

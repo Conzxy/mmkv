@@ -11,10 +11,10 @@ using namespace hklua;
 using namespace mmkv::server;
 using namespace kanon;
 
-#define ERROR_HANDLE                                                           \
-  do {                                                                         \
-    env.StackDump();                                                           \
-    return false;                                                              \
+#define ERROR_HANDLE                                                                               \
+  do {                                                                                             \
+    env.StackDump();                                                                               \
+    return false;                                                                                  \
   } while (0)
 
 bool server::ParseLuaConfig(StringArg filename, MmkvConfig &config)
@@ -71,36 +71,44 @@ bool server::ParseLuaConfig(StringArg filename, MmkvConfig &config)
     ERROR_HANDLE;
   }
 
-  std::tie(config.max_memory_usage) = env.CallFunction<Number>(
-      "ParseMemoryUsage", 0, &success, true, max_mem_usage);
+  std::tie(config.max_memory_usage) =
+      env.CallFunction<Number>("ParseMemoryUsage", 0, &success, true, max_mem_usage);
 
   if (!success) {
     ERROR_HANDLE;
   }
 
-  if (!env.GetGlobal("EveryShardNum", config.shard_num)) { 
+  if (!env.GetGlobal("ShardNum", config.shard_num)) {
     ERROR_HANDLE;
   }
 
-  if (!env.GetGlobal("ConfigServerEndpoint", config.config_server_endpoint))
-    ERROR_HANDLE;
-
-  if (!env.GetGlobal("TrackerEndpoint", config.tracker_endpoint)) {
+  if (!env.GetGlobal("ConfigServerEndpoint", config.config_server_endpoint)) {
     ERROR_HANDLE;
   }
 
-  Table data_nodes;
+  if (!env.GetGlobal("ShardControllerEndpoint", config.shard_controller_endpoint)) {
+    ERROR_HANDLE;
+  }
+
+  if (!env.GetGlobal("SharderEndpoint", config.sharder_endpoint)) {
+    ERROR_HANDLE;
+  }
+
+  if (!env.GetGlobal("ForwarderEndpoint", config.forwarder_endpoint)) {
+    ERROR_HANDLE;
+  }
+
+  Table      data_nodes;
   TableGuard data_nodes_guard(data_nodes);
 
-  if (!env.GetGlobalTable("DataNodes", data_nodes)) { 
+  if (!env.GetGlobalTable("DataNodes", data_nodes)) {
     ERROR_HANDLE;
   }
 
   auto nodes_len = data_nodes.len();
   /* NOTICE: Lua index starts with 1 */
   for (int i = 1; i <= nodes_len; ++i) {
-    config.nodes.emplace_back(
-        data_nodes.GetFieldR<char const *>(i, true, &success));
+    config.nodes.emplace_back(data_nodes.GetFieldR<char const *>(i, true, &success));
     if (!success) {
       ERROR_HANDLE;
     }

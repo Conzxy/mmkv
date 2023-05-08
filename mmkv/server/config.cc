@@ -15,7 +15,8 @@ using namespace mmkv::util;
 namespace mmkv {
 namespace server {
 
-MmkvConfig &mmkv_config() {
+MmkvConfig &mmkv_config()
+{
   static MmkvConfig config;
   return config;
 }
@@ -28,9 +29,10 @@ static bool set_replace_policy(StrSlice value, void *args) noexcept;
 static bool set_max_memoey_usage(StrSlice vlaue, void *args) noexcept;
 static bool set_nodes(StrSlice value, void *args);
 
-void RegisterConfig(MmkvConfig &config) {
+void RegisterConfig(MmkvConfig &config)
+{
   chisato::AddConfig("LogMethod", &config.log_method, &set_log_method);
-  chisato::AddConfig("ExpirationCheckCycle", &config.expiration_check_cycle); 
+  chisato::AddConfig("ExpirationCheckCycle", &config.expiration_check_cycle);
   chisato::AddConfig("RequestLogLocation", &config.request_log_location);
   chisato::AddConfig("LazyExpiration", &config.lazy_expiration);
   chisato::AddConfig("ReplacePolicy", &config.replace_policy, &set_replace_policy);
@@ -41,22 +43,24 @@ void RegisterConfig(MmkvConfig &config) {
   chisato::AddConfig("Nodes", &config.nodes, &set_nodes);
 }
 
-bool ParseConfig(std::string &errmsg) {
+bool ParseConfig(std::string &errmsg)
+{
   auto start_time = GetTimeMs();
-  auto success = chisato::Parse(mmkv_option().config_name, errmsg); 
+  auto success    = chisato::Parse(mmkv_option().config_name, errmsg);
 
   if (!success) return false;
   if (mmkv_config().request_log_location.empty()) {
     LOG_ERROR << "The RequestLogLocation field in the config file is missing";
     return false;
   }
-  
+
   LOG_INFO << "Parse config cost: " << (GetTimeMs() - start_time) << "ms";
 
   return true;
 }
 
-void PrintMmkvConfig(MmkvConfig const &config) {
+void PrintMmkvConfig(MmkvConfig const &config)
+{
   const auto usage = format_memory_usage(config.max_memory_usage);
   LOG_DEBUG << "Config information: \n";
   LOG_DEBUG << "LogMethod=" << log_method2str(config.log_method);
@@ -66,7 +70,10 @@ void PrintMmkvConfig(MmkvConfig const &config) {
   LOG_DEBUG << "\nReplacePolicy=" << replace_policy2str(config.replace_policy);
   LOG_DEBUG << "\nDiagnosticLogDirectory=" << config.diagnostic_log_dir;
   LOG_DEBUG << "\nMaxMemoryUsage=" << usage.usage << " " << memory_unit2str(usage.unit);
-  LOG_DEBUG << "\nRouterAddress=" << config.config_server_endpoint;
+  LOG_DEBUG << "\nConfigServerAddress=" << config.config_server_endpoint;
+  LOG_DEBUG << "\nSharderAddress=" << config.sharder_endpoint;
+  LOG_DEBUG << "\nForwarderAddress=" << config.forwarder_endpoint;
+  LOG_DEBUG << "\nSharderControllerAddress=" << config.shard_controller_endpoint;
   LOG_DEBUG << "\nShardNum=" << config.shard_num;
   LOG_DEBUG << "\nNodes: ";
   for (size_t i = 0; i < config.nodes.size(); ++i) {
@@ -75,22 +82,24 @@ void PrintMmkvConfig(MmkvConfig const &config) {
 }
 
 #define LM_REQUEST_STR "request"
-#define LM_NONE_STR "none"
+#define LM_NONE_STR    "none"
 
-static inline StringView log_method2str(LogMethod mtd) noexcept {
+static inline StringView log_method2str(LogMethod mtd) noexcept
+{
   switch (mtd) {
     case LM_REQUEST:
-      return { LM_REQUEST_STR, sizeof(LM_REQUEST_STR) };
+      return {LM_REQUEST_STR, sizeof(LM_REQUEST_STR)};
     case LM_NONE:
-      return { LM_NONE_STR, sizeof(LM_NONE_STR) };
+      return {LM_NONE_STR, sizeof(LM_NONE_STR)};
     default:
       assert(false && "Invalid log method");
   }
   return "";
 }
 
-static inline bool set_log_method(StrSlice value, void *args) noexcept {
-  auto log_method = (LogMethod*)args;
+static inline bool set_log_method(StrSlice value, void *args) noexcept
+{
+  auto log_method = (LogMethod *)args;
   if (!value.caseCmp("request")) {
     *log_method = LM_REQUEST;
   } else if (!value.caseCmp("none")) {
@@ -101,7 +110,8 @@ static inline bool set_log_method(StrSlice value, void *args) noexcept {
   return true;
 }
 
-static inline StringView replace_policy2str(ReplacePolicy rp) noexcept {
+static inline StringView replace_policy2str(ReplacePolicy rp) noexcept
+{
   switch (rp) {
     case RP_LRU:
       return "lru";
@@ -113,10 +123,11 @@ static inline StringView replace_policy2str(ReplacePolicy rp) noexcept {
   return "";
 }
 
-static inline bool set_replace_policy(StrSlice value, void *args) noexcept {
-  auto rp = (ReplacePolicy*)args;
+static inline bool set_replace_policy(StrSlice value, void *args) noexcept
+{
+  auto rp = (ReplacePolicy *)args;
   if (!value.caseCmp("lru")) {
-    *rp = RP_LRU; 
+    *rp = RP_LRU;
   } else if (!value.caseCmp("none")) {
     *rp = RP_NONE;
   } else {
@@ -125,17 +136,18 @@ static inline bool set_replace_policy(StrSlice value, void *args) noexcept {
   return true;
 }
 
-static inline bool set_max_memoey_usage(StrSlice value, void *args) noexcept {
-  auto max_memory_usage = (uint64_t*)args;
-  *max_memory_usage = str2memory_usage({value.data(), value.size()});
-  if (*max_memory_usage == (uint64_t)-1)
-    return false;
+static inline bool set_max_memoey_usage(StrSlice value, void *args) noexcept
+{
+  auto max_memory_usage = (uint64_t *)args;
+  *max_memory_usage     = str2memory_usage({value.data(), value.size()});
+  if (*max_memory_usage == (uint64_t)-1) return false;
   return true;
 }
 
-static inline bool set_nodes(StrSlice value, void *args) {
+static inline bool set_nodes(StrSlice value, void *args)
+{
   std::vector<std::string> nodes;
-  Tokenizer tokens(StringView(value.data(), value.size()), ',');
+  Tokenizer                tokens(StringView(value.data(), value.size()), ',');
 
   // FIXME Valid check
   for (auto token : tokens) {
@@ -144,5 +156,5 @@ static inline bool set_nodes(StrSlice value, void *args) {
   return true;
 }
 
-} // server
-} // mmkv
+} // namespace server
+} // namespace mmkv
