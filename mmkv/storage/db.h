@@ -20,7 +20,7 @@ using kanon::RWLock;
 using protocol::MmbpRequest;
 using protocol::MmbpResponse;
 
-struct DatabaseInstance {
+struct DatabaseInstance : kanon::noncopyable {
   MmkvDb db;
   RWLock lock{};
 
@@ -28,6 +28,8 @@ struct DatabaseInstance {
     : db(name)
   {
   }
+
+  DatabaseInstance() {}
 
   /**
    * \brief
@@ -54,7 +56,7 @@ struct DatabaseInstance {
  *  I think this can be noncopyable
  */
 class DatabaseManager : kanon::noncopyable {
-  using instances_t = std::vector<DatabaseInstance>;
+  using instances_t = algo::ReservedArray<DatabaseInstance>;
 
  public:
   using Iterator      = instances_t::iterator;

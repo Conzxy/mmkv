@@ -592,10 +592,10 @@ DatabaseManager::DatabaseManager()
   MMKV_ASSERT(Is2Power(db_num), "The size of instances must be power of 2");
 
   char db_name[128];
-  instances_.reserve(db_num);
+  instances_.GrowNoInit(db_num);
   for (size_t i = 0; i < db_num; ++i) {
     snprintf(db_name, sizeof db_name, "Database %zu", i);
-    instances_.emplace_back(new DatabaseInstance(db_name));
+    new (&instances_[i]) DatabaseInstance(db_name);
   }
 
   LOG_INFO << "DatabaseManager created";
@@ -647,7 +647,12 @@ void DatabaseManager::Execute(MmbpRequest &request, MmbpResponse *response)
   DatabaseInstance *instance     = nullptr;
   auto              command_type = GetCommandType((Command)request.command);
   if (request.HasKey()) {
-    instance = &GetDatabaseInstance(request.key);
+    if (DISTRIBUTED == type_) {
+      // FIXME Allow set the shard_id by user before calling this function or by arguments
+      instance = &GetShardDatabaseInstance(MakeShardId(request.key));
+    } else {
+      instance = &GetDatabaseInstance(request.key);
+    }
 
     if (command_type == CommandType::CT_READ) {
       instance->lock.RLock();
