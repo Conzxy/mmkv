@@ -33,7 +33,7 @@ else ()
    #-Wshadow
    -Wno-maybe-uninitialized
    -Wwrite-strings # in fact, this is default specified
-   #cxx standard 
+   -Wno-c++20-compat 
    -pthread
     
    # linker opt
