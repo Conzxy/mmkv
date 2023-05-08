@@ -9,12 +9,12 @@ namespace protocol {
 
 enum ShardCode : uint8_t {
   SC_OK = 0,
-  SC_NO_SHARD, /* No such shard in the server */
+  SC_NO_SHARD,         /* No such shard in the server */
   SC_NOT_SHARD_SERVER, /* Not a shard server */
   SC_PUT_SHARD_OK,
 };
 
-} // protocol
-} // mmkv
+} // namespace protocol
+} // namespace mmkv
 
 #endif // MMKV_PROTOCOL_SHARD_CODE_H

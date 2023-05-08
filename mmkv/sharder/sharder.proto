@@ -1,0 +1,31 @@
+syntax = "proto2";
+
+package mmkv;
+
+// clang-format off
+enum ShardMessageType {
+  SHARD_MSG_REQUEST = 0;
+  SHARD_MSG_RESPONSE = 1;
+}
+
+enum ShardOperation {
+  SHARD_OP_PUSH = 0;
+  SHARD_OP_PULL = 1;
+  SHARD_OP_DEL = 2;
+}
+
+enum ShardStatusCode {
+  SHARD_STATUS_OK   = 0;
+  SHARD_STATUS_WAIT = 1;
+}
+
+message ShardMessage
+{
+  required ShardMessageType type    = 1;
+  optional ShardOperation operation = 2;
+  optional ShardStatusCode status   = 3;
+  required uint64 shard_id          = 4;
+  optional uint64 data_num          = 5;
+  optional bytes data               = 6;
+  optional bool  is_shard_complete  = 7;
+}
