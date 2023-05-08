@@ -18,12 +18,20 @@ using namespace mmkv::server;
 using namespace mmkv::storage;
 using namespace mmkv::util;
 
-MmkvServer::MmkvServer(EventLoop* loop, InetAddr const& addr, InetAddr const &sharder_addr)
+MmkvServer::MmkvServer(EventLoop *loop, InetAddr const &addr,
+                       InetAddr const &sharder_addr)
   : server_(loop, addr, "In-Memory Key-Value database server")
-  , tracker_cli_loop_thr_(mmkv_config().IsSharder() ? new EventLoopThread("TrackerClient") : nullptr)
-  , tracker_cli_(mmkv_config().IsSharder() ? new TrackerClient(tracker_cli_loop_thr_->StartRun(), InetAddr(mmkv_config().config_server_endpoint), sharder_addr) : nullptr)
+  , tracker_cli_loop_thr_(mmkv_config().IsSharder()
+                              ? new EventLoopThread("TrackerClient")
+                              : nullptr)
+// , tracker_cli_(mmkv_config().IsSharder()
+//                    ? new ShardControllerClient(
+//                          tracker_cli_loop_thr_->StartRun(),
+//                          InetAddr(mmkv_config().config_server_endpoint),
+//                          sharder_addr)
+//                    : nullptr)
 {
-  server_.SetConnectionCallback([this](TcpConnectionPtr const& conn) {
+  server_.SetConnectionCallback([this](TcpConnectionPtr const &conn) {
     if (conn->IsConnected()) {
       conn->SetContext(*new MmkvSession(conn, this));
       LOG_MMKV(conn) << " connected";
@@ -36,26 +44,26 @@ MmkvServer::MmkvServer(EventLoop* loop, InetAddr const& addr, InetAddr const &sh
     }
   });
 
-  if (tracker_cli_) {
-    LOG_INFO << "This is configured as a shard server also";
-    LOG_INFO << "Connecting to the router server...";
-    tracker_cli_->Connect();
-  }
+  // if (tracker_cli_) {
+  //   LOG_INFO << "This is configured as a shard server also";
+  //   LOG_INFO << "Connecting to the router server...";
+  //   tracker_cli_->Connect();
+  // }
 }
 
-MmkvServer::~MmkvServer() noexcept {
+MmkvServer::~MmkvServer() noexcept {}
 
-}
-
-void MmkvServer::Start() {
+void MmkvServer::Start()
+{
   if (mmkv_config().log_method == LM_REQUEST) {
     auto stime = GetTimeMs();
     LOG_INFO << "Recover from request log";
-    try { 
+    try {
       Recover recover;
       recover.ParseFromRequest();
       LOG_INFO << "Recover complete";
-    } catch (FileException const &ex) {
+    }
+    catch (FileException const &ex) {
       LOG_ERROR << ex.what();
       LOG_ERROR << "Can't recover database from log";
     }
@@ -65,13 +73,16 @@ void MmkvServer::Start() {
 
   if (mmkv_config().expiration_check_cycle > 0) {
     LOG_INFO << "The mmkv will check all expired entries actively";
-    LOG_INFO << "The cycle is " << mmkv_config().expiration_check_cycle << " seconds";
+    LOG_INFO << "The cycle is " << mmkv_config().expiration_check_cycle
+             << " seconds";
 
-    server_.GetLoop()->RunEvery([]() {
-      // FIXME thread-safe
-      LOG_DEBUG << "Check expiration";
-      database_manager().CheckExpirationCycle();
-    }, mmkv_config().expiration_check_cycle);
+    server_.GetLoop()->RunEvery(
+        []() {
+          // FIXME thread-safe
+          LOG_DEBUG << "Check expiration";
+          database_manager().CheckExpirationCycle();
+        },
+        mmkv_config().expiration_check_cycle);
   }
 
   Listen();

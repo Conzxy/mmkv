@@ -17,8 +17,8 @@ using namespace mmkv;
 
 namespace detail {
 
-std::string cli_command_strings[] = {"HELP",    "QUIT",  "EXIT",
-                                     "HISTORY", "CLEAR", "CLEARHISTORY"};
+std::string cli_command_strings[] =
+    {"HELP", "QUIT", "EXIT", "HISTORY", "CLEAR", "CLEARHISTORY"};
 
 std::string help;
 
@@ -199,13 +199,25 @@ static int GenHelp()
   assert(help.empty());
   help = "Help: \n";
   for (int i = 0; i < CLI_COMMAND_NUM; ++i) {
-    StrAppend(help, GREEN, GetCliCommandString((CliCommand)i), RESET,
-              GetCliCommandHint((CliCommand)i), "\n");
+    StrAppend(
+        help,
+        GREEN,
+        GetCliCommandString((CliCommand)i),
+        RESET,
+        GetCliCommandHint((CliCommand)i),
+        "\n"
+    );
   }
 
   for (int i = 0; i < COMMAND_NUM; ++i) {
-    StrAppend(help, L_GREEN, GetCommandString((Command)i), RESET,
-              GetCommandHint((Command)i), "\n");
+    StrAppend(
+        help,
+        L_GREEN,
+        GetCommandString((Command)i),
+        RESET,
+        GetCommandHint((Command)i),
+        "\n"
+    );
   }
   return 0;
 }

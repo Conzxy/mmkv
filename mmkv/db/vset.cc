@@ -9,7 +9,8 @@ using namespace mmkv::protocol;
 
 #define VSET_MIN(x, y) ((x) < (y) ? (x) : (y))
 
-bool Vset::Insert(Weight w, String member) {
+bool Vset::Insert(Weight w, String member)
+{
   auto kv = dict_.InsertKv(std::move(member), w);
   if (!kv) return false;
 
@@ -17,11 +18,12 @@ bool Vset::Insert(Weight w, String member) {
   return true;
 }
 
-bool Vset::Erase(String const& member) {
+bool Vset::Erase(String const &member)
+{
   auto node = dict_.Extract(member);
   if (node == nullptr) return false;
 
-  tree_.Erase(node->value.value, [node](Tree::value_type const& value) {
+  tree_.Erase(node->value.value, [node](Tree::value_type const &value) {
     return *value.value == node->value.key;
   });
 
@@ -31,7 +33,8 @@ bool Vset::Erase(String const& member) {
 
 #define N2P(x) ((x) < 0 ? tree_.size() - (x) : (x))
 
-size_t Vset::EraseRange(int64_t left, int64_t right) {
+size_t Vset::EraseRange(int64_t left, int64_t right)
+{
   left = N2P(left);
   right = N2P(right);
   right = VSET_MIN((size_t)right, tree_.size());
@@ -40,19 +43,21 @@ size_t Vset::EraseRange(int64_t left, int64_t right) {
   size_t ret = 0;
   auto count = right - left + 1;
   Tree::iterator iter;
-  
+
   // reuse
   right = tree_.size() - 1 - right;
 
   if (left < right) {
     iter = tree_.begin();
-    while (left--) ++iter;
+    while (left--)
+      ++iter;
     while (count--) {
       ret += (size_t)tree_.Erase(iter++);
     }
   } else {
     iter = tree_.before_end();
-    while (right--) --iter;
+    while (right--)
+      --iter;
     while (count--) {
       ret += (size_t)tree_.Erase(iter--);
     }
@@ -61,22 +66,24 @@ size_t Vset::EraseRange(int64_t left, int64_t right) {
   return ret;
 }
 
-size_t Vset::EraseRangeByWeight(Weight left, Weight right) {
+size_t Vset::EraseRangeByWeight(Weight left, Weight right)
+{
   auto left_bound = tree_.LowerBound(left);
   if (left_bound == tree_.end()) return 0;
   auto right_bound = tree_.UpperBound(right);
-  
+
   size_t ret = 0;
   for (;;) {
     tree_.Erase(left_bound++);
-    ret++; 
+    ret++;
     if (left_bound == right_bound) break;
   }
 
   return ret;
 }
 
-bool Vset::GetWeight(String const& member, Weight& w) {
+bool Vset::GetWeight(String const &member, Weight &w)
+{
   auto kv = dict_.Find(member);
   if (!kv) return false;
 
@@ -84,7 +91,8 @@ bool Vset::GetWeight(String const& member, Weight& w) {
   return true;
 }
 
-bool Vset::GetOrder(String const& member, size_t& order) {
+bool Vset::GetOrder(String const &member, size_t &order)
+{
   Weight w;
   if (!GetWeight(member, w)) return false;
 
@@ -95,11 +103,12 @@ bool Vset::GetOrder(String const& member, size_t& order) {
     order++;
     ++first;
   }
-  
+
   return true;
 }
 
-bool Vset::GetROrder(String const& member, size_t& order) {
+bool Vset::GetROrder(String const &member, size_t &order)
+{
   Weight w;
   if (!GetWeight(member, w)) return false;
 
@@ -110,12 +119,12 @@ bool Vset::GetROrder(String const& member, size_t& order) {
     order++;
     --first;
   }
-  
-  return true;
 
+  return true;
 }
 
-size_t Vset::GetSizeByWeight(Weight left, Weight right) {
+size_t Vset::GetSizeByWeight(Weight left, Weight right)
+{
   auto first = tree_.LowerBound(left);
   if (first == tree_.end()) return 0;
   auto last = tree_.UpperBound(right);
@@ -123,27 +132,30 @@ size_t Vset::GetSizeByWeight(Weight left, Weight right) {
   return std::distance(first, last);
 }
 
-void Vset::GetRange(int64_t left, int64_t right, WeightValues& values) {
+void Vset::GetRange(int64_t left, int64_t right, WeightValues &values)
+{
   assert(values.empty());
   left = N2P(left);
   right = N2P(right);
-  
+
   Tree::iterator iter;
 
   right = VSET_MIN(tree_.size(), (size_t)right);
   auto count = right - left + 1;
 
   iter = tree_.begin();
-  while (left--) ++iter; 
+  while (left--)
+    ++iter;
 
   for (; iter != tree_.end() && count--; ++iter) {
     values.push_back({iter->key, *(iter->value)});
   }
 }
 
-void Vset::GetRangeByWeight(Weight left, Weight right, WeightValues& values) {
+void Vset::GetRangeByWeight(Weight left, Weight right, WeightValues &values)
+{
   assert(values.empty());
-  
+
   auto left_bound = tree_.LowerBound(left);
   if (left_bound == tree_.end()) return;
 
@@ -156,18 +168,20 @@ void Vset::GetRangeByWeight(Weight left, Weight right, WeightValues& values) {
   }
 }
 
-void Vset::GetRRange(int64_t left, int64_t right, WeightValues& values) {
+void Vset::GetRRange(int64_t left, int64_t right, WeightValues &values)
+{
   left = N2P(left);
   right = N2P(right);
   right = VSET_MIN((size_t)right, tree_.size());
-  
+
   auto count = right - left + 1;
   auto iter = tree_.before_end();
   auto first = tree_.begin();
-  
+
   right = tree_.size() - right;
 
-  while (left--) --iter;
+  while (left--)
+    --iter;
 
   for (; count--;) {
     values.push_back({iter->key, *(iter->value)});
@@ -176,7 +190,8 @@ void Vset::GetRRange(int64_t left, int64_t right, WeightValues& values) {
   }
 }
 
-void Vset::GetRRangeByWeight(Weight left, Weight right, WeightValues& values) {
+void Vset::GetRRangeByWeight(Weight left, Weight right, WeightValues &values)
+{
   auto left_bound = tree_.LowerBound(left);
   auto right_bound = tree_.UpperBound(right);
 
@@ -187,8 +202,9 @@ void Vset::GetRRangeByWeight(Weight left, Weight right, WeightValues& values) {
   }
 }
 
-void Vset::GetAll(WeightValues& values) {
-  tree_.DoInAll([&values](Tree::value_type const& wm) {
+void Vset::GetAll(WeightValues &values)
+{
+  tree_.DoInAll([&values](Tree::value_type const &wm) {
     values.push_back({wm.key, *(wm.value)});
   });
 }

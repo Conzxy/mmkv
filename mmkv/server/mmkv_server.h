@@ -7,7 +7,7 @@
 
 #include "mmkv/db/kvdb.h"
 
-#include "mmkv/tracker/tracker_client.h"
+// #include "mmkv/tracker/tracker_client.h"
 
 namespace mmkv {
 namespace server {
@@ -17,28 +17,26 @@ class MmkvSession;
 class MmkvServer {
   DISABLE_EVIL_COPYABLE(MmkvServer)
   friend class MmkvSession;
-  
+
  public:
-  explicit MmkvServer(EventLoop* loop, InetAddr const& addr, InetAddr const &sharder_addr);
+  explicit MmkvServer(EventLoop *loop, InetAddr const &addr,
+                      InetAddr const &sharder_addr);
   ~MmkvServer() noexcept;
 
-  void Listen() {
-    server_.StartRun();
-  }
+  void Listen() { server_.StartRun(); }
 
-  void SetLoopNum(int num) {
-    server_.SetLoopNum(num);
-  }
+  void SetLoopNum(int num) { server_.SetLoopNum(num); }
 
   void Start();
+
  private:
   TcpServer server_;
 
   std::unique_ptr<EventLoopThread> tracker_cli_loop_thr_;
-  std::unique_ptr<TrackerClient> tracker_cli_;
+  // std::unique_ptr<ShardControllerClient> tracker_cli_;
 };
 
-} // server
-} // mmkv
+} // namespace server
+} // namespace mmkv
 
 #endif // _MMKV_SERVER_MMKV_SERVER_H_
