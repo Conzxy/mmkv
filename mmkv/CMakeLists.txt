@@ -1,3 +1,13 @@
+mmkv_gen_proto_code(PROTOC_PATH "protoc" FILES "${CMAKE_CURRENT_SOURCE_DIR}/sharder/sharder.proto")
+mmkv_gen_proto_code(PROTOC_PATH "protoc" FILES 
+  ${CMAKE_CURRENT_SOURCE_DIR}/tracker/controller.proto 
+  ${CMAKE_CURRENT_SOURCE_DIR}/tracker/configuration.proto)
+mmkv_gen_proto_code(PROTOC_PATH "protoc" FILES
+  ${CMAKE_CURRENT_SOURCE_DIR}/forwarder/forwarder.proto)
+
+set(PB_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+message(STATUS "mmkv pb output dir = ${PB_OUTPUT_DIR}")
+
 file(GLOB_RECURSE DISTRIBUTION_SRC
   tracker/*.cc
   configd/*.cc
@@ -21,7 +31,7 @@ file(GLOB_RECURSE MMKV_SRC
   ${TAKINA_DIR}/takina.cc
 )
 
-file(GLOB_RECURSE MMKV_SERVER_SRC
+file(GLOB MMKV_SERVER_SRC
   app/server_main.cc
   server/*.cc
   util/*.cc
@@ -33,8 +43,17 @@ file(GLOB_RECURSE MMKV_SERVER_SRC
   storage/*.cc
   tracker/*.cc
   sharder/*.cc
+  forwarder/*.cc
   ${TAKINA_DIR}/takina.cc
   ${CHISATO_DIR}/chisato.cc
+)
+
+list(APPEND
+  MMKV_SERVER_SRC 
+  ${PB_OUTPUT_DIR}/sharder.pb.cc
+  ${PB_OUTPUT_DIR}/configuration.pb.cc
+  ${PB_OUTPUT_DIR}/controller.pb.cc
+  ${PB_OUTPUT_DIR}/forwarder.pb.cc
 )
 
 file(GLOB_RECURSE CONFIGD_SRC
@@ -81,6 +100,7 @@ if (MMKV_ON_UNIX)
     PUBLIC ${HKLUA_DIR}
     PUBLIC ${CHISATO_DIR}
     PUBLIC ${TAKINA_DIR}
+    PUBLIC ${PB_OUTPUT_DIR}
   )
   SetLibName(HKLUA_LIB hklua)
   target_link_libraries(mmkv
@@ -90,7 +110,7 @@ endif ()
 mmkv_gen_lib(mmkv_xxhash ${XXHASH_DIR}/xxhash.c)
 
 SetLibName(HKLUA_LIB hklua)
-set(MMKV_COMMON_LIBS kanon_net kanon_base mmkv_xxhash)
+set(MMKV_COMMON_LIBS kanon_protobuf kanon_net kanon_base mmkv_xxhash)
 set(MMKV_SERVER_LIBS ${MMKV_COMMON_LIBS} dl ${HKLUA_LIB})
 set(MMKV_CLIENT_LIBS ${MMKV_COMMON_LIBS} replxx)
 
@@ -100,6 +120,7 @@ target_include_directories(mmkv-cli
   PRIVATE ${TERNARY_DIR}
   PRIVATE ${PROJECT_SOURCE_DIR}
   PRIVATE ${XXHASH_DIR}
+  PRIVATE ${PB_OUTPUT_DIR}
 )
 
 mmkv_gen_app(mmkv-server SOURCES ${MMKV_SERVER_SRC} LIBS ${MMKV_SERVER_LIBS})
@@ -109,6 +130,7 @@ target_include_directories(mmkv-server
   PRIVATE ${PROJECT_SOURCE_DIR}
   PRIVATE ${XXHASH_DIR}
   PRIVATE ${HKLUA_DIR}
+  PRIVATE ${PB_OUTPUT_DIR}
 )
 
 mmkv_gen_app(rlogdump SOURCES ${RLOG_DUMP_SRC} LIBS ${MMKV_COMMON_LIBS})
@@ -116,6 +138,7 @@ target_include_directories(rlogdump
   PRIVATE ${TAKINA_DIR}
   PRIVATE ${PROJECT_SOURCE_DIR}
   PRIVATE ${XXHASH_DIR}
+  PRIVATE ${PB_OUTPUT_DIR}
 )
 
 mmkv_gen_app(configd SOURCES ${CONFIGD_SRC} LIBS ${MMKV_COMMON_LIBS})
@@ -124,4 +147,5 @@ target_include_directories(configd
   PRIVATE ${TAKINA_DIR}
   PRIVATE ${XXHASH_DIR}
   PRIVATE ${PROJECT_SOURCE_DIR}
+  PRIVATE ${PB_OUTPUT_DIR}
 )
