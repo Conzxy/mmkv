@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <stdio.h>
 #include <string>
+#include <cstdint>
 
 #include "kanon/util/noncopyable.h"
 
@@ -37,11 +38,11 @@ class File : kanon::noncopyable {
   };
 
   enum OpenMode : uint8_t {
-    READ = 0x1,
+    READ  = 0x1,
     WRITE = 0x2,
     TRUNC = 0x4,
-    APP = 0x8,
-    BIN = 0x10,
+    APP   = 0x8,
+    BIN   = 0x10,
   };
 
   File()
@@ -66,10 +67,7 @@ class File : kanon::noncopyable {
    * \return
    *  true -- Success
    */
-  bool Open(std::string const &filename, int mode)
-  {
-    return Open(filename.data(), mode);
-  }
+  bool Open(std::string const &filename, int mode) { return Open(filename.data(), mode); }
 
   bool Open(char const *filename, int mode);
 
@@ -97,10 +95,7 @@ class File : kanon::noncopyable {
    */
   Errno ReadLine(std::string &line, const bool need_newline = true);
 
-  void Write(char const *buf, size_t len) noexcept
-  {
-    ::fwrite(buf, 1, len, fp_);
-  }
+  void Write(char const *buf, size_t len) noexcept { ::fwrite(buf, 1, len, fp_); }
 
   void Flush() noexcept { ::fflush(fp_); }
 
@@ -116,7 +111,7 @@ class File : kanon::noncopyable {
   FILE *fp() const noexcept { return fp_; }
   FILE *GetFileHandler() const noexcept { return fp_; }
 
-  size_t GetFileSize() const noexcept;
+  size_t        GetFileSize() const noexcept;
   static size_t GetFileSize(char const *path) noexcept;
 
   static const size_t kInvalidReturn = static_cast<size_t>(-1); // compatible
