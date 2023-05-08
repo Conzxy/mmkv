@@ -107,6 +107,8 @@ ShardControllerClient::ShardControllerClient(
       LOG_INFO << "Then, join to the cluster that managed by the router";
       codec_.SetUpConnection(conn);
       conn_ = conn.get();
+
+      Join();
     }
   });
   shard_cli_loop_thr_.StartRun();
