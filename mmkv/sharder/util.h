@@ -29,9 +29,6 @@ MMKV_INLINE ShardMessage MakeShardResponse()
 using ShardRequest  = ShardMessage;
 using ShardResponse = ShardMessage;
 
-#define SHARDER_TAG      "SMPB"
-#define SHARDER_MAX_SIZE (1 << 26)
-
 void SerializeMmbpDataToSharderRequest(
     db::MmkvDb                              *p_db,
     std::vector<const algo::String *> const &keys,

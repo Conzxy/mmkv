@@ -30,9 +30,6 @@ struct PendingState {
 
 using NodeConfMap = ::google::protobuf::Map<uint64_t, ::mmkv::NodeConf>;
 
-#define SHARDER_CONTROLLER_TAG      "SCPB"
-#define SHARDER_CONTROLLER_MAX_SIZE (1 << 26)
-
 } // namespace mmkv
 
 #endif

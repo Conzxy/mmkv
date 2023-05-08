@@ -78,7 +78,7 @@ struct ShardControllerClient::Impl {
     /* Remove the shards in peers */
     /* Notify the peers delete shards */
     for (auto &sharder_cli : clt->shard_clis_) {
-      sharder_cli.DelAllShards(&clt->codec_, sharder_cli.GetConnection().get());
+      sharder_cli.DelAllShards(&clt->sharder_codec_, sharder_cli.GetConnection().get());
     }
     clt->state_ = IDLE;
   }

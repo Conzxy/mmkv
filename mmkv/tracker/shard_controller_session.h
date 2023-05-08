@@ -5,12 +5,6 @@
 #include <kanon/net/user_common.h>
 #include <kanon/util/noncopyable.h>
 
-namespace kanon {
-namespace protobuf {
-class ProtobufCodec2;
-}
-} // namespace kanon
-
 namespace mmkv {
 
 class ControllerRequest;
@@ -19,11 +13,12 @@ class ControllerResponse;
 namespace server {
 
 class ShardControllerServer;
+class ShardControllerCodec;
 
 class ShardControllerSession : kanon::noncopyable {
   friend class ShardControllerServer;
 
-  using Codec = ::kanon::protobuf::ProtobufCodec2;
+  using Codec = ShardControllerCodec;
 
  public:
   explicit ShardControllerSession();
@@ -38,10 +33,10 @@ class ShardControllerSession : kanon::noncopyable {
    * that belonging to it.
    */
   void AddNode(
-      ShardControllerServer           *server,
-      TcpConnection                   *conn,
-      kanon::protobuf::ProtobufCodec2 *codec,
-      ControllerRequest               &req
+      ShardControllerServer *server,
+      TcpConnection         *conn,
+      ShardControllerCodec  *codec,
+      ControllerRequest     &req
   );
 
   /*
@@ -51,24 +46,24 @@ class ShardControllerSession : kanon::noncopyable {
    *
    */
   void Leave(
-      ShardControllerServer           *server,
-      TcpConnection                   *conn,
-      kanon::protobuf::ProtobufCodec2 *codec,
-      ControllerRequest               &req
+      ShardControllerServer *server,
+      TcpConnection         *conn,
+      ShardControllerCodec  *codec,
+      ControllerRequest     &req
   );
 
   void AddNodeComplete(
-      ShardControllerServer           *server,
-      TcpConnectionPtr const          &conn,
-      kanon::protobuf::ProtobufCodec2 *codec,
-      ControllerRequest               &req
+      ShardControllerServer  *server,
+      TcpConnectionPtr const &conn,
+      ShardControllerCodec   *codec,
+      ControllerRequest      &req
   );
 
   void LeaveNodeComplete(
-      ShardControllerServer           *server,
-      TcpConnectionPtr const          &conn,
-      kanon::protobuf::ProtobufCodec2 *codec,
-      ControllerRequest               &req
+      ShardControllerServer  *server,
+      TcpConnectionPtr const &conn,
+      ShardControllerCodec   *codec,
+      ControllerRequest      &req
   );
 
  private:

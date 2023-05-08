@@ -10,7 +10,7 @@ using namespace kanon;
 
 ShardControllerServer::ShardControllerServer(EventLoop *loop, InetAddr const &addr)
   : server_(loop, addr, "ShardController")
-  , codec_(SHARDER_CONTROLLER_TAG, SHARDER_CONTROLLER_MAX_SIZE)
+  , codec_()
   , shard_num_()
 {
   codec_.SetMessageCallback(

@@ -9,6 +9,7 @@
 #include "mmkv/algo/hash_set.h"
 #include "mmkv/algo/comparator_util.h"
 #include "mmkv/tracker/common_type.h"
+#include "mmkv/sharder/sharder_codec.h"
 
 namespace mmkv {
 namespace server {
@@ -20,7 +21,7 @@ class SharderClient;
 class Sharder : kanon::noncopyable {
   friend class SharderSession;
   friend class SharderClient;
-  using Codec = ::kanon::protobuf::ProtobufCodec2;
+  using Codec = SharderCodec;
 
  public:
   explicit Sharder(EventLoop *loop);

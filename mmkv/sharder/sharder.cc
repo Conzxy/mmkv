@@ -10,7 +10,7 @@ using namespace kanon;
 
 Sharder::Sharder(EventLoop *loop, InetAddr const &addr)
   : server_(loop, addr, "Sharder")
-  , codec_(SHARDER_TAG, SHARDER_MAX_SIZE)
+  , codec_()
 {
   server_.SetConnectionCallback([this](TcpConnectionPtr const &conn) {
     if (conn->IsConnected()) {

@@ -12,9 +12,10 @@ namespace mmkv {
 namespace server {
 
 class Sharder;
+class SharderCodec;
 
 class SharderSession : kanon::noncopyable {
-  using Codec = ::kanon::protobuf::ProtobufCodec2;
+  using Codec = SharderCodec;
 
  public:
   explicit SharderSession(TcpConnection *conn);

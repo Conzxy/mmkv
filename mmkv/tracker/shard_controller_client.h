@@ -9,6 +9,7 @@
 #include "controller.pb.h"
 #include "mmkv/sharder/sharder_client.h"
 #include "mmkv/sharder/sharder.h"
+#include "mmkv/tracker/shard_controller_codec.h"
 
 namespace mmkv {
 namespace server {
@@ -21,7 +22,7 @@ namespace server {
  * 3. Move shard between new or leaved node
  */
 class ShardControllerClient : kanon::noncopyable {
-  using Codec = ::kanon::protobuf::ProtobufCodec2;
+  using ControllerCodec = ShardControllerCodec;
 
  public:
   enum State {
@@ -52,8 +53,8 @@ class ShardControllerClient : kanon::noncopyable {
   /* Operation                             */
   /*---------------------------------------*/
 
-  void Join(Codec *codec, TcpConnection *const conn);
-  void Leave(Codec *codec, TcpConnection *const conn);
+  void Join();
+  void Leave();
 
   /**
    * Start the sharder instance
@@ -77,9 +78,9 @@ class ShardControllerClient : kanon::noncopyable {
   friend struct Impl;
   struct Impl;
 
-  TcpClientPtr   cli_;
-  TcpConnection *conn_;
-  Codec          codec_;
+  TcpClientPtr    cli_;
+  TcpConnection  *conn_;
+  ControllerCodec codec_;
 
   /*------------------------------------*/
   /* Shards metadata                    */
@@ -92,7 +93,7 @@ class ShardControllerClient : kanon::noncopyable {
   /* Sharder Clients                      */
   /*------------------------------------*/
 
-  Codec                                                  sharder_codec_;
+  SharderCodec                                           sharder_codec_;
   ::google::protobuf::RepeatedPtrField<::mmkv::NodeInfo> node_infos_;
 
   EventLoopThread            shard_cli_loop_thr_;

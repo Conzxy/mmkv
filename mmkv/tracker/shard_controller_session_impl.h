@@ -30,12 +30,12 @@ struct ShardControllerSession::Impl {
   }
 
   MMKV_INLINE static void ControllorOperationComplete(
-      ShardControllerSession          *p_session,
-      ShardControllerServer           *server,
-      TcpConnectionPtr const          &conn,
-      kanon::protobuf::ProtobufCodec2 *codec,
-      ControllerRequest               &req,
-      ConfState                        conf_state
+      ShardControllerSession *p_session,
+      ShardControllerServer  *server,
+      TcpConnectionPtr const &conn,
+      ShardControllerCodec   *codec,
+      ControllerRequest      &req,
+      ConfState               conf_state
   )
   {
     const auto         node_id = req.node_id();

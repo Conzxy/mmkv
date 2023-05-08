@@ -12,6 +12,7 @@
 
 #include "mmkv/algo/dictionary.h"
 #include "mmkv/util/macro.h"
+#include "mmkv/tracker/shard_controller_codec.h"
 
 #include "type.h"
 
@@ -50,8 +51,8 @@ class ShardControllerServer : kanon::noncopyable {
   void CheckPendingConfSessionAndResponse();
 
  private:
-  TcpServer                         server_;
-  ::kanon::protobuf::ProtobufCodec2 codec_;
+  TcpServer            server_;
+  ShardControllerCodec codec_;
 
   mutable kanon::MutexLock pending_conf_lock_;
   std::queue<PendingConf>  pending_conf_q_;

@@ -9,9 +9,9 @@ ShardControllerClient::ShardControllerClient(
     std::string const &sharder_name
 )
   : cli_(NewTcpClient(loop, addr, name))
-  , codec_(SHARDER_CONTROLLER_TAG, SHARDER_CONTROLLER_MAX_SIZE)
+  , codec_()
   , node_id_(INVALID_NODE_ID)
-  , sharder_codec_(SHARDER_TAG, SHARDER_MAX_SIZE)
+  , sharder_codec_()
   , shard_cli_loop_thr_("SharderClients")
   , sharder_loop_thr_(sharder_name)
   , sharder_(sharder_loop_thr_.StartRun(), sharder_addr) // default port:9998
@@ -112,21 +112,21 @@ ShardControllerClient::ShardControllerClient(
   shard_cli_loop_thr_.StartRun();
 }
 
-void ShardControllerClient::Join(Codec *codec, TcpConnection *const conn)
+void ShardControllerClient::Join()
 {
   ControllerRequest req;
   req.set_node_id(node_id_);
   req.set_operation(CONTROL_OP_ADD_NODE);
   req.set_sharder_port(sharder_port_);
-  codec->Send(conn, &req);
+  codec_.Send(cli_->GetConnection(), &req);
 }
 
-void ShardControllerClient::Leave(Codec *codec, TcpConnection *const conn)
+void ShardControllerClient::Leave()
 {
   ControllerRequest req;
   req.set_operation(CONTROL_OP_LEAVE_NODE);
   req.set_node_id(node_id_);
-  codec->Send(conn, &req);
+  codec_.Send(cli_->GetConnection(), &req);
 }
 
 void ShardControllerClient::NotifyPullFinish()

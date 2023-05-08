@@ -1,6 +1,8 @@
 // SPDX-LICENSE-IDENTIFIER: Apache-2.0
 #include "shard_controller_session_impl.h"
 
+#include "mmkv/tracker/shard_controller_codec.h"
+
 ShardControllerSession::ShardControllerSession() {}
 
 ShardControllerSession::~ShardControllerSession() noexcept {}
@@ -8,7 +10,7 @@ ShardControllerSession::~ShardControllerSession() noexcept {}
 void ShardControllerSession::AddNode(
     ShardControllerServer *server,
     TcpConnection         *conn,
-    ProtobufCodec2        *codec,
+    ShardControllerCodec  *codec,
     ControllerRequest     &req
 )
 {
@@ -164,7 +166,7 @@ void ShardControllerSession::AddNode(
 void ShardControllerSession::Leave(
     ShardControllerServer *server,
     TcpConnection         *conn,
-    ProtobufCodec2        *codec,
+    ShardControllerCodec  *codec,
     ControllerRequest     &req
 )
 {
@@ -269,20 +271,20 @@ void ShardControllerSession::Leave(
 }
 
 void ShardControllerSession::AddNodeComplete(
-    ShardControllerServer           *server,
-    TcpConnectionPtr const          &conn,
-    kanon::protobuf::ProtobufCodec2 *codec,
-    ControllerRequest               &req
+    ShardControllerServer  *server,
+    TcpConnectionPtr const &conn,
+    ShardControllerCodec   *codec,
+    ControllerRequest      &req
 )
 {
   Impl::ControllorOperationComplete(this, server, conn, codec, req, CONF_STATE_ADD_NODE);
 }
 
 void ShardControllerSession::LeaveNodeComplete(
-    ShardControllerServer           *server,
-    TcpConnectionPtr const          &conn,
-    kanon::protobuf::ProtobufCodec2 *codec,
-    ControllerRequest               &req
+    ShardControllerServer  *server,
+    TcpConnectionPtr const &conn,
+    ShardControllerCodec   *codec,
+    ControllerRequest      &req
 )
 {
   Impl::ControllorOperationComplete(this, server, conn, codec, req, CONF_STATE_LEAVE_NODE);

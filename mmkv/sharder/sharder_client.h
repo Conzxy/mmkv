@@ -9,6 +9,7 @@
 #include "mmkv/algo/hash_set.h"
 #include "mmkv/algo/string.h"
 #include "mmkv/tracker/common_type.h"
+#include "mmkv/sharder/sharder_codec.h"
 
 namespace mmkv {
 namespace server {
@@ -17,7 +18,7 @@ class ShardControllerClient;
 class Sharder;
 
 class SharderClient : kanon::noncopyable {
-  using Codec = ::kanon::protobuf::ProtobufCodec2;
+  using Codec = SharderCodec;
 
  public:
   enum State : unsigned char {
