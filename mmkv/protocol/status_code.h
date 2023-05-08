@@ -26,6 +26,8 @@ enum StatusCode : uint8_t {
   S_SET_NO_MEMBER,        /** No member in the set */
   S_DEST_EXISTS,          /** Destination set already exists */
   S_EXPIRE_DISABLE,       /** Expiration is disable */
+
+  S_SHARD_LOCKED,
 };
 
 /**

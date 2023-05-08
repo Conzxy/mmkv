@@ -1,6 +1,9 @@
 // SPDX-LICENSE-IDENTIFIER: Apache-2.0
 #include "status_code.h"
 
+#include <cstdio>
+#include <cstdlib>
+
 using namespace mmkv::protocol;
 
 char const *
@@ -33,6 +36,11 @@ mmkv::protocol::GetStatusMessage(mmkv::protocol::StatusCode code) noexcept
       return "ERROR: The destination set already exists";
     case S_EXPIRE_DISABLE:
       return "ERROR: The expiration is disable";
+    case S_SHARD_LOCKED:
+      return "ERROR: The shard which key belonging is locked";
+    default:
+      fprintf(stderr, "There are some status code message aren't added");
+      abort();
   }
 
   return "ERROR: Unknown error";
