@@ -1,9 +1,16 @@
-mmkv_gen_proto_code(PROTOC_PATH "protoc" FILES 
+mmkv_gen_proto_code(PROTOC_PATH "protoc" 
+  FILES 
   "${CMAKE_CURRENT_SOURCE_DIR}/tracker/controller.proto"
   "${CMAKE_CURRENT_SOURCE_DIR}/tracker/configuration.proto"
   "${CMAKE_CURRENT_SOURCE_DIR}/sharder/sharder.proto"
   "${CMAKE_CURRENT_SOURCE_DIR}/forwarder/forwarder.proto"
+)
+
+mmkv_gen_proto_code(PROTOC_PATH "protoc" 
+  FILES
   "${CMAKE_CURRENT_SOURCE_DIR}/configd/configd.proto"
+  IMPORT_PATHS
+  "${CMAKE_CURRENT_SOURCE_DIR}/tracker"
 )
 
 set(PB_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}")
