@@ -1,49 +1,53 @@
 // SPDX-LICENSE-IDENTIFIER: Apache-2.0
-#include "mmkv/configd/server.h"
-#include "mmkv/server/common.h"
-#include "mmkv/server/config.h"
+#include "mmkv/configd/configd.h"
+#include "mmkv/configd/configd_config.h"
 #include "takina.h"
 
 using namespace mmkv::server;
-using namespace mmkv::configd;
+using namespace kanon;
 
-struct RouterOptions {
-  int router_port = 9997;
-  int tracker_port = router_port + BACKGROUND_PORT_DIFF;
+struct Options {
+  std::string configd_endpoint = "*:9997";
+  std::string config_path      = "./configd.conf.lua";
 };
 
-void RegisterRouterOptions(RouterOptions &opt)
+void RegisterRouterOptions(Options &opt)
 {
-  takina::AddUsage("./router [OPTIONS]");
-  takina::AddDescription("The router-tier of the MMKV cluster");
-  takina::AddOption({"rp", "router-port", "Port number of the router", "PORT"},
-                    &opt.router_port);
-  takina::AddSection("Background deamon options");
+  takina::AddDescription("The config deamon of the MMKV shard cluster");
   takina::AddOption(
-      {"tp", "tracker-port", "Port number of the tracker", "PORT"},
-      &opt.tracker_port);
+      {"e", "configd-endpoint", "The endpoint address of configd"},
+      &opt.configd_endpoint
+  );
+  takina::AddSection("Background deamon options");
+  takina::AddOption({"c", "config", "The config filepath", "filename"}, &opt.config_path);
 }
 
 int main(int argc, char *argv[])
 {
   std::string errmsg;
-  RouterOptions router_options;
-  RegisterRouterOptions(router_options);
+  Options     options;
+  char        buf[4096];
+  snprintf(buf, sizeof buf, "%s [-e|--config-endpoint] [-c|--config]", argv[0]);
+  takina::AddUsage(buf);
+  RegisterRouterOptions(options);
   if (!takina::Parse(argc, argv, &errmsg)) {
     LOG_ERROR << "Failed to parse the options: " << errmsg;
-    exit(0);
+    exit(1);
   }
 
-  RegisterConfig(mmkv_config());
-  if (!ParseConfig(errmsg)) {
+  if (!ParseConfigdConfig(options.config_path.c_str())) {
     LOG_ERROR << "Failed to parse the config file: " << errmsg;
-    exit(0);
+    exit(1);
   }
 
-  auto loop = kanon::make_unique<EventLoop>();
-  ConfigServer router(loop.get(), InetAddr(router_options.router_port),
-                      InetAddr(router_options.tracker_port));
+  EventLoop loop;
 
-  router.Listen();
-  loop->StartLoop();
+  Configd configd(
+      &loop,
+      InetAddr(options.configd_endpoint),
+      InetAddr(configd_config().shard_controller_endpoint)
+  );
+
+  configd.Listen();
+  loop.StartLoop();
 }
