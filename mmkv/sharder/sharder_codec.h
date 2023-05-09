@@ -1,3 +1,4 @@
+// SPDX-LICENSE-IDENTIFIER: Apache-2.0
 #ifndef _MMKV_SHARDER_CODEC_H__
 #define _MMKV_SHARDER_CODEC_H__
 

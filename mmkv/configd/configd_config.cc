@@ -1,3 +1,4 @@
+// SPDX-LICENSE-IDENTIFIER: Apache-2.0
 #include "configd_config.h"
 
 #include <kanon/log/logger.h>

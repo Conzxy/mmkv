@@ -1,3 +1,4 @@
+// SPDX-LICENSE-IDENTIFIER: Apache-2.0
 #include "shard_controller_session.h"
 
 #include <kanon/protobuf/protobuf_codec2.h>

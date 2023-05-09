@@ -1,3 +1,4 @@
+// SPDX-LICENSE-IDENTIFIER: Apache-2.0
 #include "mmkv/sharder/util.h"
 #include "mmkv/storage/db.h"
 #include "mmkv/protocol/mmbp_util.h"

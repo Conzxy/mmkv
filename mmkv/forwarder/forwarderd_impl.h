@@ -1,3 +1,4 @@
+// SPDX-LICENSE-IDENTIFIER: Apache-2.0
 #include "mmkv/forwarder/forwarderd.h"
 
 #include "mmkv/util/macro.h"
