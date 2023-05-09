@@ -69,6 +69,8 @@ class ShardControllerClient : kanon::noncopyable {
   size_t     GetPeerNum() const noexcept { return shard_clis_.size(); }
   State      state() const noexcept { return state_; }
 
+  bool IsIdle() const noexcept { return state_ == IDLE; }
+
   void NotifyPullFinish();
   void NotifyPushFinish();
   void NotifyJoinFinish();
@@ -86,8 +88,8 @@ class ShardControllerClient : kanon::noncopyable {
   /* Shards metadata                    */
   /*------------------------------------*/
 
-  uint32_t  finish_node_num_ = 0;
-  node_id_t node_id_; /** The id of the node */
+  kanon::AtomicCounter<uint32_t> finish_node_num_{0};
+  node_id_t                      node_id_; /** The id of the node */
 
   /*------------------------------------*/
   /* Sharder Clients                      */

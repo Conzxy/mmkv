@@ -6,8 +6,7 @@
 
 using namespace mmkv::protocol;
 
-char const *
-mmkv::protocol::GetStatusMessage(mmkv::protocol::StatusCode code) noexcept
+char const *mmkv::protocol::GetStatusMessage(mmkv::protocol::StatusCode code) noexcept
 {
   switch (code) {
     case S_OK:
@@ -75,6 +74,8 @@ char const *mmkv::protocol::StatusCode2Str(StatusCode code) noexcept
       return "dest exists";
     case S_EXPIRE_DISABLE:
       return "expire disable";
+    case S_SHARD_PROCESSING:
+      return "Shard is processing";
     default:
       return "Unknown status code";
   }

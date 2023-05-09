@@ -89,15 +89,22 @@ MmkvServer::MmkvServer(EventLoop *loop, InetAddr const &addr, InetAddr const &sh
     MmbpResponse response;
     if (request.command == SHARD_JOIN) {
       if (!request.HasKey() || !request.HasCount()) {
-        MmbpResponse resp;
-        resp.status_code = StatusCode::S_INVALID_REQUEST;
+        response.status_code = StatusCode::S_INVALID_REQUEST;
       } else {
-        InetAddr controller_addr(request.key.c_str(), (uint16_t)request.count);
-        ctler_cli_.reset(new ShardControllerClient(
-            server_.GetLoop(),
-            InetAddr(mmkv_config().shard_controller_endpoint),
-            InetAddr(mmkv_config().sharder_endpoint)
-        ));
+        if (ctler_cli_ && !ctler_cli_->IsIdle()) {
+          response.status_code = StatusCode::S_SHARD_PROCESSING;
+        } else {
+          InetAddr controller_addr(request.key.c_str(), (uint16_t)request.count);
+
+          // IsSharder() requires
+          mmkv_config().shard_controller_endpoint = controller_addr.ToIpPort();
+
+          ctler_cli_.reset(new ShardControllerClient(
+              server_.GetLoop(),
+              controller_addr,
+              InetAddr(mmkv_config().sharder_endpoint)
+          ));
+        }
       }
     } else if (request.command == SHARD_LEAVE) {
       if (ctler_cli_) {
