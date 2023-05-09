@@ -38,7 +38,6 @@ void RegisterConfig(MmkvConfig &config)
   chisato::AddConfig("ReplacePolicy", &config.replace_policy, &set_replace_policy);
   chisato::AddConfig("DiagnosticLogDirectory", &config.diagnostic_log_dir);
   chisato::AddConfig("MaxMemoryUsage", &config.max_memory_usage, &set_max_memoey_usage);
-  chisato::AddConfig("RouterAddress", &config.config_server_endpoint);
   chisato::AddConfig("ShardNum", &config.shard_num);
   chisato::AddConfig("Nodes", &config.nodes, &set_nodes);
 }
@@ -64,18 +63,16 @@ void PrintMmkvConfig(MmkvConfig const &config)
   const auto usage = format_memory_usage(config.max_memory_usage);
   LOG_DEBUG << "Config information: \n";
   LOG_DEBUG << "LogMethod=" << log_method2str(config.log_method);
-  LOG_DEBUG << "\nExpirationCheckCycle=" << config.expiration_check_cycle;
-  LOG_DEBUG << "\nLazyExpiration=" << config.lazy_expiration;
-  LOG_DEBUG << "\nRequestLogLocation=" << config.request_log_location;
-  LOG_DEBUG << "\nReplacePolicy=" << replace_policy2str(config.replace_policy);
-  LOG_DEBUG << "\nDiagnosticLogDirectory=" << config.diagnostic_log_dir;
-  LOG_DEBUG << "\nMaxMemoryUsage=" << usage.usage << " " << memory_unit2str(usage.unit);
-  LOG_DEBUG << "\nConfigServerAddress=" << config.config_server_endpoint;
-  LOG_DEBUG << "\nSharderAddress=" << config.sharder_endpoint;
-  LOG_DEBUG << "\nForwarderAddress=" << config.forwarder_endpoint;
-  LOG_DEBUG << "\nSharderControllerAddress=" << config.shard_controller_endpoint;
-  LOG_DEBUG << "\nShardNum=" << config.shard_num;
-  LOG_DEBUG << "\nNodes: ";
+  LOG_DEBUG << "ExpirationCheckCycle=" << config.expiration_check_cycle;
+  LOG_DEBUG << "LazyExpiration=" << config.lazy_expiration;
+  LOG_DEBUG << "RequestLogLocation=" << config.request_log_location;
+  LOG_DEBUG << "ReplacePolicy=" << replace_policy2str(config.replace_policy);
+  LOG_DEBUG << "DiagnosticLogDirectory=" << config.diagnostic_log_dir;
+  LOG_DEBUG << "MaxMemoryUsage=" << usage.usage << " " << memory_unit2str(usage.unit);
+  LOG_DEBUG << "SharderAddress=" << config.sharder_endpoint;
+  LOG_DEBUG << "SharderControllerAddress=" << config.shard_controller_endpoint;
+  LOG_DEBUG << "ShardNum=" << config.shard_num;
+  LOG_DEBUG << "Nodes: ";
   for (size_t i = 0; i < config.nodes.size(); ++i) {
     LOG_DEBUG << "node " << i << ": " << config.nodes[i];
   }

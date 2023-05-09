@@ -33,10 +33,8 @@ struct MmkvConfig {
   long                     expiration_check_cycle    = 0;
   std::string              request_log_location      = "/tmp/.mmkv-request.log";
   std::string              diagnostic_log_dir        = "";
-  std::string              config_server_endpoint    = "";
-  std::string              shard_controller_endpoint = "*:19997";
+  std::string              shard_controller_endpoint = "";
   std::string              sharder_endpoint          = "*:19998";
-  std::string              forwarder_endpoint        = "*:9994";
   long                     shard_num                 = DEFAULT_SHARD_NUM;
   int                      thread_num                = 1;
   std::vector<std::string> nodes;
