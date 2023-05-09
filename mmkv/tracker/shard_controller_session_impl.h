@@ -9,7 +9,6 @@
 
 using namespace mmkv::server;
 using namespace kanon;
-using namespace std::placeholders;
 using namespace kanon::protobuf;
 
 struct ShardControllerSession::Impl {

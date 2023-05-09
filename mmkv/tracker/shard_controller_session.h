@@ -32,7 +32,7 @@ class ShardControllerSession : kanon::noncopyable {
    * Give the new node the addresses and shards
    * that belonging to it.
    */
-  void AddNode(
+  void Join(
       ShardControllerServer *server,
       TcpConnection         *conn,
       ShardControllerCodec  *codec,
@@ -52,14 +52,14 @@ class ShardControllerSession : kanon::noncopyable {
       ControllerRequest     &req
   );
 
-  void AddNodeComplete(
+  void JoinComplete(
       ShardControllerServer  *server,
       TcpConnectionPtr const &conn,
       ShardControllerCodec   *codec,
       ControllerRequest      &req
   );
 
-  void LeaveNodeComplete(
+  void LeaveComplete(
       ShardControllerServer  *server,
       TcpConnectionPtr const &conn,
       ShardControllerCodec   *codec,

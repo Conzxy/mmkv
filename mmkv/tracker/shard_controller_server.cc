@@ -24,16 +24,16 @@ ShardControllerServer::ShardControllerServer(EventLoop *loop, InetAddr const &ad
         auto *p_session = AnyCast2<ShardControllerSession *>(conn->GetContext());
         switch (req.operation()) {
           case CONTROL_OP_ADD_NODE:
-            p_session->AddNode(this, conn.get(), &codec_, req);
+            p_session->Join(this, conn.get(), &codec_, req);
             break;
           case CONTROL_OP_LEAVE_NODE:
             p_session->Leave(this, conn.get(), &codec_, req);
             break;
           case CONTROL_OP_ADD_NODE_COMPLETE:
-            p_session->AddNodeComplete(this, conn, &codec_, req);
+            p_session->JoinComplete(this, conn, &codec_, req);
             break;
           case CONTROL_OP_LEAVE_NODE_COMPLETE:
-            p_session->LeaveNodeComplete(this, conn, &codec_, req);
+            p_session->LeaveComplete(this, conn, &codec_, req);
             break;
           default:;
             conn->ShutdownWrite();
@@ -120,5 +120,7 @@ void ShardControllerServer::CheckPendingConfSessionAndResponse()
 void ShardControllerServer::UpdateConfig(Configuration &&conf)
 {
   config_ = std::move(conf);
+
+  LOG_DEBUG << "Recent config: " << config_.DebugString();
   p_configd_->SyncConfig(config_);
 }
