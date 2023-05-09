@@ -11,11 +11,15 @@ using namespace hklua;
 using namespace mmkv::server;
 using namespace kanon;
 
-#define ERROR_HANDLE                                                                               \
-  do {                                                                                             \
-    env.StackDump();                                                                               \
-    return false;                                                                                  \
-  } while (0)
+#if 0
+#  define ERROR_HANDLE                                                                             \
+    do {                                                                                           \
+      env.StackDump();                                                                             \
+      return false;                                                                                \
+    } while (0)
+#else
+#  define ERROR_HANDLE
+#endif
 
 bool server::ParseLuaConfig(StringArg filename, MmkvConfig &config)
 {
@@ -82,19 +86,11 @@ bool server::ParseLuaConfig(StringArg filename, MmkvConfig &config)
     ERROR_HANDLE;
   }
 
-  if (!env.GetGlobal("ConfigServerEndpoint", config.config_server_endpoint)) {
-    ERROR_HANDLE;
-  }
-
   if (!env.GetGlobal("ShardControllerEndpoint", config.shard_controller_endpoint)) {
     ERROR_HANDLE;
   }
 
   if (!env.GetGlobal("SharderEndpoint", config.sharder_endpoint)) {
-    ERROR_HANDLE;
-  }
-
-  if (!env.GetGlobal("ForwarderEndpoint", config.forwarder_endpoint)) {
     ERROR_HANDLE;
   }
 
