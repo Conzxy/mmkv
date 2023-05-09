@@ -36,11 +36,7 @@ jobs:
 
     - name: Install dependences
       run: |
-        cd ~
-        wget https://www.lua.org/ftp/lua-5.4.4.tar.gz
-        tar -xf lua-5.4.4.tar.gz
-        cd lua-5.4.4
-        make -j$(nproc) 1>/dev/null && sudo make install
+        sudo apt install protobuf-compiler libprotobuf-dev
       shell: bash
 
     - name: Configure CMake
