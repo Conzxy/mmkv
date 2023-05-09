@@ -88,7 +88,7 @@ ConfigServerEndpoint = "*:9997"
 
 -- To disable shard, you can set this to empty string
 -- default: RouterPort + 10000
-ShardControllerEndpoint = "*:19997"
+-- ShardControllerEndpoint = "*:19997"
 
 -- default: ShardControllerPort + 1
 SharderEndpoint = "*:19998"
