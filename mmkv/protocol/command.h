@@ -86,23 +86,20 @@ enum Command : uint16_t {
   KEYALL,
   DELS,
   DELALL,
+  SHARD_JOIN,
+  SHARD_LEAVE,
   COMMAND_NUM,
 };
 
 namespace detail {
 extern std::string command_strings[];
-} // detail
+} // namespace detail
 
-KANON_INLINE std::string* GetCommandStrings() KANON_NOEXCEPT
-{
-  return detail::command_strings;
-}
+KANON_INLINE std::string *GetCommandStrings() KANON_NOEXCEPT { return detail::command_strings; }
 
-inline std::string const &GetCommandString(Command cmd) {
-  return detail::command_strings[cmd];
-}
+inline std::string const &GetCommandString(Command cmd) { return detail::command_strings[cmd]; }
 
-} // protocol
-} // mmkv
+} // namespace protocol
+} // namespace mmkv
 
 #endif // _MMKV_PROTOCOL_COMMAND_H_
