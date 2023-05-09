@@ -26,11 +26,6 @@ struct ShardControllerClient::Impl {
     return req;
   }
 
-  MMKV_INLINE static void Send(Self *self, ::google::protobuf::Message const *msg)
-  {
-    self->codec_.Send(self->cli_->GetConnection(), msg);
-  }
-
   MMKV_INLINE static void SendAllPeersRequest(
       Self                *clt,
       size_t               peer_num,
@@ -111,6 +106,7 @@ struct ShardControllerClient::Impl {
       db_instance.db.DeleteAll(&cnt);
       db_instance.db.UnlockAllShard();
     }
+
     clt->state_ = IDLE;
   }
 

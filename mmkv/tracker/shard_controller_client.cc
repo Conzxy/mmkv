@@ -116,19 +116,23 @@ ShardControllerClient::ShardControllerClient(
 
 void ShardControllerClient::Join()
 {
-  ControllerRequest req;
-  req.set_node_id(node_id_);
-  req.set_operation(CONTROL_OP_ADD_NODE);
-  req.set_sharder_port(sharder_port_);
-  codec_.Send(cli_->GetConnection(), &req);
+  cli_->GetLoop()->RunInLoop([this]() {
+    ControllerRequest req;
+    req.set_node_id(node_id_);
+    req.set_operation(CONTROL_OP_ADD_NODE);
+    req.set_sharder_port(sharder_port_);
+    codec_.Send(cli_->GetConnection(), &req);
+  });
 }
 
 void ShardControllerClient::Leave()
 {
-  ControllerRequest req;
-  req.set_operation(CONTROL_OP_LEAVE_NODE);
-  req.set_node_id(node_id_);
-  codec_.Send(cli_->GetConnection(), &req);
+  cli_->GetLoop()->RunInLoop([this]() {
+    ControllerRequest req;
+    req.set_operation(CONTROL_OP_LEAVE_NODE);
+    req.set_node_id(node_id_);
+    codec_.Send(conn_, &req);
+  });
 }
 
 void ShardControllerClient::NotifyPullFinish()
@@ -150,16 +154,20 @@ void ShardControllerClient::NotifyPushFinish()
 
 void ShardControllerClient::NotifyJoinFinish()
 {
-  ControllerRequest req = Impl::MakeRequest(this, CONTROL_OP_ADD_NODE_COMPLETE);
-  Impl::Send(this, &req);
-  finish_node_num_ = 0;
+  cli_->GetLoop()->RunInLoop([this]() {
+    ControllerRequest req = Impl::MakeRequest(this, CONTROL_OP_ADD_NODE_COMPLETE);
+    codec_.Send(conn_, &req);
+    finish_node_num_ = 0;
+  });
 }
 
 void ShardControllerClient::NotifyLeaveFinish()
 {
-  ControllerRequest req = Impl::MakeRequest(this, CONTROL_OP_LEAVE_NODE_COMPLETE);
-  Impl::Send(this, &req);
-  finish_node_num_ = 0;
+  cli_->GetLoop()->RunInLoop([this]() {
+    ControllerRequest req = Impl::MakeRequest(this, CONTROL_OP_LEAVE_NODE_COMPLETE);
+    codec_.Send(conn_, &req);
+    finish_node_num_ = 0;
+  });
 }
 
 void ShardControllerClient::StartSharder()
