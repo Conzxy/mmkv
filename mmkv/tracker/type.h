@@ -12,7 +12,7 @@ namespace mmkv {
 static constexpr node_id_t INVALID_NODE_ID = -1;
 
 enum ConfState {
-  CONF_STATE_ADD_NODE = 0,
+  CONF_STATE_JOIN_NODE = 0,
   CONF_STATE_LEAVE_NODE,
   // CHANGE_NODE
 };

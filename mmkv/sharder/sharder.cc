@@ -3,7 +3,6 @@
 
 #include "sharder_session.h"
 #include "mmkv/server/option.h"
-#include "mmkv/sharder/util.h"
 
 using namespace mmkv::server;
 using namespace kanon;

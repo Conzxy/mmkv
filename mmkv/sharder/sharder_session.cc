@@ -35,5 +35,6 @@ void SharderSession::SetUp(Sharder *sharder, Codec *codec)
 
 void SharderSession::PushShard(Sharder *sharder, shard_id_t shard_id)
 {
+  // TODO Really need conn_?
   Impl::OnPullShard(sharder, this, &sharder->codec_, conn_, shard_id);
 }

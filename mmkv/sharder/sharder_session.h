@@ -4,7 +4,6 @@
 
 #include <kanon/net/user_server.h>
 
-#include "kanon/protobuf/protobuf_codec2.h"
 #include "mmkv/algo/string.h"
 #include "mmkv/tracker/common_type.h"
 
