@@ -752,7 +752,6 @@ class MmkvDb {
   ShardDict::const_iterator ShardBegin() const noexcept { return sdict_.begin(); }
   ShardDict::const_iterator ShardEnd() const noexcept { return sdict_.end(); }
 
-  void DeleteAllShard();
   void UnlockAllShard();
 
   /**
@@ -840,13 +839,14 @@ class MmkvDb {
    * Insert the key to the mapped shard.
    * \param key Exists in the database
    */
-  void AddKeyToShard(String const &key);
+  MMKV_INLINE void AddKeyToShard(String const *key);
 
   /**
    * Remove the key record from the mapped shard
    * \param key Exists in the database
    */
-  void RemoveKeyFromShard(String const &key);
+  MMKV_INLINE void RemoveKeyFromShard(String const *key);
+  MMKV_INLINE void DeleteAllShard();
 };
 
 } // namespace db

@@ -97,7 +97,7 @@ StatusCode MmkvDb::Delete(String const &k)
   auto node = dict_.Extract(k);
   if (!node) return S_NONEXISTS;
   auto &key = node->value.key;
-  RemoveKeyFromShard(key);
+  RemoveKeyFromShard(&key);
   CacheRemove(&key);
   DeleteMmkvData(node->value.value);
   dict_.DropNode(node);
@@ -116,6 +116,7 @@ StatusCode MmkvDb::DeleteAll(size_t *p_del_cnt)
   dict_.Clear();
   exp_dict_.Clear();
   if (cache_) cache_->Clear();
+  DeleteAllShard();
 
   *p_del_cnt = ret;
   return S_OK;
@@ -142,6 +143,9 @@ StatusCode MmkvDb::Rename(String const &old_name, String &&new_name)
   // just update it in cache.
   assert(pkey == &node->value.key);
   CacheUpdate(pkey);
+
+  // To shard, do nothing since address is not changed.
+
   assert(success);
   return S_OK;
 }
@@ -161,7 +165,7 @@ StatusCode MmkvDb::InsertStr(String k, String v)
   kv->value.any_data = new String(std::move(v));
 
   CacheAdd(&kv->key);
-  AddKeyToShard(kv->key);
+  AddKeyToShard(&kv->key);
 
   return S_OK;
 }
@@ -177,7 +181,7 @@ StatusCode MmkvDb::EraseStr(String const &k)
     if (str.type == D_STRING) {
       auto &key = slot->value.key;
       CacheRemove(&key);
-      RemoveKeyFromShard(key);
+      RemoveKeyFromShard(&key);
       delete (String *)str.any_data;
       dict_.EraseNode(bucket, slot);
       return S_OK;
@@ -248,6 +252,7 @@ StatusCode MmkvDb::SetStr(String k, String v)
   if (success) {
     duplicate->value.any_data = new String(std::move(v));
     CacheAdd(&duplicate->key);
+    AddKeyToShard(&duplicate->key);
   } else {
     if (duplicate->value.type == D_STRING) {
       *((String *)duplicate->value.any_data) = std::move(v);
@@ -277,19 +282,22 @@ StatusCode MmkvDb::ListAdd(String k, StrValues &elems)
       .any_data = nullptr, // dummy
   };
 
-  auto ret = dict_.InsertKv(std::move(k), std::move(data));
-  if (!ret) return S_EXISTS;
+  auto kv = dict_.InsertKv(std::move(k), std::move(data));
+  if (!kv) return S_EXISTS;
 
   StrList *lst = new StrList();
   for (auto &elem : elems) {
     lst->PushBack(std::move(elem));
   }
+  CacheAdd(&kv->key);
+  AddKeyToShard(&kv->key);
 
-  ret->value.any_data = lst;
+  kv->value.any_data = lst;
 
   return S_OK;
 }
 
+/* TODO Allow key does not exists */
 StatusCode MmkvDb::ListAppend(String const &k, StrValues &elems)
 {
   CHECK_SHARD_IS_LOCKED_KEY(k);
@@ -429,21 +437,24 @@ StatusCode MmkvDb::ListDel(String const &k)
 {
   CHECK_SHARD_IS_LOCKED_KEY(k);
 
-  Dict::Bucket *bucket = nullptr;
-  auto          slot   = dict_.FindNode(k, &bucket);
-  auto         &str    = (slot)->value.value;
+  Dict::Bucket *bucket   = nullptr;
+  auto          slot     = dict_.FindNode(k, &bucket);
+  auto         &str_list = (slot)->value.value;
 
   if (slot) {
-    if (str.type == D_STRLIST) {
-      delete (StrList *)str.any_data;
+    if (str_list.type == D_STRLIST) {
+      auto &key = slot->value.key;
+      CacheRemove(&key);
+      RemoveKeyFromShard(&key);
+      delete (StrList *)str_list.any_data;
       dict_.EraseNode(bucket, slot);
+      exp_dict_.Erase(k);
       return S_OK;
     } else {
       return S_EXISITS_DIFF_TYPE;
     }
   }
 
-  exp_dict_.Erase(k);
   return S_NONEXISTS;
 }
 
@@ -466,6 +477,8 @@ StatusCode MmkvDb::VsetAdd(String &&key, WeightValues &&wms, size_t &count)
     if (success) {
       vset                      = new Vset();
       duplicate->value.any_data = vset;
+      CacheAdd(&duplicate->key);
+      AddKeyToShard(&duplicate->key);
     } else {
       vset = TO_VSET(duplicate);
     }
@@ -626,6 +639,8 @@ StatusCode MmkvDb::MapAdd(String &&key, StrKvs &&kvs, size_t &count)
     if (success) {
       map                       = new Map();
       duplicate->value.any_data = map;
+      CacheAdd(&duplicate->key);
+      AddKeyToShard(&duplicate->key);
     } else {
       map = (Map *)duplicate->value.any_data;
     }
@@ -789,6 +804,8 @@ StatusCode MmkvDb::SetAdd(String &&key, StrValues &members, size_t &count)
     if (success) {
       set                       = new Set();
       duplicate->value.any_data = set;
+      CacheAdd(&duplicate->key);
+      AddKeyToShard(&duplicate->key);
     } else {
       set = (Set *)duplicate->value.any_data;
     }
@@ -891,6 +908,8 @@ StatusCode MmkvDb::SetAnd(String const &key1, String const &key2, StrValues &mem
   if (success) {                                                                                   \
     dest_set                  = new Set();                                                         \
     duplicate->value.any_data = dest_set;                                                          \
+    CacheAdd(&duplicate->key);                                                                     \
+    AddKeyToShard(&duplicate->key);                                                                \
   } else {                                                                                         \
     if (duplicate->value.type != D_SET) return S_DEST_EXISTS;                                      \
     dest_set = TO_SET(duplicate->value);                                                           \
@@ -1175,17 +1194,17 @@ bool MmkvDb::CheckExpire(String const &key)
 /* Shard Management                                 */
 /*--------------------------------------------------*/
 
-void MmkvDb::AddKeyToShard(String const &key)
+void MmkvDb::AddKeyToShard(String const *key)
 {
   if (mmkv_config().IsSharder()) {
-    sdict_[MakeShardId(key)].Insert(&key);
+    sdict_[MakeShardId(*key)].Insert(key);
   }
 }
 
-void MmkvDb::RemoveKeyFromShard(String const &key)
+void MmkvDb::RemoveKeyFromShard(String const *key)
 {
   if (mmkv_config().IsSharder()) {
-    sdict_[MakeShardId(key)].Erase(&key);
+    sdict_[MakeShardId(*key)].Erase(key);
   }
 }
 
