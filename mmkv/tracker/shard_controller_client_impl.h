@@ -108,7 +108,6 @@ struct ShardControllerClient::Impl {
     for (auto &db_instance : database_manager()) {
       WLockGuard locked_shard_guard(db_instance.lock);
 
-      db_instance.db.DeleteAllShard();
       db_instance.db.DeleteAll(&cnt);
       db_instance.db.UnlockAllShard();
     }
