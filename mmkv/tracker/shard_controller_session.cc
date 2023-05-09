@@ -7,7 +7,7 @@ ShardControllerSession::ShardControllerSession() {}
 
 ShardControllerSession::~ShardControllerSession() noexcept {}
 
-void ShardControllerSession::AddNode(
+void ShardControllerSession::Join(
     ShardControllerServer *server,
     TcpConnection         *conn,
     ShardControllerCodec  *codec,
@@ -34,8 +34,8 @@ void ShardControllerSession::AddNode(
 
   MutexGuard guard(server->pending_conf_lock_);
 
-  auto *p_conf = server->GetRecentConf();
-  if ((size_t)p_conf->node_conf_map_size() + 1 > server->GetShardNum()) {
+  auto *p_recent_conf = server->GetRecentConf();
+  if ((size_t)p_recent_conf->node_conf_map_size() + 1 > server->GetShardNum()) {
     LOG_DEBUG << "The cluster is full, can't add new node";
     Impl::SendRejectResponse(codec, conn, CONTROL_STATUS_NODE_FULL);
     conn->ShutdownWrite();
@@ -49,25 +49,23 @@ void ShardControllerSession::AddNode(
   const auto peer_node_id = server->GenerateNodeId();
   response.set_node_id(peer_node_id);
 
-  auto node_num = p_conf->node_conf_map_size();
-  ++node_num;
-
-  assert(node_num > 0);
+  auto new_node_num = p_recent_conf->node_conf_map_size() + 1;
+  assert(new_node_num > 0);
 
   // The node holds shard num at least
-  auto every_node_at_least = server->shard_num_ / node_num;
+  auto every_node_at_least = server->shard_num_ / new_node_num;
   // Some node can holds (every_node_at_least + 1)
-  auto more_than_one_num   = server->shard_num_ % node_num;
+  auto more_than_one_num   = server->shard_num_ % new_node_num;
 
   LOG_DEBUG << "Every node should hold " << every_node_at_least << " at least";
   LOG_DEBUG << "Allow " << more_than_one_num << " nodes can hold more than 1 shard";
 
   // Prepare the new pending configuration
   PendingConf new_pending_conf;
-  new_pending_conf.conf = *p_conf; // copy from old conf
+  new_pending_conf.conf = *p_recent_conf; // copy from old conf
 
   new_pending_conf.node_id = peer_node_id;
-  new_pending_conf.state   = CONF_STATE_ADD_NODE;
+  new_pending_conf.state   = CONF_STATE_JOIN_NODE;
 
   // Prepare the new configuration
   NodeConf new_node_conf;
@@ -82,69 +80,73 @@ void ShardControllerSession::AddNode(
 
   /* node_infos[{node_id, host, port, is_push, shard_ids[]}] */
   auto *p_resp_node_infos = response.mutable_node_infos();
-  if (1 == node_num) {
+  if (1 == new_node_num) {
     LOG_DEBUG << "This is the first node of cluster";
-    // The first node hold all shards
-    p_new_conf_shard_ids->Reserve(server->shard_num_);
 
-    response.set_shard_num(server->GetShardNum());
-    // auto *p_new_node_info = p_resp_node_infos->Add();
-    // Set the node_id to itself since no other nodes can be stealed.
-    // p_new_node_info->set_node_id(peer_node_id);
-    // p_new_node_info->set_port(req.sharder_port());
-    // p_new_node_info->set_host(new_node_conf.host());
-    // auto *p_new_node_info_shard_ids = p_new_node_info->mutable_shard_ids();
-    // p_new_node_info_shard_ids->Reserve(server->GetShardNum());
-
-    for (uint32_t i = 0; i < server->shard_num_; ++i) {
-      p_new_conf_shard_ids->AddAlreadyReserved(i);
-      // p_new_node_info_shard_ids->AddAlreadyReserved(i);
-    }
+    // Don't send any node infos to peer to indicates
+    // it is the first node of the cluster
 
     // Tell the peer with its node id
     response.set_node_id(peer_node_id);
+    response.set_shard_num(server->GetShardNum());
     response.set_status(CONTROL_STATUS_OK);
   } else {
     LOG_DEBUG << "Node num > 1, Redistribute the shards";
 
-    // Use new pending conf's map instead old conf,
+    // Use new pending conf's map instead recent conf,
     // we need modify the old conf in pending conf.
-    auto *node_conf_map = new_pending_conf.conf.mutable_node_conf_map();
-    for (auto &node_id_conf : *node_conf_map) {
-      auto *p_new_node_info = p_resp_node_infos->Add();
-
-      const auto node_id    = node_id_conf.first;
-      auto      &node_conf  = node_id_conf.second;
-      const auto shard_size = node_conf.shard_ids_size();
-      int64_t    diff       = shard_size - every_node_at_least;
-      LOG_DEBUG << "Node id = " << node_id;
-      LOG_DEBUG << "Shard size = " << shard_size;
+    auto *pending_node_conf_map = new_pending_conf.conf.mutable_node_conf_map();
+    for (auto &pending_node_id_conf : *pending_node_conf_map) {
+      // The new pending conf holds the recent conf, this is also recent info
+      const auto pending_node_id    = pending_node_id_conf.first;
+      auto      &pending_node_conf  = pending_node_id_conf.second;
+      const auto pending_shard_size = pending_node_conf.shard_ids_size();
+      int64_t    diff               = pending_shard_size - every_node_at_least;
+      LOG_DEBUG << "Node id = " << pending_node_id;
+      LOG_DEBUG << "Shard size = " << pending_shard_size;
       LOG_DEBUG << "Move node num = " << diff;
+
+      // To some cases, the shard of old node is reach the at least num,
+      // the diff == 0, we can't pull any shard from it.
+      assert(diff >= 0);
       if (more_than_one_num > 0) {
-        diff--;
-        more_than_one_num--;
+        if (diff > 0) {
+          diff--;
+          more_than_one_num--;
+        } else {
+          continue;
+        }
       }
-      if (diff <= 0) continue;
 
-      const int64_t end = shard_size - diff;
+      // We don't known the node infos size, so I can't reserve it.
+      auto *p_resp_node_info = p_resp_node_infos->Add();
 
-      p_new_node_info->set_node_id(node_id);
-      p_new_node_info->set_host(node_conf.host());
-      p_new_node_info->set_port(node_conf.port());
-      auto *p_new_node_info_shard_ids = p_new_node_info->mutable_shard_ids();
-      p_new_node_info_shard_ids->Reserve(diff);
+      const int64_t end = pending_shard_size - diff;
 
-      auto *p_old_node_conf_shard_ids = node_conf.mutable_shard_ids();
-      for (int64_t i = shard_size - 1; i >= end; --i) {
-        const auto old_shard_id =
-            p_old_node_conf_shard_ids->Get(p_old_node_conf_shard_ids->size() - 1);
+      auto *p_resp_node_info_shard_ids = p_resp_node_info->mutable_shard_ids();
+      p_resp_node_info_shard_ids->Reserve(diff);
+
+      auto *p_pending_node_conf_shard_ids = pending_node_conf.mutable_shard_ids();
+      for (int64_t i = pending_shard_size - 1; i >= end; --i) {
+        const auto old_shard_id = p_pending_node_conf_shard_ids->Get(i);
+
+        // Update the conf of new node
         p_new_conf_shard_ids->AddAlreadyReserved(old_shard_id);
-        p_new_node_info_shard_ids->AddAlreadyReserved(old_shard_id);
-        p_old_node_conf_shard_ids->RemoveLast();
+        p_resp_node_info_shard_ids->AddAlreadyReserved(old_shard_id);
       }
+      p_pending_node_conf_shard_ids->Truncate(p_pending_node_conf_shard_ids->size() - diff);
+
       // FIXME Need shrink?
       // p_old_node_conf_shard_ids->Truncate(p_old_node_conf_shard_ids->size());
-      p_new_node_info->set_is_push(false);
+      p_resp_node_info->set_node_id(pending_node_id);
+      p_resp_node_info->set_host(pending_node_conf.host());
+      p_resp_node_info->set_port(pending_node_conf.port());
+      p_resp_node_info->set_is_push(false);
+      LOG_DEBUG << "Pull following shards to node [" << pending_node_id << ", "
+                << pending_node_conf.host() << ":" << pending_node_conf.port() << "]";
+      for (auto const shard_id : p_resp_node_info->shard_ids()) {
+        LOG_DEBUG << "node id = " << shard_id;
+      }
     }
     response.set_status(CONTROL_STATUS_OK);
   }
@@ -178,25 +180,27 @@ void ShardControllerSession::Leave(
     return;
   }
 
-  const auto peer_node_id   = req.node_id();
-  auto      *p_conf         = server->GetRecentConf();
-  auto      &node_conf_map  = p_conf->node_conf_map();
-  auto       node_conf_iter = node_conf_map.find(peer_node_id);
+  const auto peer_node_id          = req.node_id();
+  auto      *p_recent_conf         = server->GetRecentConf();
+  auto      &recent_node_conf_map  = p_recent_conf->node_conf_map();
+  auto       recent_node_conf_iter = recent_node_conf_map.find(peer_node_id);
 
-  if (node_conf_map.end() == node_conf_iter) {
-    LOG_DEBUG << "The node isn't added, can't leave from this cluster";
+  if (recent_node_conf_map.end() == recent_node_conf_iter) {
+    LOG_DEBUG << "The node isn't joined, can't leave from this cluster";
     Impl::SendRejectResponse(codec, conn, CONTROL_STATUS_NODE_NON_EXISTS);
     return;
   }
+
   assert(node_id_ == peer_node_id);
+  LOG_DEBUG << "The node: [" << node_id_ << "] is leaving";
 
-  auto &node_conf     = node_conf_iter->second;
-  auto &remove_shards = node_conf.shard_ids();
-  u64   removed_index = 0;
-  u64   shard_num     = remove_shards.size();
-  u64   new_node_num  = p_conf->node_conf_map_size() - 1;
+  auto     &recent_node_conf  = recent_node_conf_iter->second;
+  auto     &remove_shards     = recent_node_conf.shard_ids();
+  u64       removed_index     = 0;
+  const u64 removed_shard_num = remove_shards.size();
+  const u64 new_node_num      = p_recent_conf->node_conf_map_size() - 1;
 
-  assert(p_conf->node_conf_map_size() >= 1);
+  assert(p_recent_conf->node_conf_map_size() >= 1);
   /* Leave我认为有两种方案
    * 1）将leaved节点的shards尽可能分发到各个节点
    * 但是需要其他节点与该shard建立连接，
@@ -209,13 +213,14 @@ void ShardControllerSession::Leave(
    */
 
   PendingConf pending_conf;
-  pending_conf.conf    = *p_conf;
+
+  // We can't modify the recent configuration(from config_ or pending config)
+  pending_conf.conf    = *p_recent_conf;
   pending_conf.node_id = peer_node_id;
   pending_conf.state   = CONF_STATE_LEAVE_NODE;
 
   ControllerResponse resp;
   resp.set_node_id(peer_node_id);
-  auto *p_new_node_infos = resp.mutable_node_infos()->Add();
 
   if (new_node_num > 0) {
     // Get the old node shard conf and remove it from pending conf
@@ -225,37 +230,56 @@ void ShardControllerSession::Leave(
     auto *p_pending_conf_map = pending_conf.conf.mutable_node_conf_map();
     p_pending_conf_map->erase(peer_node_id);
 
-    const u64 at_least_shard_num = shard_num / new_node_num;
-    u64       more_than_node_num = shard_num % new_node_num;
+    const u64 at_least_shard_num = removed_shard_num / new_node_num;
+    u64       more_than_node_num = removed_shard_num % new_node_num;
 
-    for (auto &node_id_conf : *p_pending_conf_map) {
-      auto *p_new_node_info_shard_ids = p_new_node_infos->mutable_shard_ids();
+    for (auto &pending_node_id_conf : *p_pending_conf_map) {
+      const auto pending_node_id   = pending_node_id_conf.first;
+      auto      &pending_node_conf = pending_node_id_conf.second;
 
-      const auto node_id    = node_id_conf.first;
-      auto      &node_conf  = node_id_conf.second;
-      const auto shard_size = node_conf_map.size();
-      int64_t    diff       = at_least_shard_num - shard_size;
+      const auto pending_shard_size = pending_node_conf.shard_ids_size();
+      assert((u64)pending_shard_size < at_least_shard_num);
+      int64_t diff = at_least_shard_num - pending_shard_size;
+
+      assert(diff >= 0);
       if (more_than_node_num > 0) {
-        more_than_node_num--;
-        diff++;
+        if (diff == 0) {
+          continue;
+        } else {
+          more_than_node_num--;
+          diff++;
+        }
       }
-      if (diff <= 0) continue;
 
-      p_new_node_info_shard_ids->Reserve(diff);
-      auto *p_old_node_conf_shard_ids = node_conf.mutable_shard_ids();
-      p_old_node_conf_shard_ids->Reserve(p_old_node_conf_shard_ids->size() + diff);
+      auto *p_resp_node_info           = resp.mutable_node_infos()->Add();
+      auto *p_resp_node_info_shard_ids = p_resp_node_info->mutable_shard_ids();
+      assert(p_resp_node_info_shard_ids->size() == 0);
+      auto *p_pending_node_conf_shard_ids = pending_node_conf.mutable_shard_ids();
+
+      p_resp_node_info_shard_ids->Reserve(diff);
+      p_pending_node_conf_shard_ids->Reserve(p_pending_node_conf_shard_ids->size() + diff);
       for (int64_t i = 0; i < diff; ++i) {
         if ((size_t)remove_shards.size() != removed_index) {
           const auto old_node_id = remove_shards[removed_index++];
-          p_old_node_conf_shard_ids->AddAlreadyReserved(old_node_id);
-          p_new_node_info_shard_ids->AddAlreadyReserved(old_node_id);
+
+          // Update the pending node conf(old node)
+          p_pending_node_conf_shard_ids->AddAlreadyReserved(old_node_id);
+          p_resp_node_info_shard_ids->AddAlreadyReserved(old_node_id);
         } else
           break;
       }
 
-      p_new_node_infos->set_node_id(node_id);
-      p_new_node_infos->set_host(node_conf.host());
-      p_new_node_infos->set_is_push(true);
+      p_resp_node_info->set_node_id(pending_node_id);
+      p_resp_node_info->set_host(pending_node_conf.host());
+      p_resp_node_info->set_port(pending_node_conf.port());
+      p_resp_node_info->set_is_push(true);
+
+      LOG_DEBUG << "Push following shards to node [" << pending_node_id << ", "
+                << pending_node_conf.host() << ":" << pending_node_conf.port() << "]";
+      for (auto const shard_id : p_resp_node_info->shard_ids()) {
+        LOG_DEBUG << "node id = " << shard_id;
+      }
+
       if ((size_t)remove_shards.size() == removed_index) break;
     }
   }
@@ -270,17 +294,17 @@ void ShardControllerSession::Leave(
   codec->Send(conn, &resp);
 }
 
-void ShardControllerSession::AddNodeComplete(
+void ShardControllerSession::JoinComplete(
     ShardControllerServer  *server,
     TcpConnectionPtr const &conn,
     ShardControllerCodec   *codec,
     ControllerRequest      &req
 )
 {
-  Impl::ControllorOperationComplete(this, server, conn, codec, req, CONF_STATE_ADD_NODE);
+  Impl::ControllorOperationComplete(this, server, conn, codec, req, CONF_STATE_JOIN_NODE);
 }
 
-void ShardControllerSession::LeaveNodeComplete(
+void ShardControllerSession::LeaveComplete(
     ShardControllerServer  *server,
     TcpConnectionPtr const &conn,
     ShardControllerCodec   *codec,
