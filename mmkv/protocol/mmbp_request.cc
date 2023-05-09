@@ -75,15 +75,8 @@ void MmbpRequest::SerializeTo(ChunkList &buffer) const
 
 void MmbpRequest::ParseFrom(Buffer &buffer)
 {
-  if (buffer.GetReadableSize() >= sizeof(command))
-    ParseComponent(command, buffer);
-  else
-    return;
-
-  if (buffer.GetReadableSize() >= sizeof(has_bits_))
-    ParseComponent(has_bits_[0], buffer);
-  else
-    return;
+  ParseComponent(command, buffer);
+  ParseComponent(has_bits_[0], buffer);
 
   if (HasKey()) {
     ParseComponent(key, buffer, true);
