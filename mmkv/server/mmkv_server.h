@@ -4,10 +4,8 @@
 
 #include "kanon/util/noncopyable.h"
 #include "kanon/net/user_server.h"
-
-#include "mmkv/db/kvdb.h"
-
-// #include "mmkv/tracker/tracker_client.h"
+#include "mmkv/protocol/mmbp_codec.h"
+#include "mmkv/tracker/shard_controller_client.h"
 
 namespace mmkv {
 namespace server {
@@ -18,9 +16,10 @@ class MmkvServer {
   DISABLE_EVIL_COPYABLE(MmkvServer)
   friend class MmkvSession;
 
+  using Codec = protocol::MmbpCodec;
+
  public:
-  explicit MmkvServer(EventLoop *loop, InetAddr const &addr,
-                      InetAddr const &sharder_addr);
+  explicit MmkvServer(EventLoop *loop, InetAddr const &addr, InetAddr const &sharder_addr);
   ~MmkvServer() noexcept;
 
   void Listen() { server_.StartRun(); }
@@ -32,8 +31,10 @@ class MmkvServer {
  private:
   TcpServer server_;
 
-  std::unique_ptr<EventLoopThread> tracker_cli_loop_thr_;
-  // std::unique_ptr<ShardControllerClient> tracker_cli_;
+  Codec codec_;
+
+  // std::unique_ptr<EventLoopThread> tracker_cli_loop_thr_;
+  std::unique_ptr<ShardControllerClient> ctler_cli_;
 };
 
 } // namespace server

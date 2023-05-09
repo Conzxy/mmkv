@@ -18,17 +18,15 @@ class MmkvSession {
   DISABLE_EVIL_COPYABLE(MmkvSession)
 
  public:
-  MmkvSession(TcpConnectionPtr const& conn, MmkvServer* server);
+  MmkvSession(TcpConnectionPtr const &conn, MmkvServer *server);
   ~MmkvSession() noexcept;
-   
- private:
-  TcpConnection* conn_;
-  protocol::MmbpCodec codec_;
-  MmkvServer* server_;
 
+ private:
+  TcpConnection *conn_;
+  MmkvServer    *server_;
 };
 
-} // server
-} // mmkv
+} // namespace server
+} // namespace mmkv
 
 #endif // _MMKV_SERVER_SESSION_H_
