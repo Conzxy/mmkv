@@ -32,17 +32,17 @@ enum CommandFormat : uint8_t {
   F_INVALID,      // Invalid command
 };
 
-#define APPLICATION_INFORMATION                                                \
-  "Apache LICENSE Copyright(c) 2022.6 Conzxy\n"                                \
-  "Mmkv is an Memory Key-value remote database(or cache)\n"                    \
-  "Github page: https://github.com/Conzxy/mmkv\n"                              \
-  "Version: " MMKV_VERSION_STR "\n"                                            \
-  "Supported data structure: \n"                                               \
-  "[string]\n"                                                                 \
-  "[list]\n"                                                                   \
-  "[sorted set]\n"                                                             \
-  "[map]\n"                                                                    \
-  "[hash set]\n\n"                                                             \
+#define APPLICATION_INFORMATION                                                                    \
+  "Apache LICENSE Copyright(c) 2022.6 Conzxy\n"                                                    \
+  "Mmkv is an Memory Key-value remote database(or cache)\n"                                        \
+  "Github page: https://github.com/Conzxy/mmkv\n"                                                  \
+  "Version: " MMKV_VERSION_STR "\n"                                                                \
+  "Supported data structure: \n"                                                                   \
+  "[string]\n"                                                                                     \
+  "[list]\n"                                                                                       \
+  "[sorted set]\n"                                                                                 \
+  "[map]\n"                                                                                        \
+  "[hash set]\n\n"                                                                                 \
   "Type help to check all the supported commands\n"
 
 /**
@@ -59,6 +59,16 @@ enum CliCommand {
   CLI_COMMAND_NUM,
 };
 
+#define ENABEL_SHARD_INFO 0
+
+#if ENABEL_SHARD_INFO
+enum ShardCommand {
+  SHARD_JOIN = 0,
+  SHRAD_LEAVE,
+  SHARD_COMMAND_NUM,
+};
+#endif
+
 namespace detail {
 
 struct StringViewHash {
@@ -74,17 +84,22 @@ extern std::string command_hints[];
 
 // command_strings都是在data segment上的变量
 // 故key为StringView也无妨
-extern std::unordered_map<kanon::StringView, Command, StringViewHash>
-    command_map;
+extern std::unordered_map<kanon::StringView, Command, StringViewHash> command_map;
 // extern std::unordered_map<kanon::StringView, CommandFormat, StringViewHash>
 // command_formats;
-extern std::unordered_map<Command, CommandFormat> command_formats;
+extern std::unordered_map<Command, CommandFormat>                     command_formats;
 
 // CLI command
-extern std::string cli_command_strings[];
-extern std::string cli_command_hints[];
-extern std::unordered_map<kanon::StringView, CliCommand, StringViewHash>
-    cli_command_map;
+extern std::string                                                       cli_command_strings[];
+extern std::string                                                       cli_command_hints[];
+extern std::unordered_map<kanon::StringView, CliCommand, StringViewHash> cli_command_map;
+
+#if ENABEL_SHARD_INFO
+// Shard command
+extern std::string                                                         shard_command_strings[];
+extern std::string                                                         shard_command_hints[];
+extern std::unordered_map<kanon::StringView, ShardCommand, StringViewHash> shard_command_map;
+#endif
 
 } // namespace detail
 
@@ -105,8 +120,7 @@ KANON_INLINE CommandFormat GetCommandFormat(Command command)
  * \return
  *  true -- command is a valid command
  */
-KANON_INLINE KANON_DEPRECATED_ATTR bool GetCommand(kanon::StringView command,
-                                                   uint16_t &cmd)
+KANON_INLINE KANON_DEPRECATED_ATTR bool GetCommand(kanon::StringView command, uint16_t &cmd)
 {
   auto iter = ::detail::command_map.find(command);
   if (iter == ::detail::command_map.end()) return false;
@@ -124,10 +138,7 @@ KANON_INLINE Command GetCommand(kanon::StringView command)
   return iter->second;
 }
 
-KANON_INLINE std::string const *GetCommandHints() KANON_NOEXCEPT
-{
-  return ::detail::command_hints;
-}
+KANON_INLINE std::string const *GetCommandHints() KANON_NOEXCEPT { return ::detail::command_hints; }
 
 KANON_INLINE std::string const &GetCommandHint(Command cmd) KANON_NOEXCEPT
 {
@@ -139,8 +150,7 @@ KANON_INLINE std::string const &GetCommandHint(Command cmd) KANON_NOEXCEPT
 /* CLI command API                                  */
 /*--------------------------------------------------*/
 
-KANON_INLINE std::string const &
-GetCliCommandString(CliCommand cmd) KANON_NOEXCEPT
+KANON_INLINE std::string const &GetCliCommandString(CliCommand cmd) KANON_NOEXCEPT
 {
   assert(cmd >= 0 && cmd < CliCommand::CLI_COMMAND_NUM);
   return ::detail::cli_command_strings[cmd];
@@ -170,6 +180,39 @@ KANON_INLINE CliCommand GetCliCommand(kanon::StringView cmd)
   }
   return iter->second;
 }
+
+#if ENABEL_SHARD_INFO
+KANON_INLINE std::string const &GetShardCommandString(ShardCommand cmd) KANON_NOEXCEPT
+{
+  assert(cmd >= 0 && cmd < ShardCommand::SHARD_COMMAND_NUM);
+  return ::detail::shard_command_strings[cmd];
+}
+
+KANON_INLINE std::string const *GetShardCommandStrings() KANON_NOEXCEPT
+{
+  return ::detail::shard_command_strings;
+}
+
+KANON_INLINE std::string const &GetShardCommandHint(ShardCommand cmd)
+{
+  assert(cmd >= 0 && cmd < ShardCommand::SHARD_COMMAND_NUM);
+  return ::detail::shard_command_hints[cmd];
+}
+
+KANON_INLINE std::string const *GetShardCommandHints() KANON_NOEXCEPT
+{
+  return ::detail::shard_command_hints;
+}
+
+KANON_INLINE ShardCommand GetShardCommand(kanon::StringView cmd)
+{
+  auto iter = ::detail::shard_command_map.find(cmd);
+  if (iter == ::detail::shard_command_map.end()) {
+    return ShardCommand::SHARD_COMMAND_NUM;
+  }
+  return iter->second;
+}
+#endif
 
 KANON_INLINE std::string const &GetHelp() { return ::detail::help; }
 
