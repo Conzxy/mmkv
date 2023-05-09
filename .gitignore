@@ -5,6 +5,10 @@ bin/mmkv-cli
 bin/mmkv.conf
 bin/mmkvconf.lua
 bin/*.history
+bin/mmkv-configd
+bin/configd
+mmkv/tracker/.discard
+mmkv/protocol/.discard
 .cache/
 core
 idea
