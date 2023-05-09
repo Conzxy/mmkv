@@ -16,6 +16,15 @@ mmkv_gen_proto_code(PROTOC_PATH "protoc"
 set(PB_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}")
 message(STATUS "mmkv pb output dir = ${PB_OUTPUT_DIR}")
 
+set(
+  PB_SRC
+  ${PB_OUTPUT_DIR}/sharder.pb.cc
+  ${PB_OUTPUT_DIR}/configuration.pb.cc
+  ${PB_OUTPUT_DIR}/controller.pb.cc
+  ${PB_OUTPUT_DIR}/forwarder.pb.cc
+  ${PB_OUTPUT_DIR}/configd.pb.cc
+)
+
 file(GLOB DISTRIBUTION_SRC
   tracker/*.cc
   configd/*.cc
@@ -55,29 +64,24 @@ file(GLOB MMKV_SERVER_SRC
   configd/*.cc
   ${TAKINA_DIR}/takina.cc
   ${CHISATO_DIR}/chisato.cc
-)
-
-list(APPEND
-  MMKV_SERVER_SRC 
-  ${PB_OUTPUT_DIR}/sharder.pb.cc
-  ${PB_OUTPUT_DIR}/configuration.pb.cc
-  ${PB_OUTPUT_DIR}/controller.pb.cc
-  ${PB_OUTPUT_DIR}/forwarder.pb.cc
-  ${PB_OUTPUT_DIR}/configd.pb.cc
+  ${PB_SRC}
 )
 
 file(GLOB CONFIGD_SRC
   app/configd_main.cc
-  server/*.cc
+  configd/*.cc
   util/*.cc
   protocol/*.cc
   ${KVARINT_DIR}/kvarint.c 
-  disk/*.cc
   db/*.cc
   storage/*.cc
-  ${DISTRIBUTION_SRC}
+  tracker/*.cc
+  disk/*.cc
+  sharder/*.cc
+  server/config.cc
+  server/option.cc
   ${TAKINA_DIR}/takina.cc
-  ${CHISATO_DIR}/chisato.cc
+  ${PB_SRC}
 )
 
 file(GLOB MMKV_CLIENT_SRC
@@ -122,6 +126,7 @@ mmkv_gen_lib(mmkv_xxhash ${XXHASH_DIR}/xxhash.c)
 SetLibName(HKLUA_LIB hklua)
 set(MMKV_COMMON_LIBS kanon_protobuf kanon_net kanon_base mmkv_xxhash)
 set(MMKV_SERVER_LIBS ${MMKV_COMMON_LIBS} dl ${HKLUA_LIB})
+set(MMKV_CONFIGD_LIBS ${MMKV_COMMON_LIBS} ${HKLUA_LIB})
 set(MMKV_CLIENT_LIBS ${MMKV_COMMON_LIBS} replxx)
 
 mmkv_gen_app(mmkv-cli SOURCES ${MMKV_CLIENT_SRC} LIBS ${MMKV_CLIENT_LIBS})
@@ -151,11 +156,13 @@ target_include_directories(rlogdump
   PRIVATE ${PB_OUTPUT_DIR}
 )
 
-mmkv_gen_app(configd SOURCES ${CONFIGD_SRC} LIBS ${MMKV_COMMON_LIBS})
-target_include_directories(configd 
+set(CONFIGD_EXE_NAME mmkv-configd)
+mmkv_gen_app(${CONFIGD_EXE_NAME} SOURCES ${CONFIGD_SRC} LIBS ${MMKV_CONFIGD_LIBS})
+target_include_directories(${CONFIGD_EXE_NAME}
   PRIVATE ${CHISATO_DIR} 
   PRIVATE ${TAKINA_DIR}
   PRIVATE ${XXHASH_DIR}
   PRIVATE ${PROJECT_SOURCE_DIR}
+  PRIVATE ${HKLUA_DIR}
   PRIVATE ${PB_OUTPUT_DIR}
 )
