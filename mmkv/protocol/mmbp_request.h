@@ -85,6 +85,16 @@ class MmbpRequest : public MmbpMessage {
 
   bool HasNone() const noexcept { return has_bits_[0] == 0; }
 
+  Command PeekCommand(Buffer const &buffer) const noexcept
+  {
+    size_t   len = 0;
+    uint16_t cmd;
+    auto     err = kvarint_decode16(buffer.GetReadBegin(), buffer.GetReadableSize(), &len, &cmd);
+    MMKV_UNUSED(err);
+    MMKV_ASSERT1(err == KVARINT_OK);
+    return (Command)cmd;
+  }
+
   void DebugPrint() const noexcept;
 
   static MmbpRequest *GetPrototype() { return &detail::prototype; }
