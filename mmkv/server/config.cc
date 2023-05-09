@@ -1,16 +1,16 @@
 // SPDX-LICENSE-IDENTIFIER: Apache-2.0
 #include "config.h"
 
-#include "option.h"
-#include "mmkv/util/time_util.h"
 #include "mmkv/util/conv.h"
-#include "mmkv/util/tokenizer.h"
 
-#include <chisato.h>
+#include <hklua/env.h>
 #include <kanon/log/logger.h>
 
 using namespace kanon;
 using namespace mmkv::util;
+using namespace mmkv;
+using namespace hklua;
+using namespace mmkv::server;
 
 namespace mmkv {
 namespace server {
@@ -24,54 +24,20 @@ MmkvConfig &mmkv_config()
 static StringView log_method2str(LogMethod mtd) noexcept;
 static StringView replace_policy2str(ReplacePolicy rp) noexcept;
 
-static bool set_log_method(StrSlice value, void *args) noexcept;
-static bool set_replace_policy(StrSlice value, void *args) noexcept;
-static bool set_max_memoey_usage(StrSlice vlaue, void *args) noexcept;
-static bool set_nodes(StrSlice value, void *args);
-
-void RegisterConfig(MmkvConfig &config)
-{
-  chisato::AddConfig("LogMethod", &config.log_method, &set_log_method);
-  chisato::AddConfig("ExpirationCheckCycle", &config.expiration_check_cycle);
-  chisato::AddConfig("RequestLogLocation", &config.request_log_location);
-  chisato::AddConfig("LazyExpiration", &config.lazy_expiration);
-  chisato::AddConfig("ReplacePolicy", &config.replace_policy, &set_replace_policy);
-  chisato::AddConfig("DiagnosticLogDirectory", &config.diagnostic_log_dir);
-  chisato::AddConfig("MaxMemoryUsage", &config.max_memory_usage, &set_max_memoey_usage);
-  chisato::AddConfig("ShardNum", &config.shard_num);
-  chisato::AddConfig("Nodes", &config.nodes, &set_nodes);
-}
-
-bool ParseConfig(std::string &errmsg)
-{
-  auto start_time = GetTimeMs();
-  auto success    = chisato::Parse(mmkv_option().config_name, errmsg);
-
-  if (!success) return false;
-  if (mmkv_config().request_log_location.empty()) {
-    LOG_ERROR << "The RequestLogLocation field in the config file is missing";
-    return false;
-  }
-
-  LOG_INFO << "Parse config cost: " << (GetTimeMs() - start_time) << "ms";
-
-  return true;
-}
-
 void PrintMmkvConfig(MmkvConfig const &config)
 {
   const auto usage = format_memory_usage(config.max_memory_usage);
-  LOG_DEBUG << "Config information: \n";
-  LOG_DEBUG << "LogMethod=" << log_method2str(config.log_method);
-  LOG_DEBUG << "ExpirationCheckCycle=" << config.expiration_check_cycle;
-  LOG_DEBUG << "LazyExpiration=" << config.lazy_expiration;
-  LOG_DEBUG << "RequestLogLocation=" << config.request_log_location;
-  LOG_DEBUG << "ReplacePolicy=" << replace_policy2str(config.replace_policy);
-  LOG_DEBUG << "DiagnosticLogDirectory=" << config.diagnostic_log_dir;
-  LOG_DEBUG << "MaxMemoryUsage=" << usage.usage << " " << memory_unit2str(usage.unit);
-  LOG_DEBUG << "SharderAddress=" << config.sharder_endpoint;
-  LOG_DEBUG << "SharderControllerAddress=" << config.shard_controller_endpoint;
-  LOG_DEBUG << "ShardNum=" << config.shard_num;
+  LOG_DEBUG << "==== Mmkv Config Entries =====";
+  LOG_DEBUG << "LogMethod = " << log_method2str(config.log_method);
+  LOG_DEBUG << "ExpirationCheckCycle = " << config.expiration_check_cycle;
+  LOG_DEBUG << "LazyExpiration = " << config.lazy_expiration;
+  LOG_DEBUG << "RequestLogLocation = " << config.request_log_location;
+  LOG_DEBUG << "ReplacePolicy = " << replace_policy2str(config.replace_policy);
+  LOG_DEBUG << "DiagnosticLogDirectory = " << config.diagnostic_log_dir;
+  LOG_DEBUG << "MaxMemoryUsage = " << usage.usage << " " << memory_unit2str(usage.unit);
+  LOG_DEBUG << "SharderAddress = " << config.sharder_endpoint;
+  LOG_DEBUG << "SharderControllerAddress = " << config.shard_controller_endpoint;
+  LOG_DEBUG << "ShardNum = " << config.shard_num;
   LOG_DEBUG << "Nodes: ";
   for (size_t i = 0; i < config.nodes.size(); ++i) {
     LOG_DEBUG << "node " << i << ": " << config.nodes[i];
@@ -94,19 +60,6 @@ static inline StringView log_method2str(LogMethod mtd) noexcept
   return "";
 }
 
-static inline bool set_log_method(StrSlice value, void *args) noexcept
-{
-  auto log_method = (LogMethod *)args;
-  if (!value.caseCmp("request")) {
-    *log_method = LM_REQUEST;
-  } else if (!value.caseCmp("none")) {
-    *log_method = LM_NONE;
-  } else {
-    return false;
-  }
-  return true;
-}
-
 static inline StringView replace_policy2str(ReplacePolicy rp) noexcept
 {
   switch (rp) {
@@ -120,36 +73,103 @@ static inline StringView replace_policy2str(ReplacePolicy rp) noexcept
   return "";
 }
 
-static inline bool set_replace_policy(StrSlice value, void *args) noexcept
+// Allow the config entry is missing
+#if 0
+#  define ERROR_HANDLE                                                                             \
+    do {                                                                                           \
+      env.StackDump();                                                                             \
+      return false;                                                                                \
+    } while (0)
+#else
+#  define ERROR_HANDLE
+#endif
+
+bool ParseMmkvConfig(StringArg filename, MmkvConfig &config)
 {
-  auto rp = (ReplacePolicy *)args;
-  if (!value.caseCmp("lru")) {
-    *rp = RP_LRU;
-  } else if (!value.caseCmp("none")) {
-    *rp = RP_NONE;
-  } else {
+  Env env("ConfigParser");
+  if (HKLUA_OK != env.DoFile(filename.data())) {
+    fprintf(stderr, "Failed to load config\n");
+    env.StackDump();
     return false;
   }
-  return true;
-}
 
-static inline bool set_max_memoey_usage(StrSlice value, void *args) noexcept
-{
-  auto max_memory_usage = (uint64_t *)args;
-  *max_memory_usage     = str2memory_usage({value.data(), value.size()});
-  if (*max_memory_usage == (uint64_t)-1) return false;
-  return true;
-}
+  env.OpenLibs();
 
-static inline bool set_nodes(StrSlice value, void *args)
-{
-  std::vector<std::string> nodes;
-  Tokenizer                tokens(StringView(value.data(), value.size()), ',');
-
-  // FIXME Valid check
-  for (auto token : tokens) {
-    nodes.emplace_back(token.ToString());
+  bool success;
+  auto log_method = env.GetGlobalR<char const *>("LogMethod", true, &success);
+  if (!success) {
+    ERROR_HANDLE;
   }
+
+  if (::strcasecmp(log_method, "none") == 0) {
+    config.log_method = LM_NONE;
+  } else if (::strcasecmp(log_method, "request") == 0) {
+    config.log_method = LM_REQUEST;
+  } else {
+    ERROR_HANDLE;
+  }
+
+  if (!env.GetGlobal("ExpirationCheckCycle", config.expiration_check_cycle)) {
+    ERROR_HANDLE;
+  }
+
+  if (!env.GetGlobal("RequestLogLocation", config.request_log_location)) {
+    ERROR_HANDLE;
+  }
+
+  if (!env.GetGlobal("LazyExpiration", config.lazy_expiration)) {
+    ERROR_HANDLE;
+  }
+
+  char const *replace_policy;
+  if (!env.GetGlobal("ReplacePolicy", replace_policy)) {
+    ERROR_HANDLE;
+  }
+
+  if (::strcasecmp(replace_policy, "none") == 0) {
+    config.replace_policy = RP_NONE;
+  } else if (::strcasecmp(replace_policy, "lru") == 0) {
+    config.replace_policy = RP_LRU;
+  } else {
+    ERROR_HANDLE;
+  }
+
+  char const *max_mem_usage;
+  if (!env.GetGlobal("MaxMemoryUsage", max_mem_usage, true)) {
+    ERROR_HANDLE;
+  }
+
+  std::tie(config.max_memory_usage) =
+      env.CallFunction<Number>("ParseMemoryUsage", 0, &success, true, max_mem_usage);
+
+  if (!success) {
+    ERROR_HANDLE;
+  }
+
+  if (!env.GetGlobal("ShardControllerEndpoint", config.shard_controller_endpoint)) {
+    ERROR_HANDLE;
+  }
+
+  if (!env.GetGlobal("SharderEndpoint", config.sharder_endpoint)) {
+    ERROR_HANDLE;
+  }
+
+  Table      data_nodes;
+  TableGuard data_nodes_guard(data_nodes);
+
+  if (!env.GetGlobalTable("DataNodes", data_nodes)) {
+    ERROR_HANDLE;
+  }
+
+  auto nodes_len = data_nodes.len();
+  /* NOTICE: Lua index starts with 1 */
+  for (int i = 1; i <= nodes_len; ++i) {
+    config.nodes.emplace_back(data_nodes.GetFieldR<char const *>(i, true, &success));
+    if (!success) {
+      ERROR_HANDLE;
+    }
+  }
+
   return true;
 }
 
