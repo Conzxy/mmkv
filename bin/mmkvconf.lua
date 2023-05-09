@@ -71,29 +71,12 @@ ThreadNum = 1
 -- Shard Configuration
 ------------------------------------------
 
--- Enable shard
--- If this is configured to false, the following 
--- configs related sharder are disabled also.
---
--- default: false
--- EnableShard = false
--- To enable shard, see ShardControllerEndPoint
-
--- default: 4096
-ShardNum = 4096
-
--- default: 
--- ConfigServerEndpoint = "*.9997"
-ConfigServerEndpoint = "*:9997"
-
 -- To disable shard, you can set this to empty string
 -- default: RouterPort + 10000
 -- ShardControllerEndpoint = "*:19997"
 
 -- default: ShardControllerPort + 1
 SharderEndpoint = "*:19998"
-
-ForwarderEndpoint = "*:9994"
 
 -- default: empty
 DataNodes = {

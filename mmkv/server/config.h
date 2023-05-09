@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <string>
 
+#include "mmkv/tracker/type.h"
 #include "mmkv/util/shard_util.h"
 
 namespace mmkv {
@@ -35,7 +36,7 @@ struct MmkvConfig {
   std::string              diagnostic_log_dir        = "";
   std::string              shard_controller_endpoint = "";
   std::string              sharder_endpoint          = "*:19998";
-  long                     shard_num                 = DEFAULT_SHARD_NUM;
+  shard_id_t               shard_num                 = 1;
   int                      thread_num                = 1;
   std::vector<std::string> nodes;
 
@@ -54,10 +55,7 @@ struct MmkvConfig {
 
 MmkvConfig &mmkv_config();
 
-void RegisterConfig(MmkvConfig &config);
-bool ParseConfig(std::string &errmsg);
-
-bool ParseLuaConfig(kanon::StringArg filename, MmkvConfig &config);
+bool ParseMmkvConfig(kanon::StringArg filename, MmkvConfig &config);
 
 void PrintMmkvConfig(MmkvConfig const &config);
 
