@@ -3,6 +3,7 @@
 #include "shard_controller_session.h"
 
 #include "controller.pb.h"
+#include "mmkv/configd/configd.h"
 #include <random>
 
 using namespace mmkv::server;
@@ -102,7 +103,7 @@ void ShardControllerServer::CheckPendingConfSessionAndResponse()
     auto p_conn = (*p_wconn_slot)->value.value.lock();
     if (p_conn) {
       codec_.Send(p_conn.get(), &resp);
-      config_ = std::move(recent_conf.conf);
+      UpdateConfig(std::move(recent_conf.conf));
     } else {
       // Connection is down
       pending_conf_conn_dict_.EraseAfterFindSlot(p_wconn_slot);
@@ -112,4 +113,10 @@ void ShardControllerServer::CheckPendingConfSessionAndResponse()
 
     PopPendingConf();
   }
+}
+
+void ShardControllerServer::UpdateConfig(Configuration &&conf)
+{
+  config_ = std::move(conf);
+  p_configd_->SyncConfig(config_);
 }

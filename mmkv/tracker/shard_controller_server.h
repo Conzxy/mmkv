@@ -20,12 +20,14 @@ namespace mmkv {
 namespace server {
 
 class ShardControllerSession;
+class Configd;
 
 /**
  * Manage the all metadata about the cluster.
  */
 class ShardControllerServer : kanon::noncopyable {
   friend class ShardControllerSession;
+  friend class Configd;
 
  public:
   ShardControllerServer(EventLoop *loop, InetAddr const &addr);
@@ -34,14 +36,22 @@ class ShardControllerServer : kanon::noncopyable {
 
   u64 GetShardNum() const noexcept { return shard_num_; }
 
- private:
-  u64 GenerateNodeId() const;
-
   Configuration const *GetRecentConf() const noexcept
   {
     if (pending_conf_q_.empty()) return &config_;
     return &pending_conf_q_.front().conf;
   }
+
+  Configuration *GetRecentConf() noexcept
+  {
+    if (pending_conf_q_.empty()) return &config_;
+    return &pending_conf_q_.front().conf;
+  }
+
+ private:
+  void UpdateConfig(Configuration &&conf);
+
+  u64 GenerateNodeId() const;
 
   PendingConf &GetRecentPendingConf() noexcept { return pending_conf_q_.front(); }
 
@@ -79,6 +89,8 @@ class ShardControllerServer : kanon::noncopyable {
       pending_conf_conn_dict_;
 
   u64 shard_num_;
+
+  Configd *p_configd_;
 };
 
 } // namespace server
