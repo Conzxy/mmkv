@@ -4,6 +4,8 @@
 
 #include "controller.pb.h"
 #include "mmkv/configd/configd.h"
+#include "mmkv/configd/configd_config.h"
+
 #include <random>
 
 using namespace mmkv::server;
@@ -12,7 +14,7 @@ using namespace kanon;
 ShardControllerServer::ShardControllerServer(EventLoop *loop, InetAddr const &addr)
   : server_(loop, addr, "ShardController")
   , codec_()
-  , shard_num_()
+  , shard_num_(configd_config().shard_num)
 {
   codec_.SetMessageCallback(
       [this](TcpConnectionPtr const &conn, Buffer &buffer, size_t payload_size, TimeStamp) {
