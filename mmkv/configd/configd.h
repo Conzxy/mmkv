@@ -6,6 +6,7 @@
 #include <kanon/net/user_server.h>
 
 #include "mmkv/tracker/shard_controller_server.h"
+#include "configd_codec.h"
 
 namespace mmkv {
 namespace server {
@@ -13,15 +14,20 @@ namespace server {
 /**
  *
  */
-class ConfigServer : kanon::noncopyable {
+class Configd : kanon::noncopyable {
+  friend class ShardControllerServer;
+
  public:
-  ConfigServer(EventLoop *loop, InetAddr const &addr, InetAddr const &clter_addr);
-  ~ConfigServer() noexcept;
+  Configd(EventLoop *loop, InetAddr const &addr, InetAddr const &clter_addr);
+  ~Configd() noexcept;
 
   void Listen() { server_.StartRun(); }
 
  private:
-  TcpServer server_;
+  void SyncConfig(Configuration const &config);
+
+  TcpServer    server_;
+  ConfigdCodec codec_;
 
   EventLoopThread       ctler_loop_thr_;
   ShardControllerServer ctler_;
