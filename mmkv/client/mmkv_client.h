@@ -38,27 +38,24 @@ class MmkvClient {
   void ConnectWait() { IoWait(); }
 
  private:
-  KANON_INLINE bool CliCommandProcess(kanon::StringView cmd,
-                                      kanon::StringView line);
-  KANON_INLINE bool ShellCommandProcess(kanon::StringView cmd,
-                                        kanon::StringView line);
+  KANON_INLINE bool CliCommandProcess(kanon::StringView cmd, kanon::StringView line);
+  KANON_INLINE bool ShellCommandProcess(kanon::StringView cmd, kanon::StringView line);
 
-  KANON_INLINE int MmkvCommandProcess(kanon::StringView cmd,
-                                      kanon::StringView line);
+  KANON_INLINE int MmkvCommandProcess(kanon::StringView cmd, kanon::StringView line);
 
   void InstallLinenoise() KANON_NOEXCEPT;
 
-  TcpClientPtr client_;
+  TcpClientPtr        client_;
   protocol::MmbpCodec codec_;
 
-  ResponsePrinter response_printer_;
+  ResponsePrinter  response_printer_;
   kanon::Condition io_cond_;
   kanon::MutexLock mutex_;
-  bool need_io_wait_ = true;
+  bool             need_io_wait_ = true;
 
   std::string prompt_;
 
-  Replxx *replxx_;
+  Replxx           *replxx_;
   protocol::Command current_cmd_;
 };
 
