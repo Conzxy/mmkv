@@ -98,7 +98,7 @@ class ShardControllerClient : kanon::noncopyable {
   SharderCodec                                           sharder_codec_;
   ::google::protobuf::RepeatedPtrField<::mmkv::NodeInfo> node_infos_;
 
-  EventLoopThread            shard_cli_loop_thr_;
+  // EventLoopThread            shard_cli_loop_thr_;
   // std::vector<std::unique_ptr<ShardClient>> shard_clis_;
   std::vector<SharderClient> shard_clis_;
 
@@ -111,6 +111,9 @@ class ShardControllerClient : kanon::noncopyable {
   uint16_t        sharder_port_;
 
   State state_;
+
+  kanon::MutexLock conn_lock_;
+  kanon::Condition conn_cond_;
 };
 
 } // namespace server
