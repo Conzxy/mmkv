@@ -166,7 +166,7 @@ void DatabaseInstance::Execute(MmbpRequest &request, MmbpResponse *response, uin
       StatusCode code;
       switch (request.command) {
         case LAPPEND:
-          code = db.ListAppend(request.key, request.values);
+          code = db.ListAppend(std::move(request.key), request.values);
           break;
         case LPREPEND:
           code = db.ListPrepend(request.key, request.values);
