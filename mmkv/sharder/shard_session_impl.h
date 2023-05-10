@@ -110,7 +110,7 @@ struct SharderSession::Impl {
     auto       pending_client = sharder->pending_shard_client_dict_[shard_id];
     if (pending_client) {
       if (!sharder->canceling_client_set_.Find(pending_client)) {
-        pending_client->PutShard(sharder, codec, conn, shard_id);
+        pending_client->PutShard(sharder, codec, shard_id);
       }
     }
   }
