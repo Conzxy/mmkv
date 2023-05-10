@@ -18,7 +18,7 @@ enum StatusCode : uint8_t {
   S_INVALID_MESSAGE,      /** Invalid format of message of mmbp protocol */
   S_INVALID_RANGE,        /** Invalid range, can't range query */
   S_VMEMBER_NONEXISTS,    /** The member doesn't exists in the vset */
-  S_EXISITS_DIFF_TYPE,    /** Key exists but with different type(i.e. not expected)
+  S_EXISTS_DIFF_TYPE,     /** Key exists but with different type(i.e. not expected)
                            */
   S_FIELD_NONEXISTS,      /** The field doesn't exists in the map */
   S_SET_MEMBER_NONEXISTS, /** The member doesn't exists in the set */

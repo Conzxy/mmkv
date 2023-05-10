@@ -21,7 +21,7 @@ char const *mmkv::protocol::GetStatusMessage(mmkv::protocol::StatusCode code) no
       return "ERROR: Invalid range";
     case S_VMEMBER_NONEXISTS:
       return "ERROR: Member doesn't exists in vset";
-    case S_EXISITS_DIFF_TYPE:
+    case S_EXISTS_DIFF_TYPE:
       return "ERROR: Key exists but with different type";
     case S_FIELD_NONEXISTS:
       return "ERROR: Field doesn't exists";
@@ -60,7 +60,7 @@ char const *mmkv::protocol::StatusCode2Str(StatusCode code) noexcept
       return "invalid range";
     case S_VMEMBER_NONEXISTS:
       return "vmember nonexists";
-    case S_EXISITS_DIFF_TYPE:
+    case S_EXISTS_DIFF_TYPE:
       return "exists diff type";
     case S_FIELD_NONEXISTS:
       return "field nonexists";
