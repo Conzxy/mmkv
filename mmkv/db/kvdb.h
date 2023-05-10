@@ -100,7 +100,7 @@ class MmkvDb {
   // MmkvDb(MmkvDb &&) = default;
   // MmkvDb &operator=(MmkvDb &&) = default;
 
-  void SetName(std::string name) { name_ = std::move(name); }
+  void SetName(std::string &&name) { name_ = std::move(name); }
 
   /*----------------------------------------------*/
   /* Common API                                   */
@@ -161,7 +161,7 @@ class MmkvDb {
    *  S_EXISTS -- key exists
    *  S_OK
    */
-  StatusCode InsertStr(String k, String v);
+  StatusCode InsertStr(String &&k, String &&v);
 
   /**
    * You can call Delete() to remove string entry
@@ -187,7 +187,7 @@ class MmkvDb {
    *  S_OK
    *  S_EXISTS_DIFF_TYPE -- key exists but not string type
    */
-  StatusCode SetStr(String k, String v);
+  StatusCode SetStr(String &&k, String &&v);
 
   /**
    * \brief Append the \p str to the value of \p key
@@ -214,7 +214,7 @@ class MmkvDb {
    *  S_OK
    *  S_EXISTS -- key exists
    */
-  StatusCode ListAdd(String k, StrValues &elems);
+  StatusCode ListAdd(String &&k, StrValues &elems);
 
   /**
    * \brief Insert the elements to the tail of list
@@ -223,7 +223,7 @@ class MmkvDb {
    *  S_EXISTS_DIFF_TYPE
    *  S_NONEXISTS
    */
-  StatusCode ListAppend(String const &k, StrValues &elems);
+  StatusCode ListAppend(String &&k, StrValues &elems);
 
   /**
    * \brief Insert the elements to the head of list
