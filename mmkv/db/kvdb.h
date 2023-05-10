@@ -95,7 +95,7 @@ class MmkvDb {
   {
   }
 
-  ~MmkvDb() noexcept { LOG_INFO << "Database " << name_ << " removed"; }
+  ~MmkvDb() noexcept;
 
   // MmkvDb(MmkvDb &&) = default;
   // MmkvDb &operator=(MmkvDb &&) = default;

@@ -64,6 +64,14 @@ MmkvDb::MmkvDb(std::string name)
   LOG_INFO << "Database " << name_ << " created";
 }
 
+MmkvDb::~MmkvDb() noexcept
+{
+  // To the values, we must delete it explicitly
+  size_t cnt;
+  DeleteAll(&cnt);
+  LOG_INFO << "Database " << name_ << " removed";
+}
+
 void MmkvDb::GetAllKeys(StrValues &keys) const
 {
   // Don't reclaim expired kv
@@ -99,7 +107,6 @@ StatusCode MmkvDb::Delete(String const &k)
   auto &key = node->value.key;
   RemoveKeyFromShard(&key);
   CacheRemove(&key);
-  DeleteMmkvData(node->value.value);
   dict_.DropNode(node);
   // It's ok even though k doesn't exists
   exp_dict_.Erase(k);
@@ -155,12 +162,8 @@ StatusCode MmkvDb::InsertStr(String k, String v)
   CHECK_SHARD_IS_LOCKED_KEY(k);
   TryReplacekey(nullptr);
 
-  MmkvData data = {
-      .type     = D_STRING,
-      .any_data = nullptr, // dummy
-  };
-
-  auto kv = dict_.InsertKv(std::move(k), std::move(data));
+  MmkvData dummy_data(D_STRING);
+  auto     kv = dict_.InsertKv(std::move(k), std::move(dummy_data));
   if (!kv) return S_EXISTS;
   kv->value.any_data = new String(std::move(v));
 
@@ -182,7 +185,7 @@ StatusCode MmkvDb::EraseStr(String const &k)
       auto &key = slot->value.key;
       CacheRemove(&key);
       RemoveKeyFromShard(&key);
-      delete (String *)str.any_data;
+      DeleteSpecificMmkvData<String>(&str);
       dict_.EraseNode(bucket, slot);
       return S_OK;
     } else {
@@ -243,12 +246,9 @@ StatusCode MmkvDb::SetStr(String k, String v)
   if (CheckExpire(k)) return S_NONEXISTS;
 
   Dict::value_type *duplicate = nullptr;
-  MmkvData          data      = {
-                    .type     = D_STRING,
-                    .any_data = nullptr,
-  };
+  MmkvData          dummy_data(D_STRING);
 
-  auto success = dict_.InsertKvWithDuplicate(std::move(k), data, duplicate);
+  auto success = dict_.InsertKvWithDuplicate(std::move(k), std::move(dummy_data), duplicate);
   if (success) {
     duplicate->value.any_data = new String(std::move(v));
     CacheAdd(&duplicate->key);
@@ -277,10 +277,7 @@ StatusCode MmkvDb::SetStr(String k, String v)
 StatusCode MmkvDb::ListAdd(String k, StrValues &elems)
 {
   CHECK_SHARD_IS_LOCKED_KEY(k);
-  MmkvData data = {
-      .type     = D_STRLIST,
-      .any_data = nullptr, // dummy
-  };
+  MmkvData data(D_STRLIST);
 
   auto kv = dict_.InsertKv(std::move(k), std::move(data));
   if (!kv) return S_EXISTS;
@@ -446,7 +443,7 @@ StatusCode MmkvDb::ListDel(String const &k)
       auto &key = slot->value.key;
       CacheRemove(&key);
       RemoveKeyFromShard(&key);
-      delete (StrList *)str_list.any_data;
+      DeleteSpecificMmkvData<StrList>(&str_list);
       dict_.EraseNode(bucket, slot);
       exp_dict_.Erase(k);
       return S_OK;
@@ -464,13 +461,10 @@ StatusCode MmkvDb::VsetAdd(String &&key, WeightValues &&wms, size_t &count)
 {
   CHECK_SHARD_IS_LOCKED_KEY(key);
 
-  MmkvData data{
-      .type     = D_SORTED_SET,
-      .any_data = nullptr, // dummy
-  };
+  MmkvData dummy_data(D_SORTED_SET);
 
   Dict::value_type *duplicate = nullptr;
-  auto success = dict_.InsertKvWithDuplicate(std::move(key), std::move(data), duplicate);
+  auto success = dict_.InsertKvWithDuplicate(std::move(key), std::move(dummy_data), duplicate);
 
   if (success || duplicate->value.type == D_SORTED_SET) {
     Vset *vset = nullptr;
@@ -626,14 +620,11 @@ StatusCode MmkvDb::MapAdd(String &&key, StrKvs &&kvs, size_t &count)
 {
   CHECK_SHARD_IS_LOCKED_KEY(key);
 
-  MmkvData data{
-      .type     = D_MAP,
-      .any_data = nullptr,
-  };
+  MmkvData dummy_data(D_MAP);
 
   Dict::value_type *duplicate = nullptr;
 
-  auto success = dict_.InsertKvWithDuplicate(std::move(key), std::move(data), duplicate);
+  auto success = dict_.InsertKvWithDuplicate(std::move(key), std::move(dummy_data), duplicate);
   if (success || duplicate->value.type == D_MAP) {
     Map *map = nullptr;
     if (success) {
@@ -791,14 +782,11 @@ StatusCode MmkvDb::SetAdd(String &&key, StrValues &members, size_t &count)
 {
   CHECK_SHARD_IS_LOCKED_KEY(key);
 
-  MmkvData data{
-      .type     = D_SET,
-      .any_data = nullptr,
-  };
+  MmkvData dummy_data(D_SET);
 
   Dict::value_type *duplicate = nullptr;
 
-  auto success = dict_.InsertKvWithDuplicate(std::move(key), std::move(data), duplicate);
+  auto success = dict_.InsertKvWithDuplicate(std::move(key), std::move(dummy_data), duplicate);
   if (success || duplicate->value.type == D_SET) {
     Set *set = nullptr;
     if (success) {
@@ -896,13 +884,10 @@ StatusCode MmkvDb::SetAnd(String const &key1, String const &key2, StrValues &mem
 }
 
 #define SET_OP_TO_ROUTINE                                                                          \
-  MmkvData data{                                                                                   \
-      .type     = D_SET,                                                                           \
-      .any_data = nullptr,                                                                         \
-  };                                                                                               \
+  MmkvData dummy_data(D_SET);                                                                      \
                                                                                                    \
   Dict::value_type *duplicate = nullptr;                                                           \
-  auto success = dict_.InsertKvWithDuplicate(std::move(dest), std::move(data), duplicate);         \
+  auto success = dict_.InsertKvWithDuplicate(std::move(dest), std::move(dummy_data), duplicate);   \
                                                                                                    \
   Set *dest_set = nullptr;                                                                         \
   if (success) {                                                                                   \
@@ -1103,7 +1088,6 @@ void MmkvDb::TryReplacekey(String const *key)
   assert(node);
   cache_->DelVictim();
   if (mmkv_config().log_method == server::LM_REQUEST) rlog().AppendDel(std::move(node->value.key));
-  DeleteMmkvData(node->value.value);
   dict_.DropNode(node);
 }
 
@@ -1137,7 +1121,6 @@ void MmkvDb::CheckExpireCycle()
   for (auto const &k_exp : exp_dict_) {
     if (k_exp.value <= cur_ms) {
       node = dict_.Extract(k_exp.key);
-      DeleteMmkvData(node->value.value);
       dict_.DropNode(node);
 
       expire_keys.emplace_back(k_exp.key);
@@ -1178,7 +1161,6 @@ bool MmkvDb::CheckExpire(String const &key)
     exp_dict_.EraseNode(bucket, node);
     auto node2 = dict_.Extract(key);
     MMKV_ASSERT(node2, "Key must in the dict_ ");
-    DeleteMmkvData(node2->value.value);
     dict_.DropNode(node2);
 
     if (mmkv_config().log_method == LM_REQUEST) {
