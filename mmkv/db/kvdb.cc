@@ -157,7 +157,7 @@ StatusCode MmkvDb::Rename(String const &old_name, String &&new_name)
   return S_OK;
 }
 
-StatusCode MmkvDb::InsertStr(String k, String v)
+StatusCode MmkvDb::InsertStr(String &&k, String &&v)
 {
   CHECK_SHARD_IS_LOCKED_KEY(k);
   TryReplacekey(nullptr);
@@ -189,7 +189,7 @@ StatusCode MmkvDb::EraseStr(String const &k)
       dict_.EraseNode(bucket, slot);
       return S_OK;
     } else {
-      return S_EXISITS_DIFF_TYPE;
+      return S_EXISTS_DIFF_TYPE;
     }
   }
 
@@ -208,7 +208,7 @@ StatusCode MmkvDb::GetStr(String const &k, String *&str) noexcept
       CacheUpdate(&data->key);
       return S_OK;
     } else
-      return S_EXISITS_DIFF_TYPE;
+      return S_EXISTS_DIFF_TYPE;
   }
   return S_NONEXISTS;
 }
@@ -240,7 +240,7 @@ StatusCode MmkvDb::StrPopBack(String const &key, size_t count)
   return code;
 }
 
-StatusCode MmkvDb::SetStr(String k, String v)
+StatusCode MmkvDb::SetStr(String &&k, String &&v)
 {
   CHECK_SHARD_IS_LOCKED_KEY(k);
   if (CheckExpire(k)) return S_NONEXISTS;
@@ -258,7 +258,7 @@ StatusCode MmkvDb::SetStr(String k, String v)
       *((String *)duplicate->value.any_data) = std::move(v);
       CacheUpdate(&duplicate->key);
     } else {
-      return S_EXISITS_DIFF_TYPE;
+      return S_EXISTS_DIFF_TYPE;
     }
   }
 
@@ -269,12 +269,12 @@ StatusCode MmkvDb::SetStr(String k, String v)
 #define LIST_ERROR_ROUTINE                                                                         \
   auto kv = dict_.Find(k);                                                                         \
   if (!kv) return S_NONEXISTS;                                                                     \
-  if (kv->value.type != D_STRLIST) return S_EXISITS_DIFF_TYPE
+  if (kv->value.type != D_STRLIST) return S_EXISTS_DIFF_TYPE
 
 #define CHECK_EXPIRE_ROUTINE(key)                                                                  \
   if (CheckExpire(key)) return S_NONEXISTS
 
-StatusCode MmkvDb::ListAdd(String k, StrValues &elems)
+StatusCode MmkvDb::ListAdd(String &&k, StrValues &elems)
 {
   CHECK_SHARD_IS_LOCKED_KEY(k);
   MmkvData data(D_STRLIST);
@@ -295,18 +295,35 @@ StatusCode MmkvDb::ListAdd(String k, StrValues &elems)
 }
 
 /* TODO Allow key does not exists */
-StatusCode MmkvDb::ListAppend(String const &k, StrValues &elems)
+StatusCode MmkvDb::ListAppend(String &&k, StrValues &elems)
 {
   CHECK_SHARD_IS_LOCKED_KEY(k);
-  if (CheckExpire(k)) return S_NONEXISTS;
-  LIST_ERROR_ROUTINE;
+  // if (CheckExpire(k)) return S_NONEXISTS;
+  CheckExpire(k);
 
-  auto lst = (StrList *)(kv->value.any_data);
-  for (auto &elem : elems) {
-    lst->PushBack(std::move(elem));
+  MmkvData dummy_data(D_STRLIST);
+
+  Dict::value_type *duplicate = nullptr;
+  auto success = dict_.InsertKvWithDuplicate(std::move(k), std::move(dummy_data), duplicate);
+
+  if (success || duplicate->value.type == D_STRLIST) {
+    StrList *lst = nullptr;
+    if (success) {
+      lst                       = new StrList();
+      duplicate->value.any_data = lst;
+      CacheAdd(&duplicate->key);
+      AddKeyToShard(&duplicate->key);
+    } else {
+      lst = (StrList *)duplicate->value.any_data;
+    }
+
+    for (auto &elem : elems) {
+      lst->PushBack(std::move(elem));
+    }
+    return S_OK;
   }
 
-  return S_OK;
+  return S_EXISTS_DIFF_TYPE;
 }
 
 StatusCode MmkvDb::ListPrepend(String const &k, StrValues &elems)
@@ -448,7 +465,7 @@ StatusCode MmkvDb::ListDel(String const &k)
       exp_dict_.Erase(k);
       return S_OK;
     } else {
-      return S_EXISITS_DIFF_TYPE;
+      return S_EXISTS_DIFF_TYPE;
     }
   }
 
@@ -485,17 +502,17 @@ StatusCode MmkvDb::VsetAdd(String &&key, WeightValues &&wms, size_t &count)
   }
 
   assert(!success && duplicate->value.type != D_SORTED_SET);
-  return S_EXISITS_DIFF_TYPE;
+  return S_EXISTS_DIFF_TYPE;
 }
 
 #define ERROR_ROUTINE(_var, _type)                                                                 \
   if (!(_var)) return S_NONEXISTS;                                                                 \
-  if ((_var)->value.type != (_type)) return S_EXISITS_DIFF_TYPE;
+  if ((_var)->value.type != (_type)) return S_EXISTS_DIFF_TYPE;
 
 #define ERROR_ROUTINE_KV(_type)                                                                    \
   auto kv = dict_.Find(key);                                                                       \
   if (!kv) return S_NONEXISTS;                                                                     \
-  if (kv->value.type != (_type)) return S_EXISITS_DIFF_TYPE
+  if (kv->value.type != (_type)) return S_EXISTS_DIFF_TYPE
 
 StatusCode MmkvDb::VsetDel(String const &key, String const &member)
 {
@@ -643,7 +660,7 @@ StatusCode MmkvDb::MapAdd(String &&key, StrKvs &&kvs, size_t &count)
     return S_OK;
   }
 
-  return S_EXISITS_DIFF_TYPE;
+  return S_EXISTS_DIFF_TYPE;
 }
 
 #define TO_MAP ((Map *)(kv->value.any_data))
@@ -805,7 +822,7 @@ StatusCode MmkvDb::SetAdd(String &&key, StrValues &members, size_t &count)
     return S_OK;
   }
 
-  return S_EXISITS_DIFF_TYPE;
+  return S_EXISTS_DIFF_TYPE;
 }
 
 #define TO_SET(_data) ((Set *)((_data).any_data))
