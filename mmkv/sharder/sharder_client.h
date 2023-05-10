@@ -29,11 +29,7 @@ class SharderClient : kanon::noncopyable {
 
   SharderClient(EventLoop *loop, InetAddr const &serv_addr, ShardControllerClient *controller_clie);
 
-  void SetUp(Sharder *sharder, shard_id_t const *shard_ids, size_t shard_num, Codec *codec)
-  {
-    SetUpCodec(sharder, codec);
-    SetUpShards(shard_ids, shard_num);
-  }
+  void SetUp(Sharder *sharder, shard_id_t const *shard_ids, size_t shard_num, Codec *codec);
 
   void SetUpShards(shard_id_t const *shard_ids, size_t shard_num) noexcept
   {
@@ -42,29 +38,31 @@ class SharderClient : kanon::noncopyable {
     shard_num_ = shard_num;
   }
 
-  void SetUpCodec(Sharder *sharder, Codec *codec);
+  static void SetUpCodec(Sharder *sharder, Codec *codec);
 
   void Connect() { clie_->Connect(); }
   void DisConnect() { clie_->Disconnect(); }
 
   kanon::TcpConnectionPtr GetConnection() const { return clie_->GetConnection(); }
 
+  void SetState(State state) noexcept { state_ = state; }
+
+  State state() const noexcept { return state_; }
+
+  void PutShard(Sharder *sharder, Codec *codec, shard_id_t shard_id);
+
+  void DelAllShards(Codec *codec);
+
+ private:
   /** Get shard from other sharder */
   void GetShard(Codec *codec, kanon::TcpConnection *conn, shard_id_t shard_id);
 
   /** Notify the shard remove all data from the sharder */
   void RemShard(Codec *codec, kanon::TcpConnection *conn, shard_id_t shard_id);
 
-  void DelAllShards(Codec *codec, kanon::TcpConnection *conn);
-
   /** Put shard to other sharder */
   void PutShard(Sharder *sharder, Codec *codec, kanon::TcpConnection *conn, shard_id_t shard_id);
 
-  void SetState(State state) noexcept { state_ = state; }
-
-  State state() const noexcept { return state_; }
-
- private:
   TcpClientPtr   clie_;
   TcpConnection *conn_;
 

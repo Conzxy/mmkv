@@ -31,25 +31,26 @@ SharderClient::SharderClient(
 void SharderClient::SetUpCodec(Sharder *sharder, Codec *codec)
 {
   codec->SetMessageCallback(
-      [sharder,
-       this](TcpConnectionPtr const &conn, Buffer &buffer, size_t payload_size, TimeStamp) {
+      [sharder](TcpConnectionPtr const &conn, Buffer &buffer, size_t payload_size, TimeStamp) {
         auto resp = MakeShardResponse();
         ParseFromBuffer(&resp, payload_size, &buffer);
 
+        auto sharder_cli = AnyCast<SharderClient>(conn->GetContext());
+
         switch (resp.status()) {
           case SHARD_STATUS_OK: {
-            switch (state()) {
+            switch (sharder_cli->state()) {
               case ADDING: {
                 // assert(shard_index_ == resp.shard_id());
-                LOG_DEBUG << "Pull shard [" << shard_index_ << "] successfully";
+                LOG_DEBUG << "Pull shard [" << sharder_cli->shard_index_ << "] successfully";
 
                 assert(resp.has_data() && resp.has_data_num());
-                shard_index_++;
-                if (shard_index_ == shard_num_) {
+                sharder_cli->shard_index_++;
+                if (sharder_cli->shard_index_ == sharder_cli->shard_num_) {
                   LOG_DEBUG << "Pull shards complete";
-                  controller_clie_->NotifyPullFinish();
-                  controller_clie_->StartSharder();
-                  shard_index_ = 0;
+                  sharder_cli->controller_clie_->NotifyPullFinish();
+                  sharder_cli->controller_clie_->StartSharder();
+                  sharder_cli->shard_index_ = 0;
                 }
 
                 const size_t     data_num = resp.data_num();
@@ -89,12 +90,12 @@ void SharderClient::SetUpCodec(Sharder *sharder, Codec *codec)
               } break;
 
               case LEAVING: {
-                LOG_DEBUG << "Push shard [" << shard_index_ << "] successfully";
-                assert(shard_index_ == resp.shard_id());
-                shard_index_++;
-                if (shard_index_ == shard_num_) {
+                LOG_DEBUG << "Push shard [" << sharder_cli->shard_index_ << "] successfully";
+                assert(sharder_cli->shard_index_ == resp.shard_id());
+                sharder_cli->shard_index_++;
+                if (sharder_cli->shard_index_ == sharder_cli->shard_num_) {
                   LOG_DEBUG << "Push shards complete";
-                  controller_clie_->NotifyPushFinish();
+                  sharder_cli->controller_clie_->NotifyPushFinish();
                 }
               } break; // state()
 
@@ -110,7 +111,15 @@ void SharderClient::SetUpCodec(Sharder *sharder, Codec *codec)
         }
       }
   );
+}
 
+void SharderClient::SetUp(
+    Sharder          *sharder,
+    shard_id_t const *shard_ids,
+    size_t            shard_num,
+    Codec            *codec
+)
+{
   clie_->SetConnectionCallback([sharder, codec, this](TcpConnectionPtr const &conn) {
     if (conn->IsConnected()) {
       conn_ = conn.get();
@@ -122,11 +131,14 @@ void SharderClient::SetUpCodec(Sharder *sharder, Codec *codec)
         else if (state_ == LEAVING)
           PutShard(sharder, codec, conn.get(), shard_ids_[i]);
       }
+      conn->SetContext(this);
     } else {
       LOG_DEBUG << "The Sharder Client: [" << conn->GetName() << "] is down";
       sharder->canceling_client_set_.Erase(this);
+      conn->SetContext(nullptr);
     }
   });
+  SetUpShards(shard_ids, shard_num);
 }
 
 void SharderClient::GetShard(Codec *codec, kanon::TcpConnection *conn, shard_id_t shard_id)
@@ -145,13 +157,13 @@ void SharderClient::RemShard(Codec *codec, kanon::TcpConnection *conn, shard_id_
   codec->Send(conn, &req);
 }
 
-void SharderClient::DelAllShards(Codec *codec, kanon::TcpConnection *conn)
+void SharderClient::DelAllShards(Codec *codec)
 {
   assert(controller_clie_->state() == ShardControllerClient::JOINING);
 
   /* FIXME Batcing send */
   for (size_t i = 0; i < shard_num_; ++i) {
-    RemShard(codec, conn, shard_ids_[i]);
+    RemShard(codec, conn_, shard_ids_[i]);
   }
 }
 
@@ -192,4 +204,9 @@ void SharderClient::PutShard(
   req.set_operation(SHARD_OP_PUSH);
   req.set_shard_id(shard_id);
   codec->Send(conn, &req);
+}
+
+void SharderClient::PutShard(Sharder *sharder, Codec *codec, shard_id_t shard_id)
+{
+  PutShard(sharder, codec, conn_, shard_id);
 }

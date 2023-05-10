@@ -35,11 +35,8 @@ struct ShardControllerClient::Impl {
     clt->shard_clis_.reserve(peer_num);
     for (size_t i = 0; i < peer_num; ++i) {
       const auto &node_info = clt->node_infos_[i];
-      clt->shard_clis_.emplace_back(
-          clt->shard_cli_loop_thr_.GetLoop(),
-          InetAddr(node_info.host(), node_info.port()),
-          clt
-      );
+      clt->shard_clis_
+          .emplace_back(clt->cli_->GetLoop(), InetAddr(node_info.host(), node_info.port()), clt);
       clt->shard_clis_[i].SetUp(
           &clt->sharder_,
           clt->node_infos_[i].shard_ids().data(),
@@ -91,7 +88,7 @@ struct ShardControllerClient::Impl {
     /* Remove the shards in peers */
     /* Notify the peers delete shards */
     for (auto &sharder_cli : clt->shard_clis_) {
-      sharder_cli.DelAllShards(&clt->sharder_codec_, sharder_cli.GetConnection().get());
+      sharder_cli.DelAllShards(&clt->sharder_codec_);
     }
     clt->state_ = IDLE;
   }
@@ -136,5 +133,13 @@ struct ShardControllerClient::Impl {
     assert(shard_idx == shard_num);
     clt->NotifyJoinFinish();
     clt->StartSharder();
+  }
+
+  MMKV_INLINE static void WaitConn(Self *clt)
+  {
+    MutexGuard guard(clt->conn_lock_);
+    while (!clt->conn_) {
+      clt->conn_cond_.Wait();
+    }
   }
 };

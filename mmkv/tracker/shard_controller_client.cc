@@ -12,12 +12,17 @@ ShardControllerClient::ShardControllerClient(
   , codec_()
   , node_id_(INVALID_NODE_ID)
   , sharder_codec_()
-  , shard_cli_loop_thr_("SharderClients")
+  // , shard_cli_loop_thr_("SharderClients")
   , sharder_loop_thr_(sharder_name)
   , sharder_(sharder_loop_thr_.StartRun(), sharder_addr) // default port:9998
   , sharder_port_(sharder_addr.GetPort())
   , state_(IDLE)
+  , conn_cond_(conn_lock_)
 {
+  cli_->EnableRetry();
+
+  SharderClient::SetUpCodec(&sharder_, &sharder_codec_);
+
   codec_.SetMessageCallback([this](
                                 TcpConnectionPtr const &conn,
                                 Buffer                 &buffer,
@@ -106,33 +111,43 @@ ShardControllerClient::ShardControllerClient(
       LOG_INFO << "Connect to the router successfully";
       LOG_INFO << "Then, join to the cluster that managed by the router";
       codec_.SetUpConnection(conn);
-      conn_ = conn.get();
+      {
 
-      Join();
+        MutexGuard guard(conn_lock_);
+        conn_ = conn.get();
+        conn_cond_.Notify();
+      }
+
+      if (IsIdle()) {
+        Join();
+      }
+    } else {
+      MutexGuard guard(conn_lock_);
+      conn_ = nullptr;
     }
   });
-  shard_cli_loop_thr_.StartRun();
+  // shard_cli_loop_thr_.StartRun();
 }
 
 void ShardControllerClient::Join()
 {
-  cli_->GetLoop()->RunInLoop([this]() {
-    ControllerRequest req;
-    req.set_node_id(node_id_);
-    req.set_operation(CONTROL_OP_ADD_NODE);
-    req.set_sharder_port(sharder_port_);
-    codec_.Send(cli_->GetConnection(), &req);
-  });
+  Impl::WaitConn(this);
+  ControllerRequest req;
+  req.set_node_id(node_id_);
+  req.set_operation(CONTROL_OP_ADD_NODE);
+  req.set_sharder_port(sharder_port_);
+  codec_.Send(cli_->GetConnection(), &req);
+  state_ = JOINING;
 }
 
 void ShardControllerClient::Leave()
 {
-  cli_->GetLoop()->RunInLoop([this]() {
-    ControllerRequest req;
-    req.set_operation(CONTROL_OP_LEAVE_NODE);
-    req.set_node_id(node_id_);
-    codec_.Send(conn_, &req);
-  });
+  Impl::WaitConn(this);
+  ControllerRequest req;
+  req.set_operation(CONTROL_OP_LEAVE_NODE);
+  req.set_node_id(node_id_);
+  codec_.Send(conn_, &req);
+  state_ = LEAVING;
 }
 
 void ShardControllerClient::NotifyPullFinish()
@@ -154,20 +169,18 @@ void ShardControllerClient::NotifyPushFinish()
 
 void ShardControllerClient::NotifyJoinFinish()
 {
-  cli_->GetLoop()->RunInLoop([this]() {
-    ControllerRequest req = Impl::MakeRequest(this, CONTROL_OP_ADD_NODE_COMPLETE);
-    codec_.Send(conn_, &req);
-    finish_node_num_ = 0;
-  });
+  Impl::WaitConn(this);
+  ControllerRequest req = Impl::MakeRequest(this, CONTROL_OP_ADD_NODE_COMPLETE);
+  codec_.Send(conn_, &req);
+  finish_node_num_ = 0;
 }
 
 void ShardControllerClient::NotifyLeaveFinish()
 {
-  cli_->GetLoop()->RunInLoop([this]() {
-    ControllerRequest req = Impl::MakeRequest(this, CONTROL_OP_LEAVE_NODE_COMPLETE);
-    codec_.Send(conn_, &req);
-    finish_node_num_ = 0;
-  });
+  Impl::WaitConn(this);
+  ControllerRequest req = Impl::MakeRequest(this, CONTROL_OP_LEAVE_NODE_COMPLETE);
+  codec_.Send(conn_, &req);
+  finish_node_num_ = 0;
 }
 
 void ShardControllerClient::StartSharder()
