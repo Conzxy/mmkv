@@ -23,8 +23,8 @@ class SharderClient : kanon::noncopyable {
  public:
   enum State : unsigned char {
     IDLE = 0,
-    ADDING,  /** Adding to cluster */
-    LEAVING, /** Leaving from cluster */
+    PULLING,
+    PUSHING,
   };
 
   SharderClient(EventLoop *loop, InetAddr const &serv_addr, ShardControllerClient *controller_clie);

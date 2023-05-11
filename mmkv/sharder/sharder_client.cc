@@ -40,7 +40,7 @@ void SharderClient::SetUpCodec(Sharder *sharder, Codec *codec)
         switch (resp.status()) {
           case SHARD_STATUS_OK: {
             switch (sharder_cli->state()) {
-              case ADDING: {
+              case PULLING: {
                 // assert(shard_index_ == resp.shard_id());
                 LOG_DEBUG << "Pull shard [" << sharder_cli->shard_index_ << "] successfully";
 
@@ -49,7 +49,6 @@ void SharderClient::SetUpCodec(Sharder *sharder, Codec *codec)
                 if (sharder_cli->shard_index_ == sharder_cli->shard_num_) {
                   LOG_DEBUG << "Pull shards complete";
                   sharder_cli->controller_clie_->NotifyPullFinish();
-                  sharder_cli->controller_clie_->StartSharder();
                   sharder_cli->shard_index_ = 0;
                 }
 
@@ -89,7 +88,7 @@ void SharderClient::SetUpCodec(Sharder *sharder, Codec *codec)
 
               } break;
 
-              case LEAVING: {
+              case PUSHING: {
                 LOG_DEBUG << "Push shard [" << sharder_cli->shard_index_ << "] successfully";
                 assert(sharder_cli->shard_index_ == resp.shard_id());
                 sharder_cli->shard_index_++;
@@ -126,9 +125,9 @@ void SharderClient::SetUp(
       codec->SetUpConnection(conn);
       LOG_DEBUG << "Shard num = " << shard_num_;
       for (size_t i = 0; i < shard_num_; ++i) {
-        if (state_ == ADDING)
+        if (state_ == PULLING)
           GetShard(codec, conn.get(), shard_ids_[i]);
-        else if (state_ == LEAVING)
+        else if (state_ == PUSHING)
           PutShard(sharder, codec, conn.get(), shard_ids_[i]);
       }
       conn->SetContext(this);
@@ -159,7 +158,10 @@ void SharderClient::RemShard(Codec *codec, kanon::TcpConnection *conn, shard_id_
 
 void SharderClient::DelAllShards(Codec *codec)
 {
-  assert(controller_clie_->state() == ShardControllerClient::JOINING);
+  assert(
+      controller_clie_->state() == ShardControllerClient::JOINING ||
+      controller_clie_->state() == ShardControllerClient::JOIN_PUSHING
+  );
 
   /* FIXME Batcing send */
   for (size_t i = 0; i < shard_num_; ++i) {
