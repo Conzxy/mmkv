@@ -1287,3 +1287,23 @@ bool MmkvDb::IsShardLocked(shard_id_t shard_id) const noexcept
 }
 
 bool MmkvDb::HasShardLocked() const noexcept { return !locked_shard_id_set_.empty(); }
+
+void MmkvDb::DistributeKeysToShard()
+{
+  assert(mmkv_config().SupportDistribution());
+  for (auto const &kv : dict_) {
+    sdict_[MakeShardId(kv.key)].Insert(&kv.key);
+  }
+
+#ifndef NDEBUG
+  LOG_DEBUG << "The distribution of shards: ";
+  for (auto const &shardId_shardSet : sdict_) {
+    std::string key_msg;
+    for (auto const p_key : shardId_shardSet.value) {
+      key_msg.append(1, ' ');
+      key_msg.append(p_key->data(), p_key->size());
+    }
+    LOG_DEBUG << "(" << shardId_shardSet.key << ")keys:" << key_msg;
+  }
+#endif
+}

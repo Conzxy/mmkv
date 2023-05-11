@@ -752,6 +752,8 @@ class MmkvDb {
   ShardDict::const_iterator ShardBegin() const noexcept { return sdict_.begin(); }
   ShardDict::const_iterator ShardEnd() const noexcept { return sdict_.end(); }
 
+  void DistributeKeysToShard();
+
   void UnlockAllShard();
 
   /**
