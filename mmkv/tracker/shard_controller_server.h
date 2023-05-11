@@ -53,10 +53,15 @@ class ShardControllerServer : kanon::noncopyable {
 
   u64 GenerateNodeId() const;
 
-  PendingConf &GetRecentPendingConf() noexcept { return pending_conf_q_.front(); }
+  PendingConf *GetRecentPendingConf() noexcept
+  {
+    assert(HasPendingConf());
+    return &pending_conf_q_.front();
+  }
 
   void PushPendingConf(PendingConf *conf) { pending_conf_q_.push(std::move(*conf)); }
   void PopPendingConf() { pending_conf_q_.pop(); }
+  bool HasPendingConf() const noexcept { return !pending_conf_q_.empty(); }
 
   void CheckPendingConfSessionAndResponse();
 
