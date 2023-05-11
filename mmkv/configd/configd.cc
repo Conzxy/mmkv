@@ -12,6 +12,7 @@ Configd::Configd(EventLoop *loop, InetAddr const &addr, InetAddr const &ctler_ad
   , ctler_(ctler_loop_thr_.StartRun(), ctler_addr)
 {
   ctler_.Listen();
+  ctler_.p_configd_ = this;
 
   codec_.SetMessageCallback(
       [this](TcpConnectionPtr const &conn, Buffer &buffer, size_t payload_size, TimeStamp) {
