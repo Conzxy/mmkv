@@ -29,6 +29,10 @@ class ShardControllerClient : kanon::noncopyable {
     IDLE = 0,
     JOINING,
     LEAVING,
+    // Used for join operation but some hold shards is don't allocated for itself,
+    // in this case, push these shards to other nodes to make the state is consistent
+    // and correct.
+    JOIN_PUSHING,
   };
 
   /**
@@ -101,6 +105,8 @@ class ShardControllerClient : kanon::noncopyable {
   // EventLoopThread            shard_cli_loop_thr_;
   // std::vector<std::unique_ptr<ShardClient>> shard_clis_;
   std::vector<SharderClient> shard_clis_;
+
+  size_t joining_push_num_ = 0;
 
   /*------------------------------------*/
   /* Sharder                            */

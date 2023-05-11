@@ -9,6 +9,7 @@ ShardControllerClient::ShardControllerClient(
     std::string const &sharder_name
 )
   : cli_(NewTcpClient(loop, addr, name))
+  , conn_(nullptr)
   , codec_()
   , node_id_(INVALID_NODE_ID)
   , sharder_codec_()
@@ -45,6 +46,9 @@ ShardControllerClient::ShardControllerClient(
             Impl::HandleLeaveOk(this, response);
           } break; // LEAVING
 
+          case JOIN_PUSHING: {
+            Impl::HandleJoinPushing(this, response);
+          } break;
           case IDLE:
           default:
             LOG_FATAL << "Recv controller status ok, state mustn't be IDLE";
@@ -59,7 +63,6 @@ ShardControllerClient::ShardControllerClient(
 
           case LEAVING:
             LOG_DEBUG << "Leave complete, waiting peer update configuration";
-
           case IDLE:
           default:
             LOG_ERROR << "Incorrect state when receving completion wait";
@@ -68,6 +71,7 @@ ShardControllerClient::ShardControllerClient(
 
       case CONTROL_STATUS_CONF_CHANGE: {
         switch (state()) {
+          case JOIN_PUSHING:
           case JOINING: {
             Impl::HandleJoinConfChange(this);
           } break;
@@ -108,8 +112,7 @@ ShardControllerClient::ShardControllerClient(
 
   cli_->SetConnectionCallback([this](TcpConnectionPtr const &conn) {
     if (conn->IsConnected()) {
-      LOG_INFO << "Connect to the router successfully";
-      LOG_INFO << "Then, join to the cluster that managed by the router";
+      LOG_INFO << "Connect to the controller successfully";
       codec_.SetUpConnection(conn);
       {
 
@@ -124,13 +127,18 @@ ShardControllerClient::ShardControllerClient(
     } else {
       MutexGuard guard(conn_lock_);
       conn_ = nullptr;
+      LOG_INFO << "Disconnect to the controller";
     }
   });
   // shard_cli_loop_thr_.StartRun();
+
+  // TODO When to start sharder?
+  StartSharder();
 }
 
 void ShardControllerClient::Join()
 {
+  LOG_DEBUG << "Try send Join request...";
   Impl::WaitConn(this);
   ControllerRequest req;
   req.set_node_id(node_id_);
@@ -138,30 +146,40 @@ void ShardControllerClient::Join()
   req.set_sharder_port(sharder_port_);
   codec_.Send(cli_->GetConnection(), &req);
   state_ = JOINING;
+
+  LOG_DEBUG << "Send Join request";
 }
 
 void ShardControllerClient::Leave()
 {
+  LOG_DEBUG << "Try send Leave request...";
   Impl::WaitConn(this);
   ControllerRequest req;
   req.set_operation(CONTROL_OP_LEAVE_NODE);
   req.set_node_id(node_id_);
   codec_.Send(conn_, &req);
   state_ = LEAVING;
+
+  LOG_DEBUG << "Send Leave request";
 }
 
 void ShardControllerClient::NotifyPullFinish()
 {
   finish_node_num_++;
-  if (finish_node_num_ == GetPeerNum()) {
-    NotifyLeaveFinish();
+  if (finish_node_num_ == GetPeerNum() + joining_push_num_) {
+    NotifyJoinFinish();
   }
 }
 
 void ShardControllerClient::NotifyPushFinish()
 {
-  finish_node_num_++;
+  // JOIN_PUSHING will call this, redict it
+  if (state_ == JOIN_PUSHING) {
+    NotifyPullFinish();
+    return;
+  }
 
+  finish_node_num_++;
   if (finish_node_num_ == GetPeerNum()) {
     NotifyLeaveFinish();
   }
@@ -186,6 +204,5 @@ void ShardControllerClient::NotifyLeaveFinish()
 void ShardControllerClient::StartSharder()
 {
   sharder_.Listen();
-  sharder_loop_thr_.StartRun();
   sharder_.controller = this;
 }
