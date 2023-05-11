@@ -44,13 +44,15 @@ struct ShardControllerSession::Impl {
     {
       MutexGuard guard(server->pending_conf_lock_);
       auto       p_recent_conf = server->GetRecentPendingConf();
-      if (p_recent_conf.node_id == node_id && p_recent_conf.state == conf_state) {
+      if (p_recent_conf->node_id == node_id && p_recent_conf->state == conf_state) {
         resp.set_status(CONTROL_STATUS_CONF_CHANGE);
-        server->UpdateConfig(std::move(p_recent_conf.conf));
+        server->UpdateConfig(std::move(p_recent_conf->conf));
         server->PopPendingConf();
 
         // Check pending
-        server->CheckPendingConfSessionAndResponse();
+        if (server->HasPendingConf()) {
+          server->CheckPendingConfSessionAndResponse();
+        }
       } else {
         resp.set_status(CONTROL_STATUS_WAIT);
 

@@ -66,6 +66,13 @@ class ShardControllerSession : kanon::noncopyable {
       ControllerRequest      &req
   );
 
+  void QueryNodeInfo(
+      ShardControllerServer  *server,
+      TcpConnectionPtr const &conn,
+      ShardControllerCodec   *codec,
+      ControllerRequest      &req
+  );
+
  private:
   friend struct Impl;
   struct Impl;

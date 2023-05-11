@@ -313,3 +313,77 @@ void ShardControllerSession::LeaveComplete(
 {
   Impl::ControllorOperationComplete(this, server, conn, codec, req, CONF_STATE_LEAVE_NODE);
 }
+
+// TODO: Optimization the algorithm or take other policy
+void ShardControllerSession::QueryNodeInfo(
+    ShardControllerServer  *server,
+    TcpConnectionPtr const &conn,
+    ShardControllerCodec   *codec,
+    ControllerRequest      &req
+)
+{
+  // Reject the invalid request
+  if (!req.has_node_id() || req.node_id() != node_id_) {
+    conn->ShutdownWrite();
+    return;
+  }
+
+  auto const &query_shard_ids = req.shard_ids();
+
+  Configuration *p_recent_conf = nullptr;
+  {
+    MutexGuard guard(server->pending_conf_lock_);
+    p_recent_conf = server->GetRecentConf();
+  }
+
+  ControllerResponse resp;
+  resp.set_status(CONTROL_STATUS_OK);
+  auto p_resp_node_infos = resp.mutable_node_infos();
+
+  // Collect the host and port from node conf that is responding to the query shard
+  std::vector<NodeConf const *> shard_confs;
+
+  // Collect the responding node id of the query shard
+  std::vector<node_id_t> shard_node_ids;
+
+  // O(query_shard_ids.size() * node_conf_map.size() * node_conf_shard_ids.size())
+  // ie. O(n^3)
+  shard_confs.reserve(query_shard_ids.size());
+  for (auto const query_shard_id : query_shard_ids) {
+    for (auto const &nodeId_nodeConf : p_recent_conf->node_conf_map()) {
+      auto const &node_conf = nodeId_nodeConf.second;
+
+      auto const &conf_shard_ids = node_conf.shard_ids();
+      auto find_iter = std::find(conf_shard_ids.begin(), conf_shard_ids.end(), query_shard_id);
+      if (find_iter == conf_shard_ids.end()) {
+        continue;
+      }
+
+      shard_confs.push_back(&node_conf);
+      shard_node_ids.push_back(nodeId_nodeConf.first);
+    }
+  }
+
+  assert(shard_confs.size() == (size_t)query_shard_ids.size());
+  assert(shard_node_ids.size() == (size_t)query_shard_ids.size());
+
+  // Collect the node id -> query shards
+  std::unordered_map<node_id_t, ::google::protobuf::RepeatedField<uint64_t>> node_id_shard_id_map_;
+
+  // O(n)
+  for (size_t i = 0; i < shard_confs.size(); ++i) {
+    node_id_shard_id_map_[shard_node_ids[i]].Add(query_shard_ids[i]);
+  }
+
+  // Average: O(n)
+  for (size_t i = 0; i < shard_confs.size(); ++i) {
+    auto p_resp_node_info = p_resp_node_infos->Add();
+    p_resp_node_info->set_node_id(shard_node_ids[i]);
+    *p_resp_node_info->mutable_shard_ids() = std::move(node_id_shard_id_map_[shard_node_ids[i]]);
+    p_resp_node_info->set_is_push(true);
+    p_resp_node_info->set_host(shard_confs[i]->host());
+    p_resp_node_info->set_port(shard_confs[i]->port());
+  }
+
+  codec->Send(conn, &resp);
+}

@@ -7,6 +7,7 @@ enum ControllerOperation {
   CONTROL_OP_LEAVE_NODE          = 1;
   CONTROL_OP_ADD_NODE_COMPLETE   = 2;
   CONTROL_OP_LEAVE_NODE_COMPLETE = 3;
+  CONTROL_OP_QUERY_NODE_INFO     = 4;
 }
 
 message ControllerRequest
@@ -14,6 +15,7 @@ message ControllerRequest
   required ControllerOperation operation    = 1;
   required uint64              node_id      = 2;
   optional uint32              sharder_port = 3;
+  repeated uint64              shard_ids    = 4;
 }
 
 enum ControllerStatusCode {
