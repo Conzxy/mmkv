@@ -156,16 +156,20 @@ class Blist
     assert(new_node);
     if (!node) {
       assert(node == header_);
-      header_ = new_node;
+      SetHeader(node);
     } else {
       auto node_nn   = node->next;
       new_node->prev = node;
       new_node->next = node_nn;
       if (node_nn) {
         node_nn->prev = new_node;
+      } else {
+        // This is a new tail node
+        header_->prev = new_node;
       }
       node->next = new_node;
     }
+    count_++;
   }
 
 #define PRE_PUSH                                                                                   \
@@ -194,12 +198,11 @@ class Blist
      * then set header->prev
      * Last, set header_ to new node
      */
-    auto new_node  = node;
-    new_node->next = header_;
-    new_node->prev = header_->prev;
+    node->next    = header_;
+    node->prev    = header_->prev;
     // header_->prev->next = new_node;
-    header_->prev  = new_node;
-    header_        = new_node;
+    header_->prev = node;
+    header_       = node;
     count_++;
 
     return 1;
@@ -223,12 +226,11 @@ class Blist
      * First, set node2->next and new_node->prev
      * then, set header->prev
      */
-    auto new_node       = node;
-    new_node->prev      = header_->prev;
+    node->prev          = header_->prev;
     // new_node->next = header_;
-    header_->prev->next = new_node;
-    header_->prev       = new_node;
-    assert(!new_node->next);
+    header_->prev->next = node;
+    header_->prev       = node;
+    assert(!node->next);
     count_++;
 
     return 1;
@@ -344,8 +346,10 @@ class Blist
     /* Later process node == head since updating header maybe */
     if (node != header_)
       node->prev->next = node->next;
-    else
+    else {
+      // No need to set the header_->prev
       header_ = node->next;
+    }
 #endif
 
     node->next = node->prev = nullptr;
