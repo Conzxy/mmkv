@@ -155,6 +155,7 @@ class Blist
   do {                                                                                             \
     if (empty()) {                                                                                 \
       SetHeader(node);                                                                             \
+      count_ = 1;                                                                                  \
       return 1;                                                                                    \
     }                                                                                              \
                                                                                                    \
@@ -182,6 +183,7 @@ class Blist
     // header_->prev->next = new_node;
     header_->prev  = new_node;
     header_        = new_node;
+    count_++;
 
     return 1;
   }
@@ -210,6 +212,7 @@ class Blist
     header_->prev->next = new_node;
     header_->prev       = new_node;
     assert(!new_node->next);
+    count_++;
 
     return 1;
   }
@@ -229,6 +232,7 @@ class Blist
     if (count_ == 1) {                                                                             \
       DropNode(header_);                                                                           \
       header_ = nullptr;                                                                           \
+      count_  = 0;                                                                                 \
       return 1;                                                                                    \
     }                                                                                              \
   } while (0)
@@ -248,6 +252,7 @@ class Blist
     // new_header->prev->next = new_header;
     DropNode(header_);
     header_ = new_header;
+    count_--;
 
     return 1;
   }
@@ -269,24 +274,9 @@ class Blist
     // old_end->next->prev = old_end->prev;
     header_->prev       = old_end->prev;
     DropNode(old_end);
-    return 1;
-  }
+    count_--;
 
-  void InsertAfter(Node *node, Node *new_node)
-  {
-    assert(new_node);
-    if (!node) {
-      assert(node == header_);
-      header_ = new_node;
-    } else {
-      auto node_nn   = node->next;
-      new_node->prev = node;
-      new_node->next = node_nn;
-      if (node_nn) {
-        node_nn->prev = new_node;
-      }
-      node->next = new_node;
-    }
+    return 1;
   }
 
   void Extract(Node *node)
@@ -342,6 +332,7 @@ class Blist
 #endif
 
     node->next = node->prev = nullptr;
+    count_--;
   }
 
   void Erase(Node *node)
@@ -364,20 +355,26 @@ class Blist
       DropNode(header_);
       header_ = node;
     }
+    count_ = 0;
     assert(count_ == 0);
   }
 
-  template <typename Cb>
-  void ClearApply(Cb cb)
+ private:
+  void SetHeader(Node *header)
   {
-    auto node = header_;
-    for (; header_;) {
-      node = header_->next;
-      cb(node->value);
-      DropNode(header_);
-      header_ = node;
-    }
-    assert(count_ == 0);
+    header_       = header;
+    // header_->next = header_;
+    header_->prev = header_;
+    assert(header_->next == nullptr);
+  }
+
+  Node *AllocateNode() { return NodeAllocTraits::allocate(*this, 1); }
+
+  // deprecated
+  template <typename... Args>
+  void ConstructNode(Node *node, Args &&...args)
+  {
+    AllocTraits::construct(*this, &node->value, std::forward<Args>(args)...);
   }
 
   template <typename... Args>
@@ -396,34 +393,7 @@ class Blist
     return node;
   }
 
-  void FreeNode(Node *node)
-  {
-    NodeAllocTraits::deallocate(*this, node, 1);
-    count_--;
-  }
-
- private:
-  void SetHeader(Node *header)
-  {
-    header_       = header;
-    // header_->next = header_;
-    header_->prev = header_;
-    assert(header_->next == nullptr);
-  }
-
-  Node *AllocateNode()
-  {
-    ++count_;
-    return NodeAllocTraits::allocate(*this, 1);
-  }
-
-  // deprecated
-  template <typename... Args>
-  void ConstructNode(Node *node, Args &&...args)
-  {
-    AllocTraits::construct(*this, &node->value, std::forward<Args>(args)...);
-  }
-
+  void FreeNode(Node *node) { NodeAllocTraits::deallocate(*this, node, 1); }
   void DestroyNode(Node *node) { AllocTraits::destroy(*this, &node->value); }
 
   // Data member:
