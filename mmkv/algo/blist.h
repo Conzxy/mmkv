@@ -151,6 +151,23 @@ class Blist
   Node       *BackNode() noexcept { return header_->prev; }
   Node const *BackNode() const noexcept { return header_->prev; }
 
+  void InsertAfter(Node *node, Node *new_node)
+  {
+    assert(new_node);
+    if (!node) {
+      assert(node == header_);
+      header_ = new_node;
+    } else {
+      auto node_nn   = node->next;
+      new_node->prev = node;
+      new_node->next = node_nn;
+      if (node_nn) {
+        node_nn->prev = new_node;
+      }
+      node->next = new_node;
+    }
+  }
+
 #define PRE_PUSH                                                                                   \
   do {                                                                                             \
     if (empty()) {                                                                                 \
@@ -347,6 +364,22 @@ class Blist
     FreeNode(node);
   }
 
+  template <typename... Args>
+  Node *CreateNode(Args &&...args)
+  {
+    auto node = AllocateNode();
+    try {
+      node->prev = node->next = nullptr;
+      AllocTraits::construct(*this, &node->value, std::forward<Args>(args)...);
+    }
+    catch (...) {
+      FreeNode(node);
+      throw;
+    }
+
+    return node;
+  }
+
   void Clear()
   {
     auto node = header_;
@@ -375,22 +408,6 @@ class Blist
   void ConstructNode(Node *node, Args &&...args)
   {
     AllocTraits::construct(*this, &node->value, std::forward<Args>(args)...);
-  }
-
-  template <typename... Args>
-  Node *CreateNode(Args &&...args)
-  {
-    auto node = AllocateNode();
-    try {
-      node->prev = node->next = nullptr;
-      AllocTraits::construct(*this, &node->value, std::forward<Args>(args)...);
-    }
-    catch (...) {
-      FreeNode(node);
-      throw;
-    }
-
-    return node;
   }
 
   void FreeNode(Node *node) { NodeAllocTraits::deallocate(*this, node, 1); }
