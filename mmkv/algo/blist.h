@@ -41,20 +41,19 @@ template <typename T, typename Alloc = LibcAllocatorWithRealloc<T>>
 class Blist
   : protected blist::BNodeAllocator<T, Alloc>
   , protected Alloc {
-  using NodeAllocTraits =
-      std::allocator_traits<blist::BNodeAllocator<T, Alloc>>;
-  using AllocTraits = std::allocator_traits<Alloc>;
+  using NodeAllocTraits = std::allocator_traits<blist::BNodeAllocator<T, Alloc>>;
+  using AllocTraits     = std::allocator_traits<Alloc>;
 
  public:
-  using size_type = size_t;
-  using value_type = T;
-  using reference = T &;
+  using size_type       = size_t;
+  using value_type      = T;
+  using reference       = T &;
   using const_reference = T const &;
-  using pointer = T *;
-  using const_pointer = T const *;
-  using iterator = blist::BlistIterator<T>;
-  using const_iterator = blist::BlistConstIterator<T>;
-  using Node = blist::BNode<T>;
+  using pointer         = T *;
+  using const_pointer   = T const *;
+  using iterator        = blist::BlistIterator<T>;
+  using const_iterator  = blist::BlistConstIterator<T>;
+  using Node            = blist::BNode<T>;
 
   Blist() noexcept
     : header_(nullptr)
@@ -80,7 +79,7 @@ class Blist
       if (!node) throw std::bad_alloc{};
       prev->next = node;
       node->prev = prev;
-      prev = node;
+      prev       = node;
     }
 
     assert(prev);
@@ -88,17 +87,14 @@ class Blist
     // prev->next = header_;
   }
 
-  ~Blist() noexcept
-  {
-    Clear();
-  }
+  ~Blist() noexcept { Clear(); }
 
   Blist(Blist &&other) noexcept
     : header_(other.header_)
     , count_(other.count_)
   {
     other.header_ = nullptr;
-    other.count_ = 0;
+    other.count_  = 0;
   }
 
   Blist &operator=(Blist &&other) noexcept
@@ -107,18 +103,9 @@ class Blist
     return *this;
   }
 
-  bool empty() const noexcept
-  {
-    return header_ == nullptr;
-  }
-  size_type size() const noexcept
-  {
-    return count_;
-  }
-  size_type max_size() const noexcept
-  {
-    return (size_type)-1;
-  }
+  bool      empty() const noexcept { return header_ == nullptr; }
+  size_type size() const noexcept { return count_; }
+  size_type max_size() const noexcept { return (size_type)-1; }
 
   void swap(Blist &o) noexcept
   {
@@ -126,44 +113,17 @@ class Blist
     std::swap(o.count_, count_);
   }
 
-  iterator begin() noexcept
-  {
-    return header_;
-  }
-  const_iterator begin() const noexcept
-  {
-    return header_;
-  }
-  const_iterator cbegin() const noexcept
-  {
-    return begin();
-  }
+  iterator       begin() noexcept { return header_; }
+  const_iterator begin() const noexcept { return header_; }
+  const_iterator cbegin() const noexcept { return begin(); }
 
-  iterator end() noexcept
-  {
-    return nullptr;
-  }
-  const_iterator end() const noexcept
-  {
-    return nullptr;
-  }
-  const_iterator cend() const noexcept
-  {
-    return nullptr;
-  }
+  iterator       end() noexcept { return nullptr; }
+  const_iterator end() const noexcept { return nullptr; }
+  const_iterator cend() const noexcept { return nullptr; }
 
-  iterator before_end() noexcept
-  {
-    return header_->prev;
-  }
-  const_iterator before_end() const noexcept
-  {
-    return header_->prev;
-  }
-  const_iterator cbefore_end() const noexcept
-  {
-    return before_end();
-  }
+  iterator       before_end() noexcept { return header_->prev; }
+  const_iterator before_end() const noexcept { return header_->prev; }
+  const_iterator cbefore_end() const noexcept { return before_end(); }
 
   T &Back() noexcept
   {
@@ -186,33 +146,21 @@ class Blist
     return header_->value;
   }
 
-  Node *FrontNode() noexcept
-  {
-    return header_;
-  }
-  Node const *FrontNode() const noexcept
-  {
-    return header_;
-  }
-  Node *BackNode() noexcept
-  {
-    return header_->prev;
-  }
-  Node const *BackNode() const noexcept
-  {
-    return header_->prev;
-  }
+  Node       *FrontNode() noexcept { return header_; }
+  Node const *FrontNode() const noexcept { return header_; }
+  Node       *BackNode() noexcept { return header_->prev; }
+  Node const *BackNode() const noexcept { return header_->prev; }
 
-#define PRE_PUSH                                                               \
-  do {                                                                         \
-    if (empty()) {                                                             \
-      SetHeader(node);                                                         \
-      return 1;                                                                \
-    }                                                                          \
-                                                                               \
-    if (size() > max_size()) {                                                 \
-      return 0;                                                                \
-    }                                                                          \
+#define PRE_PUSH                                                                                   \
+  do {                                                                                             \
+    if (empty()) {                                                                                 \
+      SetHeader(node);                                                                             \
+      return 1;                                                                                    \
+    }                                                                                              \
+                                                                                                   \
+    if (size() > max_size()) {                                                                     \
+      return 0;                                                                                    \
+    }                                                                                              \
   } while (0)
 
   int PushFront(Node *node) noexcept
@@ -228,18 +176,18 @@ class Blist
      * then set header->prev
      * Last, set header_ to new node
      */
-    auto new_node = node;
+    auto new_node  = node;
     new_node->next = header_;
     new_node->prev = header_->prev;
     // header_->prev->next = new_node;
-    header_->prev = new_node;
-    header_ = new_node;
+    header_->prev  = new_node;
+    header_        = new_node;
 
     return 1;
   }
 
   template <typename... Args>
-  int PushFront(Args &&... args)
+  int PushFront(Args &&...args)
   {
     return PushFront(CreateNode(std::forward<Args>(args)...));
   }
@@ -256,33 +204,33 @@ class Blist
      * First, set node2->next and new_node->prev
      * then, set header->prev
      */
-    auto new_node = node;
-    new_node->prev = header_->prev;
+    auto new_node       = node;
+    new_node->prev      = header_->prev;
     // new_node->next = header_;
     header_->prev->next = new_node;
-    header_->prev = new_node;
+    header_->prev       = new_node;
     assert(!new_node->next);
 
     return 1;
   }
 
   template <typename... Args>
-  int PushBack(Args &&... args)
+  int PushBack(Args &&...args)
   {
     return PushBack(CreateNode(std::forward<Args>(args)...));
   }
 
-#define PRE_POP                                                                \
-  do {                                                                         \
-    if (empty()) {                                                             \
-      return 0;                                                                \
-    }                                                                          \
-                                                                               \
-    if (count_ == 1) {                                                         \
-      DropNode(header_);                                                       \
-      header_ = nullptr;                                                       \
-      return 1;                                                                \
-    }                                                                          \
+#define PRE_POP                                                                                    \
+  do {                                                                                             \
+    if (empty()) {                                                                                 \
+      return 0;                                                                                    \
+    }                                                                                              \
+                                                                                                   \
+    if (count_ == 1) {                                                                             \
+      DropNode(header_);                                                                           \
+      header_ = nullptr;                                                                           \
+      return 1;                                                                                    \
+    }                                                                                              \
   } while (0)
 
   int PopFront()
@@ -295,7 +243,7 @@ class Blist
      * Steps:
      * set new_header, new_header->prev
      */
-    auto new_header = header_->next;
+    auto new_header  = header_->next;
     new_header->prev = header_->prev;
     // new_header->prev->next = new_header;
     DropNode(header_);
@@ -315,13 +263,30 @@ class Blist
      * First, set old_end = header->prev
      * then, set old_end->prev->next, header->prev
      */
-    auto old_end = header_->prev;
+    auto old_end        = header_->prev;
     old_end->prev->next = nullptr;
     // old_end->prev->next = header_;
     // old_end->next->prev = old_end->prev;
-    header_->prev = old_end->prev;
+    header_->prev       = old_end->prev;
     DropNode(old_end);
     return 1;
+  }
+
+  void InsertAfter(Node *node, Node *new_node)
+  {
+    assert(new_node);
+    if (!node) {
+      assert(node == header_);
+      header_ = new_node;
+    } else {
+      auto node_nn   = node->next;
+      new_node->prev = node;
+      new_node->next = node_nn;
+      if (node_nn) {
+        node_nn->prev = new_node;
+      }
+      node->next = new_node;
+    }
   }
 
   void Extract(Node *node)
@@ -402,30 +367,21 @@ class Blist
     assert(count_ == 0);
   }
 
- private:
-  void SetHeader(Node *header)
+  template <typename Cb>
+  void ClearApply(Cb cb)
   {
-    header_ = header;
-    // header_->next = header_;
-    header_->prev = header_;
-    assert(header_->next == nullptr);
-  }
-
-  Node *AllocateNode()
-  {
-    ++count_;
-    return NodeAllocTraits::allocate(*this, 1);
-  }
-
-  // deprecated
-  template <typename... Args>
-  void ConstructNode(Node *node, Args &&... args)
-  {
-    AllocTraits::construct(*this, &node->value, std::forward<Args>(args)...);
+    auto node = header_;
+    for (; header_;) {
+      node = header_->next;
+      cb(node->value);
+      DropNode(header_);
+      header_ = node;
+    }
+    assert(count_ == 0);
   }
 
   template <typename... Args>
-  Node *CreateNode(Args &&... args)
+  Node *CreateNode(Args &&...args)
   {
     auto node = AllocateNode();
     try {
@@ -445,13 +401,33 @@ class Blist
     NodeAllocTraits::deallocate(*this, node, 1);
     count_--;
   }
-  void DestroyNode(Node *node)
+
+ private:
+  void SetHeader(Node *header)
   {
-    AllocTraits::destroy(*this, &node->value);
+    header_       = header;
+    // header_->next = header_;
+    header_->prev = header_;
+    assert(header_->next == nullptr);
   }
 
+  Node *AllocateNode()
+  {
+    ++count_;
+    return NodeAllocTraits::allocate(*this, 1);
+  }
+
+  // deprecated
+  template <typename... Args>
+  void ConstructNode(Node *node, Args &&...args)
+  {
+    AllocTraits::construct(*this, &node->value, std::forward<Args>(args)...);
+  }
+
+  void DestroyNode(Node *node) { AllocTraits::destroy(*this, &node->value); }
+
   // Data member:
-  Node *header_;
+  Node     *header_;
   size_type count_;
 };
 
