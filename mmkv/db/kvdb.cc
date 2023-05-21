@@ -28,6 +28,8 @@
 #include "mmkv/disk/request_log.h"
 
 #include "mmkv/replacement/lru_cache.h"
+#include "mmkv/replacement/mru_cache.h"
+#include "mmkv/replacement/lfu_cache.h"
 #include "mmkv/util/shard_util.h"
 
 #include <kanon/log/logger.h>
@@ -59,7 +61,21 @@ MmkvDb::MmkvDb(std::string name)
   : name_(std::move(name))
   , cache_(nullptr)
 {
-  if (mmkv_config().replace_policy == RP_LRU) cache_.reset(new LruCache<String const *>(-1));
+  switch (mmkv_config().replace_policy) {
+    case server::RP_LRU:
+      cache_.reset(new LruCache<String const *>(-1));
+      break;
+    case server::RP_LFU:
+      cache_.reset(new LfuCache<String const *>(-1));
+      break;
+    case server::RP_MRU:
+      cache_.reset(new MruCache<String const *>(-1));
+      break;
+    case server::RP_NONE:
+      break;
+    default:
+      LOG_FATAL << "Unknown replace policy";
+  }
 
   LOG_INFO << "Database " << name_ << " created";
 }

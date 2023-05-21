@@ -20,6 +20,8 @@ enum LogMethod : uint8_t {
 /** The policy to replace key when maximum allowed memory usage is reached */
 enum ReplacePolicy : uint8_t {
   RP_LRU = 0, /** Least-recently-used */
+  RP_MRU = 1,
+  RP_LFU = 2,
   RP_NONE,
 };
 

@@ -130,6 +130,10 @@ bool ParseMmkvConfig(StringArg filename, MmkvConfig &config)
     config.replace_policy = RP_NONE;
   } else if (::strcasecmp(replace_policy, "lru") == 0) {
     config.replace_policy = RP_LRU;
+  } else if (::strcasecmp(replace_policy, "mru") == 0) {
+    config.replace_policy = RP_MRU;
+  } else if (::strcasecmp(replace_policy, "lfu") == 0) {
+    config.replace_policy = RP_LFU;
   } else {
     ERROR_HANDLE;
   }
