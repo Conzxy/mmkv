@@ -18,21 +18,27 @@ void RegisterOptions()
   takina::AddDescription("Command-line-interface client of mmkv");
 
   takina::AddSection("Connect control");
-  takina::AddOption({"p", "port", "Port of mmkv server", "PORT"},
-                    &cli_option().port);
-  takina::AddOption({"h", "host", "Hostname of mmkv server", "HOST"},
-                    &cli_option().host);
+  takina::AddOption({"p", "port", "Port of mmkv server", "PORT"}, &cli_option().port);
+  takina::AddOption({"h", "host", "Hostname of mmkv server", "HOST"}, &cli_option().host);
+  takina::AddOption(
+      {
+          "ce",
+          "configd-endpoint",
+          "The address of confid",
+      },
+      &cli_option().configd_endpoint
+  );
+
   takina::AddOption(
       {"r", "reconnect", "Reconnect to server when peer close the connection"},
-      &cli_option().reconnect);
+      &cli_option().reconnect
+  );
 
   takina::AddSection("Log control");
-  takina::AddOption({"l", "log", "Enable log trace/debug/... message"},
-                    &cli_option().log);
+  takina::AddOption({"l", "log", "Enable log trace/debug/... message"}, &cli_option().log);
 
   takina::AddSection("Version information");
-  takina::AddOption({"v", "version", "Show the current version of mmkv"},
-                    &cli_option().version);
+  takina::AddOption({"v", "version", "Show the current version of mmkv"}, &cli_option().version);
 }
 
 } // namespace client

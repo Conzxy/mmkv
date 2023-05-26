@@ -11,6 +11,8 @@
 #include "mmkv/util/print_util.h"
 #include "mmkv/util/str_util.h"
 #include "mmkv/util/time_util.h"
+#include "mmkv/util/shard_util.h"
+#include "mmkv/util/tokenizer.h"
 
 #include "information.h"
 #include "option.h"
@@ -27,13 +29,19 @@
 
 using namespace mmkv::protocol;
 using namespace mmkv::client;
+using namespace mmkv::util;
 using namespace std;
 using namespace kanon;
+using namespace std::placeholders;
 
 /* Command is "quit/exit" ==> true */
 static bool is_exit = false;
 
-#define COMMAND_HISTORY_LOCATION "./.mmkv-command.history"
+#ifdef KANON_ON_UNIX
+#  define COMMAND_HISTORY_LOCATION "/tmp/.mmkv-command.history"
+#else
+#  define COMMAND_HISTORY_LOCATION "./.mmkv-command.history"
+#endif
 
 #ifdef MAX_LINE
 #  undef MAX_LINE
@@ -41,66 +49,26 @@ static bool is_exit = false;
 #define MAX_LINE 4096
 
 /* Record the start time when send request */
-static int64_t start_time = 0;
+static int64_t      start_time  = 0;
 /* Store the commands and support fast prefix search */
 static TernaryNode *command_tst = nullptr;
 
 MmkvClient::MmkvClient(EventLoop *loop, InetAddr const &server_addr)
-  : client_(NewTcpClient(loop, server_addr, "Mmkv console client"))
+  : client_()
   , codec_(MmbpResponse::GetPrototype())
-  , io_cond_(mutex_)
+  , io_latch_()
   , replxx_(replxx_init())
+  , wait_cli_num_(0)
+  , p_loop_(loop)
 {
-  client_->SetConnectionCallback([this,
-                                  &server_addr](TcpConnectionPtr const &conn) {
-    if (conn->IsConnected()) {
-      codec_.SetUpConnection(conn);
-      printf("Connect to %s successfully\n\n", server_addr.ToIpPort().c_str());
-      // ConsoleIoProcess();
-      {
-        KANON_MUTEX_GUARD(mutex_);
-        need_io_wait_ = false;
-        if (prompt_.empty())
-          ::mmkv::util::StrCat(prompt_, YELLOW "mmkv %a> " RESET,
-                               server_addr.ToIpPort().c_str());
-        io_cond_.Notify();
-      }
-
-    } else {
-      if (is_exit) {
-        puts("Disconnect successfully!");
-        ::exit(EXIT_SUCCESS);
-      } else {
-        puts("\nConnection is closed by peer server");
-        if (!cli_option().reconnect) ::exit(EXIT_SUCCESS);
-      }
-    }
-  });
-
-  codec_.SetErrorCallback([](TcpConnectionPtr const &conn,
-                             MmbpCodec::ErrorCode code) {
-    MMKV_UNUSED(conn);
-    util::ErrorPrintf("ERROR occurred: %s", MmbpCodec::GetErrorString(code));
-  });
-
-  codec_.SetMessageCallback([this](TcpConnectionPtr const &, Buffer &buffer,
-                                   uint32_t, TimeStamp recv_time) {
-    MmbpResponse response;
-    response.ParseFrom(buffer);
-    // std::cout << response->GetContent() << "\n";
-    response_printer_.Printf(current_cmd_, &response);
-    ::printf("(%.3lf sec)\n",
-             (double)(recv_time.GetMicrosecondsSinceEpoch() - start_time) /
-                 1000000);
-
-    // ConsoleIoProcess();
-    KANON_MUTEX_GUARD(mutex_);
-    need_io_wait_ = false;
-    io_cond_.Notify();
-  });
+  // If there are two connection need to connection, wait them
+  if (!cli_option().is_conn_configd()) {
+    SetupMmkvClient(server_addr);
+  } else {
+    SetupConfigClient();
+  }
 
   InstallLinenoise();
-  if (cli_option().reconnect) client_->EnableRetry();
 }
 
 MmkvClient::~MmkvClient() noexcept
@@ -109,82 +77,118 @@ MmkvClient::~MmkvClient() noexcept
   replxx_end(replxx_);
 }
 
-bool MmkvClient::CliCommandProcess(kanon::StringView cmd,
-                                   kanon::StringView line)
+bool MmkvClient::CliCommandProcess(kanon::StringView cmd, kanon::StringView line)
 {
   // Check if line is a cli command
   auto cli_cmd = GetCliCommand(cmd);
-  if (cli_cmd != CliCommand::CLI_COMMAND_NUM) {
-    switch (cli_cmd) {
-      case CLI_HELP:
-        fwrite(GetHelp().c_str(), 1, GetHelp().size(), stdout);
-        break;
-      case CLI_EXIT:
-      case CLI_QUIT: {
-        is_exit = true;
-        client_->Disconnect();
-      } break;
-      case CLI_HISTORY: {
-        const auto history_sz = replxx_history_size(replxx_);
-        auto *history_scan = replxx_history_scan_start(replxx_);
-        ReplxxHistoryEntry history_entry;
-        std::vector<std::string> history_arr(history_sz);
-        for (int i = 0; replxx_history_scan_next(replxx_, history_scan,
-                                                 &history_entry) == 0;
-             ++i)
-        {
-          history_arr[i] = history_entry.text;
-          if (i == history_sz) break;
-        }
 
-        int i = 0;
-        for (auto beg = history_arr.rbegin(); beg != history_arr.rend(); ++beg)
-        {
-          const auto align_padding_size =
-              (int)(prompt_.size() - (sizeof(YELLOW) + sizeof(RESET) - 2));
-          if (i == 0) {
-            printf("%*s: %s\n", align_padding_size, "latest", beg->c_str());
-          } else {
-            printf("%*d: %s\n", align_padding_size, i, beg->c_str());
-          }
-          ++i;
-        }
-        replxx_history_scan_stop(replxx_, history_scan);
-      } break;
-
-      case CLI_CLEAR: {
-        replxx_clear_screen(replxx_);
-      } break;
-
-      case CLI_CLEAR_HISTORY: {
-        // This API just clear the memory history record
-        replxx_history_clear(replxx_);
-
-        FILE *file = fopen(COMMAND_HISTORY_LOCATION, "w");
-        replxx_history_save(replxx_, COMMAND_HISTORY_LOCATION);
-        if (file) fclose(file);
-      } break;
-      default:
-        LOG_FATAL << "Don't implement the handler of "
-                  << GetCliCommandString(cli_cmd);
-    }
-
-    return true;
+  if (cli_cmd == CliCommand::CLI_COMMAND_NUM) {
+    return false;
   }
-  return false;
+
+  line.remove_prefix(cmd.size());
+  Tokenizer           tokenizer(line);
+  Tokenizer::iterator token_iter      = tokenizer.begin();
+  bool                is_syntax_error = false;
+
+  switch (cli_cmd) {
+    case CLI_HELP:
+      fwrite(GetHelp().c_str(), 1, GetHelp().size(), stdout);
+      break;
+    case CLI_EXIT:
+    case CLI_QUIT: {
+      is_exit = true;
+      if (client_) client_->Disconnect();
+      if (p_conf_cli_) p_conf_cli_->cli_->Disconnect();
+    } break;
+    case CLI_HISTORY: {
+      const auto               history_sz   = replxx_history_size(replxx_);
+      auto                    *history_scan = replxx_history_scan_start(replxx_);
+      ReplxxHistoryEntry       history_entry;
+      std::vector<std::string> history_arr(history_sz);
+      for (int i = 0; replxx_history_scan_next(replxx_, history_scan, &history_entry) == 0; ++i) {
+        history_arr[i] = history_entry.text;
+        if (i == history_sz) break;
+      }
+
+      int i = 0;
+      for (auto beg = history_arr.rbegin(); beg != history_arr.rend(); ++beg) {
+        const auto align_padding_size =
+            (int)(prompt_.size() - (sizeof(YELLOW) + sizeof(RESET) - 2));
+        if (i == 0) {
+          PrintfAndFlush("%*s: %s\n", align_padding_size, "latest", beg->c_str());
+        } else {
+          PrintfAndFlush("%*d: %s\n", align_padding_size, i, beg->c_str());
+        }
+        ++i;
+      }
+      replxx_history_scan_stop(replxx_, history_scan);
+    } break;
+
+    case CLI_CLEAR: {
+      replxx_clear_screen(replxx_);
+    } break;
+
+    case CLI_CLEAR_HISTORY: {
+      // This API just clear the memory history record
+      replxx_history_clear(replxx_);
+
+      FILE *file = fopen(COMMAND_HISTORY_LOCATION, "w");
+      replxx_history_save(replxx_, COMMAND_HISTORY_LOCATION);
+      if (file) fclose(file);
+    } break;
+
+    case CLI_CACL_SHARD: {
+      if (token_iter == tokenizer.end()) {
+        is_syntax_error = true;
+        break;
+      }
+      auto key = *token_iter;
+      ++token_iter;
+      if (token_iter != tokenizer.end()) {
+        is_syntax_error = true;
+        break;
+      }
+
+      auto shard_num = p_conf_cli_ ? p_conf_cli_->ShardNum() : 0;
+      auto shard_id  = MakeShardId(key);
+
+      if (shard_num > 0) {
+        shard_id %= p_conf_cli_->ShardNum();
+        PrintfAndFlush("The shard id is %llu\n", (unsigned long long)shard_id);
+        fflush(stdout);
+      } else {
+        util::ErrorPrintf(
+            "ERROR: Can't calculate the shard id since there is no shard num from configd\n"
+        );
+      }
+      return true;
+    } break;
+
+    default:
+      LOG_FATAL << "Don't implement the handler of " << GetCliCommandString(cli_cmd);
+  }
+
+  if (is_syntax_error) {
+    util::ErrorPrintf(
+        "Syntax ERROR: %s%s\n",
+        GetCliCommandString(cli_cmd).c_str(),
+        GetCliCommandHint(cli_cmd).c_str()
+    );
+  }
+  return true;
 }
 
-bool MmkvClient::ShellCommandProcess(kanon::StringView cmd,
-                                     kanon::StringView line)
+bool MmkvClient::ShellCommandProcess(kanon::StringView line)
 {
   // Check if line is a shell cmd
-  if (cmd.size() > 0 && cmd[0] == '!') {
+  if (line.size() > 0 && line[0] == '!') {
 #if KANON_ON_WIN
-    auto cmd = StrCat("powershell ", line.substr(1));
+    auto shell_cmd = StrCat("powershell ", line.substr(1));
 #elif defined(KANON_ON_UNIX)
-    auto cmd = line.substr(1);
+    auto shell_cmd = line.substr(1);
 #endif
-    if (::system(cmd.data())) {
+    if (::system(shell_cmd.data())) {
       util::ErrorPrintf("Syntax error: no command\n");
     }
     return true;
@@ -192,16 +196,16 @@ bool MmkvClient::ShellCommandProcess(kanon::StringView cmd,
   return false;
 }
 
-int MmkvClient::MmkvCommandProcess(kanon::StringView cmd,
-                                   kanon::StringView line)
+void MmkvClient::MmkvCommandProcess(kanon::StringView cmd, kanon::StringView line)
 {
   // Check if line is a mmkv command
   auto mmkv_cmd = GetCommand(cmd);
   if (mmkv_cmd == Command::COMMAND_NUM) {
-    return Translator::E_NO_COMMAND;
+    util::ErrorPrintf("ERROR: invalid command: %s\n", cur_cmd_.c_str());
+    return;
   }
   MmbpRequest request;
-  Translator translator;
+  Translator  translator;
 
   // const auto first_token_pos = line.find_first_not_of(' ', cmd.size());
   // line.remove_prefix(std::min(first_token_pos, line.size()));
@@ -209,29 +213,58 @@ int MmkvClient::MmkvCommandProcess(kanon::StringView cmd,
   line.remove_prefix(cmd.size());
   LOG_DEBUG << "Mmkv token string: " << line;
   auto error_code = translator.Parse(&request, mmkv_cmd, line);
-  current_cmd_ = (Command)request.command;
+  current_cmd_    = (Command)request.command;
 
   switch (error_code) {
     case Translator::E_SYNTAX_ERROR: {
-      return Translator::E_SYNTAX_ERROR;
+      util::ErrorPrintf(
+          "Syntax error: %s%s\n",
+          GetCommandString(GetCommand(upper_cur_cmd_)).c_str(),
+          GetCommandHint(GetCommand(upper_cur_cmd_)).c_str()
+      );
     } break;
 
     case Translator::E_OK: {
+
+      if (cli_option().is_conn_configd()) {
+        ConfigdClient::NodeEndPoint node_ep;
+        if (request.HasKey()) {
+          if (p_conf_cli_->ShardNum() == 0) {
+            util::ErrorPrintf("ERROR: There are no avaliable nodes can execute command!\n");
+            return;
+          }
+          shard_id_t request_shard = MakeShardId(request.key) % p_conf_cli_->ShardNum();
+          auto       ret           = p_conf_cli_->QueryNodeEndpoint(request_shard, &node_ep);
+          (void)ret;
+          assert(ret);
+        } else {
+          LOG_ERROR << "Not implemented";
+          return;
+        }
+
+        if (!client_ || node_ep.node_id != current_peer_node_id) {
+          SetupMmkvClient(InetAddr(node_ep.host, node_ep.port));
+          client_->Connect();
+          IoWait();
+          PrintfAndFlush("Connecting mmkvd in %s:%d\n", node_ep.host.c_str(), node_ep.port);
+        }
+
+        current_peer_node_id = node_ep.node_id;
+      }
       codec_.Send(client_->GetConnection(), &request);
       start_time = util::GetTimeUs();
+      IoWait();
     } break;
 
     default:
       LOG_FATAL << "Unknown error code of Translator";
   }
-
-  return Translator::E_OK;
 }
 
 void MmkvClient::ConsoleIoProcess()
 {
   // line is managed by replxx
-  auto line = ::replxx_input(replxx_, prompt_.c_str());
+  auto       line     = ::replxx_input(replxx_, prompt_.c_str());
   const auto line_len = strlen(line);
   if (!line) {
     return;
@@ -243,12 +276,12 @@ void MmkvClient::ConsoleIoProcess()
   }
 
   StringView line_view(line, line_len);
-  auto space_pos = line_view.find(' ');
+  auto       space_pos = line_view.find(' ');
   // space_pos is npos is also ok.
-  auto cmd = line_view.substr(0, space_pos).ToString();
-  auto upper_cmd = line_view.substr(0, space_pos).ToUpperString();
+  cur_cmd_             = line_view.substr(0, space_pos).ToString();
+  upper_cur_cmd_       = line_view.substr(0, space_pos).ToUpperString();
 
-  if (CliCommandProcess(upper_cmd, line_view)) {
+  if (CliCommandProcess(upper_cur_cmd_, line_view)) {
     if (is_exit) IoWait();
     return;
   }
@@ -265,47 +298,201 @@ void MmkvClient::ConsoleIoProcess()
     ::fprintf(stderr, "Failed to save the command history\n");
   }
 
-  if (ShellCommandProcess(cmd, line_view)) {
+  if (ShellCommandProcess(line_view)) {
     return;
   }
-  auto err_code = MmkvCommandProcess(upper_cmd, line_view);
-  switch (err_code) {
-    case Translator::E_OK: {
+
+  if (ConfigCommandProcess(upper_cur_cmd_, line_view)) {
+    return;
+  }
+
+  MmkvCommandProcess(upper_cur_cmd_, line_view);
+}
+
+bool MmkvClient::ConfigCommandProcess(kanon::StringView cmd, kanon::StringView line)
+{
+  auto conf_cmd = GetConfigCommand(cmd);
+  if (conf_cmd == CONFIG_COMMAND_NUM) {
+    return false;
+  }
+
+  if (!p_conf_cli_) {
+    util::ErrorPrintf("ERROR: The address of configd is not specified!\n");
+    return true;
+  }
+
+  switch (conf_cmd) {
+    case CONFIG_FETCH_CONF: {
+      p_conf_cli_->FetchConfig();
       IoWait();
     } break;
-    case Translator::E_NO_COMMAND: {
-      util::ErrorPrintf("ERROR: invalid command: %s\n", cmd.c_str());
-    } break;
-    case Translator::E_SYNTAX_ERROR: {
-      util::ErrorPrintf("Syntax error: %s%s\n",
-                        GetCommandString(GetCommand(upper_cmd)).c_str(),
-                        GetCommandHint(GetCommand(upper_cmd)).c_str());
 
-    } break;
+    default:
+      LOG_ERROR << "The handler of config command: " << GetConfigCommandString(conf_cmd)
+                << " is not implemented";
   }
+  return true;
 }
 
 void MmkvClient::Start()
 {
-  printf("%s\n\n", APPLICATION_INFORMATION);
-  printf("Connecting %s...\n", client_->GetServerAddr().ToIpPort().c_str());
+  PrintfAndFlush("%s\n\n", APPLICATION_INFORMATION);
 
-  client_->Connect();
+  if (cli_option().is_conn_configd()) {
+    auto configd_addr = p_conf_cli_->cli_->GetServerAddr().ToIpPort();
+    PrintfAndFlush("Connecting configd in %s...\n", configd_addr.c_str());
+    p_conf_cli_->Connect();
+  } else {
+    auto mmkvd_addr = client_->GetServerAddr().ToIpPort();
+    PrintfAndFlush("Connecting mmkvd in %s...\n", mmkvd_addr.c_str());
+    client_->Connect();
+  }
+}
+
+/*--------------------------------------------------*/
+/* IO wait                                          */
+/*--------------------------------------------------*/
+
+void MmkvClient::IoWait() { io_latch_.IncrAndWait(); }
+
+void MmkvClient::ConnectWait()
+{
+  int wait_conn_num = 0;
+  if (client_) {
+    wait_conn_num++;
+  }
+  if (p_conf_cli_) {
+    wait_conn_num++;
+  }
+  io_latch_.ResetAndWait(wait_conn_num);
+}
+
+/*--------------------------------------------------*/
+/* Connection setup                                 */
+/*--------------------------------------------------*/
+
+void MmkvClient::SetupMmkvClient(InetAddr const &server_addr)
+{
+  client_ = NewTcpClient(p_loop_, server_addr, "Mmkv console client");
+  client_->SetConnectionCallback([this, &server_addr](TcpConnectionPtr const &conn) {
+    if (conn->IsConnected()) {
+      codec_.SetUpConnection(conn);
+      PrintfAndFlush("Connect to %s successfully\n\n", server_addr.ToIpPort().c_str());
+      // ConsoleIoProcess();
+      if (prompt_.empty())
+        ::mmkv::util::StrCat(prompt_, YELLOW "mmkv %a> " RESET, server_addr.ToIpPort().c_str());
+      wait_cli_num_++;
+      io_latch_.Countdown();
+    } else {
+      if (--wait_cli_num_ == 0) {
+        if (is_exit) {
+          puts("Disconnect successfully!");
+          ::exit(EXIT_SUCCESS);
+        } else {
+          puts("\nConnection is closed by peer server");
+          if (!cli_option().reconnect) ::exit(EXIT_SUCCESS);
+        }
+      }
+    }
+  });
+
+  codec_.SetErrorCallback([](TcpConnectionPtr const &conn, MmbpCodec::ErrorCode code) {
+    MMKV_UNUSED(conn);
+    util::ErrorPrintf("ERROR occurred: %s", MmbpCodec::GetErrorString(code));
+  });
+
+  codec_.SetMessageCallback(
+      [this](TcpConnectionPtr const &, Buffer &buffer, uint32_t, TimeStamp recv_time) {
+        MmbpResponse response;
+        response.ParseFrom(buffer);
+        // std::cout << response->GetContent() << "\n";
+        response_printer_.Printf(current_cmd_, &response);
+        ::PrintfAndFlush(
+            "(%.3lf sec)\n",
+            (double)(recv_time.GetMicrosecondsSinceEpoch() - start_time) / 1000000
+        );
+
+        // ConsoleIoProcess();
+        io_latch_.Countdown();
+      }
+  );
+  if (cli_option().reconnect) client_->EnableRetry();
+}
+
+void MmkvClient::SetupConfigClient()
+{
+  if (p_conf_cli_) {
+    LOG_WARN << "Config client has established";
+  }
+  p_conf_cli_.reset(new ConfigdClient(p_loop_, InetAddr(cli_option().configd_endpoint)));
+
+  p_conf_cli_->codec_.SetMessageCallback([this](
+                                             TcpConnectionPtr const &conn,
+                                             Buffer                 &buffer,
+                                             size_t                  payload_size,
+                                             TimeStamp               recv_time
+                                         ) {
+    p_conf_cli_->OnMessage(conn, buffer, payload_size, recv_time);
+    io_latch_.Countdown();
+  });
+
+  p_conf_cli_->cli_->SetConnectionCallback([this](TcpConnectionPtr const &conn) {
+    p_conf_cli_->OnConnection(conn);
+
+    if (conn->IsConnected()) {
+      auto configd_addr = p_conf_cli_->cli_->GetServerAddr().ToIpPort();
+      PrintfAndFlush("Connect to configd successfully\n\n");
+      wait_cli_num_++;
+
+      if (prompt_.empty())
+        ::mmkv::util::StrCat(prompt_, YELLOW "configd %a> " RESET, configd_addr.c_str());
+
+      io_latch_.Countdown();
+    } else {
+      if (--wait_cli_num_ == 0) {
+        if (is_exit) {
+          puts("Disconnect configd successfully!");
+          ::exit(EXIT_SUCCESS);
+        } else {
+          puts("\nConnection is closed by configd");
+          if (!cli_option().reconnect) ::exit(EXIT_SUCCESS);
+        }
+      }
+    }
+  });
+
+  p_conf_cli_->resp_cb_ = [this](ConfigResponse const &resp) {
+    switch (resp.status()) {
+      case CONF_STATUS_OK:
+        PrintfAndFlush("Success!\n");
+        p_conf_cli_->PrintNodeConfiguration();
+        break;
+      case CONF_INVALID_REQ:
+        PrintfAndFlush("Internal Error\n");
+        break;
+    }
+  };
+
+  if (cli_option().reconnect) p_conf_cli_->cli_->EnableRetry();
 }
 
 /*--------------------------------------------------*/
 /* Command linenoise install(replxx)                */
 /*--------------------------------------------------*/
 
-KANON_INLINE void RegisterCommandHints(size_t cmd_count,
-                                       std::string const *cmd_strings,
-                                       std::string const *cmd_hints,
-                                       size_t line_len, char const *command_buf,
-                                       size_t cmd_len, std::string &hint,
-                                       replxx_hints *lc) KANON_NOEXCEPT
+KANON_INLINE void RegisterCommandHints(
+    size_t             cmd_count,
+    std::string const *cmd_strings,
+    std::string const *cmd_hints,
+    size_t             line_len,
+    char const        *command_buf,
+    size_t             cmd_len,
+    std::string       &hint,
+    replxx_hints      *lc
+) KANON_NOEXCEPT
 {
   for (size_t i = 0; i < cmd_count; ++i) {
-    auto cmd_str = cmd_strings[i];
+    auto cmd_str  = cmd_strings[i];
     auto cmd_hint = cmd_hints[i];
     if (line_len > cmd_str.size()) continue;
     /* Although command isn't complete, we also should provide
@@ -319,13 +506,18 @@ KANON_INLINE void RegisterCommandHints(size_t cmd_count,
 }
 
 /* Callback of command hint */
-static void OnCommandHint(char const *line, replxx_hints *lc, int *context_len,
-                          ReplxxColor *color, void *args)
+static void OnCommandHint(
+    char const   *line,
+    replxx_hints *lc,
+    int          *context_len,
+    ReplxxColor  *color,
+    void         *args
+)
 {
-  *color = ReplxxColor::REPLXX_COLOR_YELLOW;
+  *color           = ReplxxColor::REPLXX_COLOR_YELLOW;
   const size_t len = strlen(line);
-  StringView line_view(line, len);
-  auto blank_pos = line_view.find(' ');
+  StringView   line_view(line, len);
+  auto         blank_pos = line_view.find(' ');
 
   /* Although command isn't complete, we also should provide
      hint message */
@@ -347,38 +539,59 @@ static void OnCommandHint(char const *line, replxx_hints *lc, int *context_len,
 
      Set the context_len to current length of line can fix.
  */
-  *context_len = len;
+  *context_len     = len;
   auto cmd_strings = GetCommandStrings();
-  auto cmd_hints = GetCommandHints();
-  auto cmd_count = Command::COMMAND_NUM;
-  auto cli_cmd_hints = GetCliCommandHints();
-  auto cli_cmd_count = CliCommand::CLI_COMMAND_NUM;
+  auto cmd_hints   = GetCommandHints();
+  auto cmd_count   = Command::COMMAND_NUM;
+
+  auto cli_cmd_hints   = GetCliCommandHints();
+  auto cli_cmd_count   = CliCommand::CLI_COMMAND_NUM;
   auto cli_cmd_strings = GetCliCommandStrings();
+
+  auto config_cmd_hints   = GetConfigCommandHints();
+  auto config_cmd_count   = ConfigCommand::CONFIG_COMMAND_NUM;
+  auto config_cmd_strings = GetConfigCommandStrings();
+
   std::string hint; /* reserve space */
 
-  RegisterCommandHints(cmd_count, cmd_strings, cmd_hints, len, cmd.data(),
-                       cmd.size(), hint, lc);
-  RegisterCommandHints(cli_cmd_count, cli_cmd_strings, cli_cmd_hints, len,
-                       cmd.data(), cmd.size(), hint, lc);
+  RegisterCommandHints(cmd_count, cmd_strings, cmd_hints, len, cmd.data(), cmd.size(), hint, lc);
+  RegisterCommandHints(
+      cli_cmd_count,
+      cli_cmd_strings,
+      cli_cmd_hints,
+      len,
+      cmd.data(),
+      cmd.size(),
+      hint,
+      lc
+  );
+  RegisterCommandHints(
+      config_cmd_count,
+      config_cmd_strings,
+      config_cmd_hints,
+      len,
+      cmd.data(),
+      cmd.size(),
+      hint,
+      lc
+  );
 }
 
-static KANON_DEPRECATED_ATTR void OnCommandModify(char **p_line,
-                                                  int *cursor_pos, void *args)
+static KANON_DEPRECATED_ATTR void OnCommandModify(char **p_line, int *cursor_pos, void *args)
 {
-  auto line = *p_line;
-  const size_t len = strlen(line);
-  char command_buf[MAX_LINE];
-  Command cmd;
+  auto         line = *p_line;
+  const size_t len  = strlen(line);
+  char         command_buf[MAX_LINE];
+  Command      cmd;
 
   for (size_t i = 0; i < len; ++i) {
-    command_buf[i] =
-        (line[i] <= 'z' && line[i] >= 'a') ? line[i] - 0x20 : line[i];
+    command_buf[i] = (line[i] <= 'z' && line[i] >= 'a') ? line[i] - 0x20 : line[i];
   }
   command_buf[len] = 0;
   if ((cmd = GetCommand({command_buf, len})) != Command::COMMAND_NUM) {
     auto old_line = *p_line;
     auto new_line = ::kanon::StrCat(line, GetCommandHint(cmd));
-    *p_line = (char *)calloc(new_line.size() + 1, 1);
+    *p_line       = (char *)calloc(new_line.size() + 1, 1);
     ::strncpy(*p_line, new_line.c_str(), new_line.size());
     ::free(old_line);
   }
@@ -392,8 +605,12 @@ static KANON_INLINE void AddCompletion(char const *cmd, void *args)
 }
 
 /* Callback of command completion */
-static void OnCommandCompletion(char const *line, replxx_completions *lc,
-                                int *context_len, void *args)
+static void OnCommandCompletion(
+    char const         *line,
+    replxx_completions *lc,
+    int                *context_len,
+    void               *args
+)
 {
   static char line_lower[4096];
   strcpy(line_lower, line);
@@ -412,13 +629,19 @@ void MmkvClient::InstallLinenoise() KANON_NOEXCEPT
   }
 
   for (size_t i = 0; i < CLI_COMMAND_NUM; ++i) {
-    ternary_add(&command_tst, GetCliCommandString((CliCommand)i).c_str(),
-                false);
+    ternary_add(&command_tst, GetCliCommandString((CliCommand)i).c_str(), false);
+  }
+
+  for (size_t i = 0; i < CONFIG_COMMAND_NUM; ++i) {
+    ternary_add(&command_tst, GetConfigCommandString((ConfigCommand)i).c_str(), false);
   }
 
   if (::replxx_history_load(replxx_, COMMAND_HISTORY_LOCATION) < 0) {
-    ::fprintf(stderr, "Failed to load the command history\n"
-                      "OR there is no command history");
+    // ::fprintf(
+    //     stderr,
+    //     "Failed to load the command history\n"
+    //     "OR there is no command history"
+    // );
   }
 
   ::replxx_set_indent_multiline(replxx_, prompt_.size());

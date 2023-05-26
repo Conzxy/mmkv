@@ -17,11 +17,10 @@ using namespace mmkv;
 
 namespace detail {
 
-std::string cli_command_strings[] = {"HELP", "QUIT", "EXIT", "HISTORY", "CLEAR", "CLEARHISTORY"};
+std::string cli_command_strings[] =
+    {"HELP", "QUIT", "EXIT", "HISTORY", "CLEAR", "CLEARHISTORY", "CACL_SHARD"};
 
-#if ENABEL_SHARD_INFO
-std::string shard_command_strings[] = {"JOIN", "LEAVE"};
-#endif
+std::string config_command_strings[] = {"FETCH_CONF"};
 
 std::string help;
 
@@ -32,10 +31,8 @@ std::unordered_map<Command, CommandFormat>              command_formats;
 std::string cli_command_hints[CLI_COMMAND_NUM];
 std::unordered_map<kanon::StringView, CliCommand, StringViewHash> cli_command_map;
 
-#if ENABEL_SHARD_INFO
-std::string shard_command_hints[CLI_COMMAND_NUM];
-std::unordered_map<kanon::StringView, ShardCommand, StringViewHash> shard_command_map;
-#endif
+std::string config_command_hints[CLI_COMMAND_NUM];
+std::unordered_map<kanon::StringView, ConfigCommand, StringViewHash> config_command_map;
 
 } // namespace detail
 
@@ -220,11 +217,24 @@ static KANON_INLINE int GenCommandMetadata() KANON_NOEXCEPT
       case CLI_CLEAR_HISTORY:
         cli_command_hints[i] += "";
         break;
-
+      case CLI_CACL_SHARD:
+        cli_command_hints[i] += " key";
+        break;
       default:
         LOG_FATAL << "Unknown Cli command, unable to register its hint";
     }
   }
+
+  for (int i = 0; i < CONFIG_COMMAND_NUM; ++i) {
+    switch (i) {
+      case CONFIG_FETCH_CONF:
+        config_command_hints[i] += "";
+        break;
+      default:
+        LOG_FATAL << "Unknown config command, unable to register its hint";
+    }
+  }
+
   return 0;
 }
 
@@ -235,7 +245,7 @@ static int GenHelp()
   for (int i = 0; i < CLI_COMMAND_NUM; ++i) {
     StrAppend(
         help,
-        GREEN,
+        CYAN,
         GetCliCommandString((CliCommand)i),
         RESET,
         GetCliCommandHint((CliCommand)i),
@@ -246,6 +256,18 @@ static int GenHelp()
   for (int i = 0; i < COMMAND_NUM; ++i) {
     StrAppend(help, L_GREEN, GetCommandString((Command)i), RESET, GetCommandHint((Command)i), "\n");
   }
+
+  for (int i = 0; i < CONFIG_COMMAND_NUM; ++i) {
+    StrAppend(
+        help,
+        BLUE,
+        GetConfigCommandString((ConfigCommand)i),
+        RESET,
+        GetConfigCommandHint((ConfigCommand)i),
+        "\n"
+    );
+  }
+
   return 0;
 }
 
@@ -259,6 +281,9 @@ static KANON_INLINE int GenCommandMap() KANON_NOEXCEPT
     cli_command_map[GetCliCommandString((CliCommand)i)] = (CliCommand)i;
   }
 
+  for (size_t i = 0; i < CONFIG_COMMAND_NUM; ++i) {
+    config_command_map[GetConfigCommandString((ConfigCommand)i)] = (ConfigCommand)i;
+  }
   return 0;
 }
 

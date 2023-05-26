@@ -8,11 +8,14 @@ namespace mmkv {
 namespace client {
 
 struct Option {
-  std::string host = "127.0.0.1";
-  int port = 9998;
-  bool reconnect = false;
-  bool log = false;
-  bool version = false;
+  std::string host             = "127.0.0.1";
+  int         port             = 9998;
+  bool        reconnect        = false;
+  bool        log              = false;
+  bool        version          = false;
+  std::string configd_endpoint = "";
+
+  bool is_conn_configd() const noexcept { return !configd_endpoint.empty(); }
 };
 
 Option &cli_option();

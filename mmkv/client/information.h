@@ -56,18 +56,14 @@ enum CliCommand {
   CLI_HISTORY,
   CLI_CLEAR,
   CLI_CLEAR_HISTORY,
+  CLI_CACL_SHARD,
   CLI_COMMAND_NUM,
 };
 
-#define ENABEL_SHARD_INFO 0
-
-#if ENABEL_SHARD_INFO
-enum ShardCommand {
-  SHARD_JOIN = 0,
-  SHRAD_LEAVE,
-  SHARD_COMMAND_NUM,
+enum ConfigCommand {
+  CONFIG_FETCH_CONF = 0,
+  CONFIG_COMMAND_NUM,
 };
-#endif
 
 namespace detail {
 
@@ -94,12 +90,10 @@ extern std::string                                                       cli_com
 extern std::string                                                       cli_command_hints[];
 extern std::unordered_map<kanon::StringView, CliCommand, StringViewHash> cli_command_map;
 
-#if ENABEL_SHARD_INFO
 // Shard command
-extern std::string                                                         shard_command_strings[];
-extern std::string                                                         shard_command_hints[];
-extern std::unordered_map<kanon::StringView, ShardCommand, StringViewHash> shard_command_map;
-#endif
+extern std::string config_command_strings[];
+extern std::string config_command_hints[];
+extern std::unordered_map<kanon::StringView, ConfigCommand, StringViewHash> config_command_map;
 
 } // namespace detail
 
@@ -181,38 +175,36 @@ KANON_INLINE CliCommand GetCliCommand(kanon::StringView cmd)
   return iter->second;
 }
 
-#if ENABEL_SHARD_INFO
-KANON_INLINE std::string const &GetShardCommandString(ShardCommand cmd) KANON_NOEXCEPT
+KANON_INLINE std::string const &GetConfigCommandString(ConfigCommand cmd) KANON_NOEXCEPT
 {
-  assert(cmd >= 0 && cmd < ShardCommand::SHARD_COMMAND_NUM);
-  return ::detail::shard_command_strings[cmd];
+  assert(cmd >= 0 && cmd < ConfigCommand::CONFIG_COMMAND_NUM);
+  return ::detail::config_command_strings[cmd];
 }
 
-KANON_INLINE std::string const *GetShardCommandStrings() KANON_NOEXCEPT
+KANON_INLINE std::string const *GetConfigCommandStrings() KANON_NOEXCEPT
 {
-  return ::detail::shard_command_strings;
+  return ::detail::config_command_strings;
 }
 
-KANON_INLINE std::string const &GetShardCommandHint(ShardCommand cmd)
+KANON_INLINE std::string const &GetConfigCommandHint(ConfigCommand cmd)
 {
-  assert(cmd >= 0 && cmd < ShardCommand::SHARD_COMMAND_NUM);
-  return ::detail::shard_command_hints[cmd];
+  assert(cmd >= 0 && cmd < ConfigCommand::CONFIG_COMMAND_NUM);
+  return ::detail::config_command_hints[cmd];
 }
 
-KANON_INLINE std::string const *GetShardCommandHints() KANON_NOEXCEPT
+KANON_INLINE std::string const *GetConfigCommandHints() KANON_NOEXCEPT
 {
-  return ::detail::shard_command_hints;
+  return ::detail::config_command_hints;
 }
 
-KANON_INLINE ShardCommand GetShardCommand(kanon::StringView cmd)
+KANON_INLINE ConfigCommand GetConfigCommand(kanon::StringView cmd)
 {
-  auto iter = ::detail::shard_command_map.find(cmd);
-  if (iter == ::detail::shard_command_map.end()) {
-    return ShardCommand::SHARD_COMMAND_NUM;
+  auto iter = ::detail::config_command_map.find(cmd);
+  if (iter == ::detail::config_command_map.end()) {
+    return ConfigCommand::CONFIG_COMMAND_NUM;
   }
   return iter->second;
 }
-#endif
 
 KANON_INLINE std::string const &GetHelp() { return ::detail::help; }
 

@@ -4,11 +4,13 @@
 
 #include "mmkv/protocol/mmbp_codec.h"
 #include "mmkv/protocol/mmbp_response.h"
+#include "mmkv/configd/configd_client.h"
 #include "response_printer.h"
 
 #include <kanon/net/user_client.h>
 #include <kanon/thread/condition.h>
 #include <kanon/thread/mutex_lock.h>
+#include <kanon/thread/count_down_latch.h>
 #include <kanon/util/noncopyable.h>
 
 struct Replxx;
@@ -27,36 +29,41 @@ class MmkvClient {
 
   void ConsoleIoProcess();
 
-  void IoWait()
-  {
-    KANON_MUTEX_GUARD(mutex_);
-    while (need_io_wait_)
-      io_cond_.Wait();
-    need_io_wait_ = true;
-  }
-
-  void ConnectWait() { IoWait(); }
+  void IoWait();
+  void ConnectWait();
 
  private:
-  KANON_INLINE bool CliCommandProcess(kanon::StringView cmd, kanon::StringView line);
-  KANON_INLINE bool ShellCommandProcess(kanon::StringView cmd, kanon::StringView line);
+  KANON_INLINE void SetupMmkvClient(InetAddr const &addr);
+  KANON_INLINE void SetupConfigClient();
 
-  KANON_INLINE int MmkvCommandProcess(kanon::StringView cmd, kanon::StringView line);
+  KANON_INLINE bool CliCommandProcess(kanon::StringView cmd, kanon::StringView line);
+  KANON_INLINE bool ShellCommandProcess(kanon::StringView line);
+
+  KANON_INLINE bool ConfigCommandProcess(kanon::StringView cmd, kanon::StringView line);
+  KANON_INLINE void MmkvCommandProcess(kanon::StringView cmd, kanon::StringView line);
 
   void InstallLinenoise() KANON_NOEXCEPT;
 
   TcpClientPtr        client_;
   protocol::MmbpCodec codec_;
 
-  ResponsePrinter  response_printer_;
-  kanon::Condition io_cond_;
-  kanon::MutexLock mutex_;
-  bool             need_io_wait_ = true;
+  ResponsePrinter       response_printer_;
+  kanon::MutexLock      mutex_;
+  kanon::CountDownLatch io_latch_;
 
   std::string prompt_;
 
   Replxx           *replxx_;
   protocol::Command current_cmd_;
+
+  std::unique_ptr<ConfigdClient> p_conf_cli_;
+
+  int        wait_cli_num_;
+  EventLoop *p_loop_;
+  node_id_t  current_peer_node_id = -1;
+
+  std::string cur_cmd_;
+  std::string upper_cur_cmd_;
 };
 
 } // namespace client
