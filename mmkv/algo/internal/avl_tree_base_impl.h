@@ -9,38 +9,33 @@
 namespace mmkv {
 namespace algo {
 
-#define AVL_TEMPLATE \
-  template<typename K, typename V, typename Compare, typename GK, typename A, typename D>
+#define AVL_TEMPLATE                                                                               \
+  template <typename K, typename V, typename Compare, typename GK, typename A, typename D>
 
-#define AVL_CLASS \
-  AvlTreeBase<K, V, Compare, GK, A, D>
+#define AVL_CLASS AvlTreeBase<K, V, Compare, GK, A, D>
 
-#define ARGS_TEMPLATE \
-  template<typename... Args>
+#define ARGS_TEMPLATE template <typename... Args>
 
 #define VALUE_TO_NODE CreateNode(std::forward<T>(value))
-#define NODE typename AVL_CLASS::Node
+#define NODE          typename AVL_CLASS::Node
 
 AVL_TEMPLATE
-AVL_CLASS::~AvlTreeBase() noexcept {
-  Clear();
-}
+AVL_CLASS::~AvlTreeBase() noexcept { Clear(); }
 
 // \see CLRS 12.3 Insertion part
 AVL_TEMPLATE
-inline bool AVL_CLASS::Push(Node* node) noexcept {
-  return PushWithDuplicate(node, nullptr);
-}
+inline bool AVL_CLASS::Push(Node *node) noexcept { return PushWithDuplicate(node, nullptr); }
 
 AVL_TEMPLATE
-inline bool AVL_CLASS::PushWithDuplicate(Node* node, value_type** duplicate) {
+inline bool AVL_CLASS::PushWithDuplicate(Node *node, value_type **duplicate)
+{
   if (!root_) {
     root_ = node;
     if (duplicate) *duplicate = std::addressof(NODE2VALUE(root_));
   } else {
     if (!root_->left && !root_->right) {
-      auto res = TO_COMPARE(TO_GK(node->value), TO_GK(NODE2VALUE(root_)));
-      BaseNode** slot = nullptr;
+      auto       res  = TO_COMPARE(TO_GK(node->value), TO_GK(NODE2VALUE(root_)));
+      BaseNode **slot = nullptr;
       if (res > 0) {
         slot = &root_->right;
       } else if (res < 0) {
@@ -50,22 +45,22 @@ inline bool AVL_CLASS::PushWithDuplicate(Node* node, value_type** duplicate) {
         return false;
       }
 
-      *slot = node;
+      *slot           = node;
       (*slot)->parent = root_;
       if (duplicate) *duplicate = std::addressof(NODE2VALUE(slot[0]));
 
       return true;
     }
 
-    BaseNode* parent = nullptr; 
+    BaseNode  *parent = nullptr;
     // slot最终会指向空槽（slot）
     // 采用二级指针，避免了定义表示插入哪边的元数据
-    BaseNode** slot = &root_;
-    
-    int res; 
-    
+    BaseNode **slot   = &root_;
+
+    int res;
+
     while (slot[0]) {
-      res = TO_COMPARE(TO_GK(NODE2VALUE(slot[0])), TO_GK(node->value));
+      res    = TO_COMPARE(TO_GK(NODE2VALUE(slot[0])), TO_GK(node->value));
       parent = slot[0];
 
       if (res > 0) {
@@ -77,32 +72,32 @@ inline bool AVL_CLASS::PushWithDuplicate(Node* node, value_type** duplicate) {
         return false;
       }
     }
-    
+
     // 由于这两个语句与value无关，我把它分出去了
-    _LinkSlot(slot, node, parent); 
+    _LinkSlot(slot, node, parent);
     if (duplicate) *duplicate = std::addressof(NODE2VALUE(slot[0]));
     _InsertFixup(parent, &root_);
   }
 
   IncreaseCount();
   return true;
-
 }
 AVL_TEMPLATE
-inline void AVL_CLASS::PushEq(Node* node) noexcept {
+inline void AVL_CLASS::PushEq(Node *node) noexcept
+{
   if (!root_) {
     root_ = node;
     IncreaseCount();
     return;
   }
 
-  BaseNode* parent = nullptr; 
-  BaseNode** slot = &root_;
-  
-  int res; 
-  
+  BaseNode  *parent = nullptr;
+  BaseNode **slot   = &root_;
+
+  int res;
+
   while (slot[0]) {
-    res = TO_COMPARE(TO_GK(NODE2VALUE(slot[0])), TO_GK(node->value));
+    res    = TO_COMPARE(TO_GK(NODE2VALUE(slot[0])), TO_GK(node->value));
     parent = slot[0];
 
     if (res > 0) {
@@ -117,22 +112,23 @@ inline void AVL_CLASS::PushEq(Node* node) noexcept {
       }
     }
   }
-  
-  _LinkSlot(slot, node, parent); 
+
+  _LinkSlot(slot, node, parent);
   _InsertFixup(parent, &root_);
   IncreaseCount();
 }
 
 AVL_TEMPLATE
-template<typename T>
-inline bool AVL_CLASS::_InsertWithDuplicate(T&& value, value_type** dup) {
+template <typename T>
+inline bool AVL_CLASS::_InsertWithDuplicate(T &&value, value_type **dup)
+{
   if (!root_) {
     root_ = VALUE_TO_NODE;
     if (dup) *dup = std::addressof(NODE2VALUE(root_));
   } else {
     if (!root_->left && !root_->right) {
-      auto res = TO_COMPARE(TO_GK(value), TO_GK(NODE2VALUE(root_)));
-      BaseNode** slot = nullptr;
+      auto       res  = TO_COMPARE(TO_GK(value), TO_GK(NODE2VALUE(root_)));
+      BaseNode **slot = nullptr;
       if (res > 0) {
         slot = &root_->right;
       } else if (res < 0) {
@@ -142,22 +138,22 @@ inline bool AVL_CLASS::_InsertWithDuplicate(T&& value, value_type** dup) {
         return false;
       }
 
-      *slot = VALUE_TO_NODE;
+      *slot           = VALUE_TO_NODE;
       (*slot)->parent = root_;
       if (dup) *dup = std::addressof((NODE2VALUE(*slot)));
 
       return true;
     }
 
-    BaseNode* parent = nullptr; 
+    BaseNode  *parent = nullptr;
     // slot最终会指向空槽（slot）
     // 采用二级指针，避免了定义表示插入哪边的元数据
-    BaseNode** slot = &root_;
-    
-    int res; 
-    
+    BaseNode **slot   = &root_;
+
+    int res;
+
     while (slot[0]) {
-      res = TO_COMPARE(TO_GK(((Node*)slot[0])->value), TO_GK(value));
+      res    = TO_COMPARE(TO_GK(((Node *)slot[0])->value), TO_GK(value));
       parent = slot[0];
 
       if (res > 0) {
@@ -169,7 +165,7 @@ inline bool AVL_CLASS::_InsertWithDuplicate(T&& value, value_type** dup) {
         return false;
       }
     }
-    
+
     _LinkSlot(slot, VALUE_TO_NODE, parent);
     // !!!
     // 下面这句不能放在_InsertFixup()后，因为slot指向parent的孩子
@@ -184,24 +180,27 @@ inline bool AVL_CLASS::_InsertWithDuplicate(T&& value, value_type** dup) {
 }
 
 AVL_TEMPLATE
-template<typename T>
-inline bool AVL_CLASS::_Insert(T&& value) {
+template <typename T>
+inline bool AVL_CLASS::_Insert(T &&value)
+{
   return _InsertWithDuplicate(std::forward<T>(value), nullptr);
 }
 
 AVL_TEMPLATE
-template<typename T>
-inline void AVL_CLASS::_InsertEq(T&& value) {
+template <typename T>
+inline void AVL_CLASS::_InsertEq(T &&value)
+{
   PushEq(VALUE_TO_NODE);
 }
 
 AVL_TEMPLATE
-NODE* AVL_CLASS::Extract(K const& key) noexcept {
+NODE *AVL_CLASS::Extract(K const &key) noexcept
+{
   auto node = FindNode(key);
   if (!node) {
     return nullptr;
   }
-  
+
   _Erase(node, &root_);
   DecreaseCount();
 
@@ -210,63 +209,65 @@ NODE* AVL_CLASS::Extract(K const& key) noexcept {
 }
 
 AVL_TEMPLATE
-typename AVL_CLASS::Node* AVL_CLASS::Extract() noexcept {
-  BaseNode* ret = root_;
-  
+typename AVL_CLASS::Node *AVL_CLASS::Extract() noexcept
+{
+  BaseNode *ret = root_;
+
   if (!root_) return nullptr;
 
   if (root_->left) {
-    root_ = root_->left;
-    BaseNode** child = &root_->right;
+    root_            = root_->left;
+    BaseNode **child = &root_->right;
     while (*child)
       child = &(*child)->right;
     *(child) = ret->right;
   } else if (root_->right) {
-    root_ = root_->right;
-    BaseNode** child = &root_->left;
+    root_            = root_->right;
+    BaseNode **child = &root_->left;
     while (*child)
       child = &(*child)->left;
     *(child) = ret->left;
   } else {
     root_ = nullptr;
     assert(ret->parent == nullptr);
-    return (Node*)ret;
+    return (Node *)ret;
   }
 
   root_->parent = nullptr;
 
   ret->parent = ret->left = ret->right = nullptr;
-  return (Node*)ret;
+  return (Node *)ret;
 }
 
 AVL_TEMPLATE
-bool AVL_CLASS::Erase(K const& key) {
+bool AVL_CLASS::Erase(K const &key)
+{
   // 实际可以转发给Extract
   // 这里采用hard code的手法避免一个变量的定义以及if
   auto node = FindNode(key);
   if (!node) {
     return false;
   }
-  
-  EraseRoutine(node); 
+
+  EraseRoutine(node);
   return true;
 }
 
 AVL_TEMPLATE
-bool AVL_CLASS::Erase(const_iterator pos) {
-  return EraseNode(pos.node_);
-}
+bool AVL_CLASS::Erase(const_iterator pos) { return EraseNode(pos.node_); }
 
 AVL_TEMPLATE
-bool AVL_CLASS::EraseNode(Node* node) {
+bool AVL_CLASS::EraseNode(Node *node)
+{
   if (node == nullptr) return false;
   EraseRoutine(node);
   return true;
 }
 
 AVL_TEMPLATE
-template<typename Pred>
-bool AVL_CLASS::Erase(K const& key, Pred pred) {
+template <typename Pred>
+bool AVL_CLASS::Erase(K const &key, Pred pred)
+{
   auto node = FindNode(key);
   if (!node) return false;
 
@@ -276,7 +277,7 @@ bool AVL_CLASS::Erase(K const& key, Pred pred) {
       return true;
     }
 
-    node = (Node*)_GetNextNode(node);
+    node = (Node *)_GetNextNode(node);
     if (TO_COMPARE(TO_GK(node->value), key)) break;
   }
 
@@ -284,33 +285,45 @@ bool AVL_CLASS::Erase(K const& key, Pred pred) {
 }
 
 AVL_TEMPLATE
-inline void AVL_CLASS::Clear() {
+inline void AVL_CLASS::Clear()
+{
   ReuseAllNodes([this](Node *node) {
     DropNode(node);
   });
 }
 
 AVL_TEMPLATE
-template<typename NodeCb>
-void AVL_CLASS::ReuseAllNodes(NodeCb node_cb) {
-  auto node = root_;
-  BaseNode* parent = nullptr;
-  
+template <typename ValueCb>
+inline void AVL_CLASS::ClearApply(ValueCb cb)
+{
+  ReuseAllNodes([this, &cb](Node *node) {
+    cb(node->value);
+    DropNode(node);
+  });
+}
+
+AVL_TEMPLATE
+template <typename NodeCb>
+void AVL_CLASS::ReuseAllNodes(NodeCb node_cb)
+{
+  auto      node   = root_;
+  BaseNode *parent = nullptr;
+
   // 深度优先删除左子树和右子树，然后上升到根节点
   // 相比于采用迭代器迭代删除要快那么一些(尽管都是O(nlgn))
-  for (; node; ) {
+  for (; node;) {
     if (node->left) {
       node = node->left;
     } else if (node->right) {
       node = node->right;
     } else {
       parent = node->parent;
-      
+
       node->left = node->parent = node->right = nullptr;
-      node->height = 0;
+      node->height                            = 0;
 
       if (!parent) {
-        node_cb((Node*)node);
+        node_cb((Node *)node);
         break;
       } else if (parent->left == node)
         parent->left = nullptr;
@@ -318,21 +331,21 @@ void AVL_CLASS::ReuseAllNodes(NodeCb node_cb) {
         parent->right = nullptr;
 
       // parent->left = nullptr;
-      node_cb((Node*)node);
+      node_cb((Node *)node);
       node = parent;
     }
   }
 
   root_ = nullptr;
   SetCount(0);
-
 }
 
 AVL_TEMPLATE
-template<typename Cb>
-void AVL_CLASS::DoInAll(Cb cb) {
-  std::vector<BaseNode*> nodes;
-  auto root = root_;
+template <typename Cb>
+void AVL_CLASS::DoInAll(Cb cb)
+{
+  std::vector<BaseNode *> nodes;
+  auto                    root = root_;
 
   while (root || !nodes.empty()) {
     while (root) {
@@ -340,14 +353,15 @@ void AVL_CLASS::DoInAll(Cb cb) {
       root = root->left;
     }
 
-    root = nodes.back(); nodes.pop_back();    
+    root = nodes.back();
+    nodes.pop_back();
     cb(NODE2VALUE(root));
-    
-    root = (Node*)root->right;
+
+    root = (Node *)root->right;
   }
 }
 
-} // algo
-} // mmkv
+} // namespace algo
+} // namespace mmkv
 
 #endif // _MMKV_ALGO_INTERNAL_AVL_TREE_BASE_IMPL_H_

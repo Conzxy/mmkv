@@ -55,6 +55,11 @@ struct Comparator<std::basic_string<char, std::char_traits<char>, Alloc>> {
   }
 };
 
+template <typename T>
+struct Comparator<T *> {
+  inline int operator()(T *const x, T *const y) const noexcept { return x - y; }
+};
+
 } // namespace algo
 } // namespace mmkv
 

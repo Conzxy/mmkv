@@ -11,32 +11,33 @@
 namespace mmkv {
 namespace algo {
 
-template<typename T>
+template <typename T>
 struct Hash {
   static_assert(sizeof(T) < 0, "Non-supported type");
 };
 
-template<typename Alloc>
+template <typename Alloc>
 struct Hash<std::basic_string<char, std::char_traits<char>, Alloc>> {
-  uint64_t operator()(std::basic_string<char, std::char_traits<char>, Alloc> const& x) const noexcept {
+  uint64_t operator()(std::basic_string<char, std::char_traits<char>, Alloc> const &x
+  ) const noexcept
+  {
     return XXH64(x.c_str(), x.size(), 0);
   }
 };
 
-template<typename T>
-struct Hash<T*> {
-  uint64_t operator()(T *ptr) const noexcept {
-    return XXH64(&ptr, sizeof ptr, 0);
-  }
+template <typename T>
+struct Hash<T *> {
+  uint64_t operator()(T *ptr) const noexcept { return XXH64(&ptr, sizeof ptr, 0); }
 };
 
-#define BASIC_TYPE_SPECILIZATION(type) \
-template<> \
-struct Hash<type> { \
-  uint64_t operator()(type x) const noexcept { \
-    return XXH64(&x, sizeof(x), 0); \
-  } \
-};
+#define BASIC_TYPE_SPECILIZATION(type)                                                             \
+  template <>                                                                                      \
+  struct Hash<type> {                                                                              \
+    uint64_t operator()(type x) const noexcept                                                     \
+    {                                                                                              \
+      return XXH64(&x, sizeof(x), 0);                                                              \
+    }                                                                                              \
+  };
 
 BASIC_TYPE_SPECILIZATION(char)
 BASIC_TYPE_SPECILIZATION(unsigned char)
@@ -52,8 +53,8 @@ BASIC_TYPE_SPECILIZATION(float)
 BASIC_TYPE_SPECILIZATION(double)
 BASIC_TYPE_SPECILIZATION(long double)
 
-} // algo
-} // mmkv
+} // namespace algo
+} // namespace mmkv
 
 #include "internal/func_util.h"
 

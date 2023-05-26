@@ -4,7 +4,8 @@
 
 #include "tree_hashtable.h"
 
-#define TREE_HASH_TABLE_TEMPLATE template<typename K, typename V, typename GK, typename HF, typename Tree, typename A>
+#define TREE_HASH_TABLE_TEMPLATE                                                                   \
+  template <typename K, typename V, typename GK, typename HF, typename Tree, typename A>
 #define TREE_HASH_TABLE_CLASS TreeHashTable<K, V, GK, HF, Tree, A>
 
 #define HASH_MAX(x, y) (((x) > (y)) ? (x) : (y))
@@ -13,44 +14,43 @@ namespace mmkv {
 namespace algo {
 
 TREE_HASH_TABLE_TEMPLATE
-TREE_HASH_TABLE_CLASS::TreeHashTable()
+TREE_HASH_TABLE_CLASS::TreeHashTable() { table1().Grow(4); }
+
+TREE_HASH_TABLE_TEMPLATE
+inline bool TREE_HASH_TABLE_CLASS::Push(Node *node) { return PushWithDuplicate(node, nullptr); }
+
+TREE_HASH_TABLE_TEMPLATE
+inline bool TREE_HASH_TABLE_CLASS::PushWithDuplicate(Node *node, value_type **duplicate)
 {
-  table1().Grow(4);
-}
-
-TREE_HASH_TABLE_TEMPLATE
-inline bool TREE_HASH_TABLE_CLASS::Push(Node* node) {
-  return PushWithDuplicate(node, nullptr);
-}
-
-TREE_HASH_TABLE_TEMPLATE
-inline bool TREE_HASH_TABLE_CLASS::PushWithDuplicate(Node* node, value_type** duplicate) {
   Rehash();
   IncrementalRehash();
 
-  // Not in rehashing: 
+  // Not in rehashing:
   //   insert to table1
   // In rehashing:
   //   If rehash_move_bucket_index > bucket_index1 ==> table2
   //   otherwise, if bucket_index > table1.size ==> table2
   //              otherwise, tabel1
-  const auto hash_val = HASH_FUNC(GET_KEY(node->value));
+  const auto hash_val      = HASH_FUNC(GET_KEY(node->value));
   const auto bucket_index1 = bucket_index(0, hash_val);
-  Bucket* bucket = nullptr;
+  Bucket    *bucket        = nullptr;
 
-#define PUSH_AND_SET_DUPLICATE do { \
-    auto success = bucket->PushWithDuplicate(node, duplicate); \
-    if (!success) { \
-      return false; \
-    } \
-    } while (0)
+#define PUSH_AND_SET_DUPLICATE                                                                     \
+  do {                                                                                             \
+    auto success = bucket->PushWithDuplicate(node, duplicate);                                     \
+    if (!success) {                                                                                \
+      return false;                                                                                \
+    }                                                                                              \
+  } while (0)
 
-#define AVL_CHECK_AND_SET_DUPLICATE_OF_PUSH do {\
-    auto value = bucket->Find(GET_KEY(node->value)); \
-    if (value) { \
-      if (duplicate) *duplicate = value; \
-      return false; \
-    } } while (0)
+#define AVL_CHECK_AND_SET_DUPLICATE_OF_PUSH                                                        \
+  do {                                                                                             \
+    auto value = bucket->Find(GET_KEY(node->value));                                               \
+    if (value) {                                                                                   \
+      if (duplicate) *duplicate = value;                                                           \
+      return false;                                                                                \
+    }                                                                                              \
+  } while (0)
 
   if (!InRehashing()) {
     bucket = &table1()[bucket_index1];
@@ -59,7 +59,7 @@ inline bool TREE_HASH_TABLE_CLASS::PushWithDuplicate(Node* node, value_type** du
     // index < rehash_move_bucket_index_ in the table2
     if (rehash_move_bucket_index_ > bucket_index1) {
       auto bucket_index2 = bucket_index(1, hash_val);
-      bucket = &table2()[bucket_index2]; 
+      bucket             = &table2()[bucket_index2];
       PUSH_AND_SET_DUPLICATE;
     } else {
       auto bucket_index2 = bucket_index(1, hash_val);
@@ -87,14 +87,14 @@ inline bool TREE_HASH_TABLE_CLASS::PushWithDuplicate(Node* node, value_type** du
   // FIXME 0?
   ++table1().used;
 
-  return true; 
+  return true;
 }
 
 TREE_HASH_TABLE_TEMPLATE
-template<typename U>
-inline typename TREE_HASH_TABLE_CLASS::value_type* 
-TREE_HASH_TABLE_CLASS::Insert_impl(U&& elem) {
-  value_type* duplicate = nullptr;
+template <typename U>
+inline typename TREE_HASH_TABLE_CLASS::value_type *TREE_HASH_TABLE_CLASS::Insert_impl(U &&elem)
+{
+  value_type *duplicate = nullptr;
   if (InsertWithDuplicate_impl(std::forward<U>(elem), duplicate)) {
     return duplicate;
   }
@@ -102,34 +102,38 @@ TREE_HASH_TABLE_CLASS::Insert_impl(U&& elem) {
 }
 
 TREE_HASH_TABLE_TEMPLATE
-template<typename U>
-inline bool TREE_HASH_TABLE_CLASS::InsertWithDuplicate_impl(U&& elem, value_type *& duplicate) {
+template <typename U>
+inline bool TREE_HASH_TABLE_CLASS::InsertWithDuplicate_impl(U &&elem, value_type *&duplicate)
+{
   Rehash();
   IncrementalRehash();
 
-  // Not in rehashing: 
+  // Not in rehashing:
   //   insert to table1
   // In rehashing:
   //   If rehash_move_bucket_index > bucket_index1 ==> table2
   //   otherwise, if bucket_index > table1.size ==> table2
   //              otherwise, tabel1
-  const auto hash_val = HASH_FUNC(GET_KEY(elem));
+  const auto hash_val      = HASH_FUNC(GET_KEY(elem));
   const auto bucket_index1 = bucket_index(0, hash_val);
-  Bucket* bucket = nullptr;
+  Bucket    *bucket        = nullptr;
 
-#define INSERT_AND_SET_DUPLICATE do { \
-    auto success = bucket->InsertWithDuplicate(std::forward<U>(elem), &duplicate); \
-    if (!success) { \
-      return false; \
-    } \
-    } while (0)
+#define INSERT_AND_SET_DUPLICATE                                                                   \
+  do {                                                                                             \
+    auto success = bucket->InsertWithDuplicate(std::forward<U>(elem), &duplicate);                 \
+    if (!success) {                                                                                \
+      return false;                                                                                \
+    }                                                                                              \
+  } while (0)
 
-#define AVL_CHECK_AND_SET_DUPLICATE do {\
-    auto value = bucket->Find(GET_KEY(elem)); \
-    if (value) { \
-      duplicate = value; \
-      return false; \
-    } } while (0)
+#define AVL_CHECK_AND_SET_DUPLICATE                                                                \
+  do {                                                                                             \
+    auto value = bucket->Find(GET_KEY(elem));                                                      \
+    if (value) {                                                                                   \
+      duplicate = value;                                                                           \
+      return false;                                                                                \
+    }                                                                                              \
+  } while (0)
 
   if (!InRehashing()) {
     bucket = &table1()[bucket_index1];
@@ -138,7 +142,7 @@ inline bool TREE_HASH_TABLE_CLASS::InsertWithDuplicate_impl(U&& elem, value_type
     // index < rehash_move_bucket_index_ in the table2
     if (rehash_move_bucket_index_ > bucket_index1) {
       auto bucket_index2 = bucket_index(1, hash_val);
-      bucket = &table2()[bucket_index2]; 
+      bucket             = &table2()[bucket_index2];
       INSERT_AND_SET_DUPLICATE;
     } else {
       auto bucket_index2 = bucket_index(1, hash_val);
@@ -170,21 +174,22 @@ inline bool TREE_HASH_TABLE_CLASS::InsertWithDuplicate_impl(U&& elem, value_type
 }
 
 TREE_HASH_TABLE_TEMPLATE
-inline void TREE_HASH_TABLE_CLASS::Rehash() {
-  if (!InRehashing() && 
-      table1().used >= table1().size()) {
+inline void TREE_HASH_TABLE_CLASS::Rehash()
+{
+  if (!InRehashing() && table1().used >= table1().size()) {
     table2().Grow(table1().size() << 1);
     rehash_move_bucket_index_ = 0;
   }
 }
 
 TREE_HASH_TABLE_TEMPLATE
-inline void TREE_HASH_TABLE_CLASS::IncrementalRehash() {
+inline void TREE_HASH_TABLE_CLASS::IncrementalRehash()
+{
   if (!InRehashing()) {
     return;
   }
 
-  auto& bucket1 = table1().table[rehash_move_bucket_index_];
+  auto &bucket1 = table1().table[rehash_move_bucket_index_];
 
   // typename Bucket::Node* slot = nullptr;
   // uint64_t hash_val = 0;
@@ -210,32 +215,35 @@ inline void TREE_HASH_TABLE_CLASS::IncrementalRehash() {
 }
 
 TREE_HASH_TABLE_TEMPLATE
-inline typename TREE_HASH_TABLE_CLASS::value_type*
-TREE_HASH_TABLE_CLASS::Find(K const& key) {
+inline typename TREE_HASH_TABLE_CLASS::value_type *TREE_HASH_TABLE_CLASS::Find(K const &key)
+{
   auto node = FindNode(key, nullptr);
   if (node) return std::addressof(node->value);
   return nullptr;
 }
 
 TREE_HASH_TABLE_TEMPLATE
-inline typename TREE_HASH_TABLE_CLASS::Node*
-TREE_HASH_TABLE_CLASS::FindNode(K const& key, Bucket** bck) {
+inline typename TREE_HASH_TABLE_CLASS::Node *TREE_HASH_TABLE_CLASS::FindNode(
+    K const &key,
+    Bucket **bck
+)
+{
   // No need to call Rehash()
   IncrementalRehash();
-  
-  // 采用最robust的方法（simple is best)
-  Bucket* bucket = nullptr;
-  Node* node = nullptr;
 
-  const int table_num = (InRehashing()) ? 2 : 1; 
+  // 采用最robust的方法（simple is best)
+  Bucket *bucket = nullptr;
+  Node   *node   = nullptr;
+
+  const int table_num = (InRehashing()) ? 2 : 1;
 
   // 当table为空时，BucetIndex是非法的
   const auto hash_val = HASH_FUNC(key);
   for (int i = 0; i < table_num; ++i) {
     bucket = &table(i)[bucket_index(i, hash_val)];
-    node = bucket->FindNode(key);
+    node   = bucket->FindNode(key);
 
-    if (node) { 
+    if (node) {
       if (bck) *bck = bucket;
       return node;
     }
@@ -245,32 +253,32 @@ TREE_HASH_TABLE_CLASS::FindNode(K const& key, Bucket** bck) {
 }
 
 TREE_HASH_TABLE_TEMPLATE
-inline typename TREE_HASH_TABLE_CLASS::Node*
-TREE_HASH_TABLE_CLASS::Extract(K const& key) {
+inline typename TREE_HASH_TABLE_CLASS::Node *TREE_HASH_TABLE_CLASS::Extract(K const &key)
+{
   // WARNING Don't support shrink temporarily
   IncrementalRehash();
-  
-  Bucket* bucket = nullptr;
-  Node* node = nullptr;
 
-  const auto hash_val = HASH_FUNC(key);
-  const int table_num = (InRehashing()) ? 2 : 1;
+  Bucket *bucket = nullptr;
+  Node   *node   = nullptr;
+
+  const auto hash_val  = HASH_FUNC(key);
+  const int  table_num = (InRehashing()) ? 2 : 1;
   for (int i = 0; i < table_num; ++i) {
     bucket = &table(i)[bucket_index(i, hash_val)];
-    node = bucket->Extract(key);
+    node   = bucket->Extract(key);
 
-    if (node) { 
+    if (node) {
       table1().used--;
-      break; 
+      break;
     }
   }
-  
-  return node; 
+
+  return node;
 }
 
 TREE_HASH_TABLE_TEMPLATE
-inline typename TREE_HASH_TABLE_CLASS::size_type 
-TREE_HASH_TABLE_CLASS::Erase(K const& key) {
+inline typename TREE_HASH_TABLE_CLASS::size_type TREE_HASH_TABLE_CLASS::Erase(K const &key)
+{
   auto node = Extract(key);
   if (node) {
     DropNode(node);
@@ -280,17 +288,21 @@ TREE_HASH_TABLE_CLASS::Erase(K const& key) {
 }
 
 TREE_HASH_TABLE_TEMPLATE
-inline typename TREE_HASH_TABLE_CLASS::size_type
-TREE_HASH_TABLE_CLASS::EraseNode(Bucket* bucket, Node* node) {
+inline typename TREE_HASH_TABLE_CLASS::size_type TREE_HASH_TABLE_CLASS::EraseNode(
+    Bucket *bucket,
+    Node   *node
+)
+{
   return bucket->EraseNode(node);
 }
 
 TREE_HASH_TABLE_TEMPLATE
-inline void TREE_HASH_TABLE_CLASS::Clear() {
+inline void TREE_HASH_TABLE_CLASS::Clear()
+{
   table1().Shrink(4);
   for (size_type i = 0; i < 4; ++i)
     table1()[i].Clear();
-  
+
   table1().used = 0;
 
   if (InRehashing()) {
@@ -300,30 +312,58 @@ inline void TREE_HASH_TABLE_CLASS::Clear() {
 }
 
 TREE_HASH_TABLE_TEMPLATE
-void TREE_HASH_TABLE_CLASS::DebugPrint() {
+template <typename ValueCb>
+inline void TREE_HASH_TABLE_CLASS::ClearApply(ValueCb cb)
+{
+  for (size_type i = 4; i < table1().size(); ++i) {
+    table1()[i].ClearApply(cb);
+  }
+
+  table1().Shrink(4);
+  for (size_type i = 0; i < 4; ++i)
+    table1()[i].ClearApply(cb);
+
+  table1().used = 0;
+
+  if (InRehashing()) {
+    for (size_type i = 0; i < table2().size(); ++i) {
+      table2()[i].ClearApply(cb);
+    }
+    table2().Shrink(0);
+  }
+  rehash_move_bucket_index_ = ~0;
+}
+
+TREE_HASH_TABLE_TEMPLATE
+void TREE_HASH_TABLE_CLASS::DebugPrint()
+{
 #ifdef _DEBUG_TREE_HASH_TABLE_
   printf("====== Hash table metadata =====\n");
   printf("used count = %zu\n", table1().used);
   printf("size(table1) = %zu\nsize(table2) = %zu\n", table1().size(), table2().size());
-  printf("sizemask(table1) = %zu\nsizemask(table2) = %zu\n", table1().size_mask, table2().size_mask);
+  printf(
+      "sizemask(table1) = %zu\nsizemask(table2) = %zu\n",
+      table1().size_mask,
+      table2().size_mask
+  );
   printf("rehash_move_bucket_index = %zu\n", rehash_move_bucket_index_);
   printf("====== View of hash table =====\n");
 
   int longthest_list_size = 0;
 
   for (int i = 0; i < 2; ++i) {
-    auto size = table(i).size();
-    Bucket* bucket = nullptr;
-    printf("===== table%d ======\n", i+1);
+    auto    size   = table(i).size();
+    Bucket *bucket = nullptr;
+    printf("===== table%d ======\n", i + 1);
 
     for (size_type j = 0; j < size; ++j) {
       printf("[%zu]: ", j);
       bucket = &table(i)[j];
       assert(bucket);
-      
+
       int list_size = 0;
       if (!bucket->empty()) {
-        for (auto const& e : *bucket) {
+        for (auto const &e : *bucket) {
           std::cout << e << " -> ";
           list_size++;
         }
@@ -334,14 +374,14 @@ void TREE_HASH_TABLE_CLASS::DebugPrint() {
       printf("(nil)\n");
     }
 
-    printf("$$$$$ table%d $$$$$\n\n", i+1);
+    printf("$$$$$ table%d $$$$$\n\n", i + 1);
   }
 
   printf("The longest list size = %d\n", longthest_list_size);
 #endif
 }
 
-} // algo
-} // mmkv
+} // namespace algo
+} // namespace mmkv
 
 #endif // _MMKV_ALGO_INTERNAL_TREE_HASH_TABLE_IMPL_H_
