@@ -86,4 +86,6 @@ class LfuCache : public CacheInterface<K> {
 } // namespace replacement
 } // namespace mmkv
 
+#include "internal/lfu_cache_impl.h"
+
 #endif
