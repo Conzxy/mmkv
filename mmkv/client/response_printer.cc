@@ -1,6 +1,7 @@
 // SPDX-LICENSE-IDENTIFIER: Apache-2.0
 #include "response_printer.h"
 
+#include <cstdarg>
 #include <iostream>
 
 #include "mmkv/protocol/mmbp_response.h"
@@ -11,20 +12,21 @@ using namespace mmkv::client;
 using namespace mmkv;
 using namespace mmkv::protocol;
 
-void ResponsePrinter::Printf(Command cmd, MmbpResponse* response) {
+void ResponsePrinter::Printf(Command cmd, MmbpResponse *response)
+{
   switch (response->status_code) {
     case S_OK: {
       if (response->HasValue()) {
         std::cout << response->value << std::endl;
       } else if (response->HasValues()) {
-        auto& values = response->values;
-        int64_t n = values.size();
+        auto   &values = response->values;
+        int64_t n      = values.size();
         if (n == 0) {
           std::cout << "{}" << std::endl;
         } else {
           int64_t i;
           std::cout << "{";
-          for (i = 0; i < n-1; ++i) {
+          for (i = 0; i < n - 1; ++i) {
             std::cout << values[i] << ", ";
           }
           std::cout << values[i] << "}" << std::endl;
@@ -35,25 +37,33 @@ void ResponsePrinter::Printf(Command cmd, MmbpResponse* response) {
         } else {
           std::cout << "(integer)" << response->count << std::endl;
         }
-      } else if (response->HasVmembers()) { 
-        auto& wms = response->vmembers;
+      } else if (response->HasVmembers()) {
+        auto  &wms   = response->vmembers;
         size_t order = 0;
-        for (auto const& wm : wms) {
+        for (auto const &wm : wms) {
           std::cout << "[" << order++ << "]: " << wm.value << "(" << wm.key << ")\n";
         }
-      } else if (response->HasKvs()) { 
+      } else if (response->HasKvs()) {
         unsigned int i = 0;
-        for (auto const& kv : response->kvs) {
-          std::cout << "[" << i++ << "]: " << "(" << kv.key << ", " << kv.value << ")\n";
+        for (auto const &kv : response->kvs) {
+          std::cout << "[" << i++ << "]: "
+                    << "(" << kv.key << ", " << kv.value << ")\n";
         }
       } else {
         std::cout << "Success!" << std::endl;
       }
-    }
-      break;
-      
+    } break;
+
     default:
       std::cout << GetStatusMessage((StatusCode)response->status_code) << std::endl;
-
   }
+}
+
+void mmkv::client::PrintfAndFlush(char const *fmt, ...)
+{
+  va_list args;
+  va_start(args, fmt);
+  vprintf(fmt, args);
+  ::fflush(stdout);
+  va_end(args);
 }

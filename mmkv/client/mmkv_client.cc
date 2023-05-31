@@ -6,7 +6,6 @@
 #include "mmkv/protocol/command.h"
 #include "mmkv/protocol/mmbp_request.h"
 #include "mmkv/protocol/mmbp_response.h"
-
 #include "mmkv/util/macro.h"
 #include "mmkv/util/print_util.h"
 #include "mmkv/util/str_util.h"
@@ -241,6 +240,9 @@ void MmkvClient::MmkvCommandProcess(kanon::StringView cmd, kanon::StringView lin
           LOG_ERROR << "Not implemented";
           return;
         }
+
+        LOG_INFO << "current peer node id = " << current_peer_node_id;
+        LOG_INFO << "node_ep node_id = " << node_ep.node_id;
 
         if (!client_ || node_ep.node_id != current_peer_node_id) {
           SetupMmkvClient(InetAddr(node_ep.host, node_ep.port));

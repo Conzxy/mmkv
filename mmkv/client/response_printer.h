@@ -16,12 +16,12 @@ class ResponsePrinter {
  public:
   ResponsePrinter() = default;
 
-  void Printf(protocol::Command cmd, protocol::MmbpResponse* response);
- private:
-
+  void Printf(protocol::Command cmd, protocol::MmbpResponse *response);
 };
 
-} // client
-} // mmkv
+void PrintfAndFlush(char const *fmt, ...);
+
+} // namespace client
+} // namespace mmkv
 
 #endif // _MMKV_CLIENT_RESPONSE_PRINTER_H_
