@@ -37,6 +37,8 @@ char const *mmkv::protocol::GetStatusMessage(mmkv::protocol::StatusCode code) no
       return "ERROR: The expiration is disable";
     case S_SHARD_LOCKED:
       return "ERROR: The shard which key belonging is locked";
+    case S_SHARD_NONEXISTS:
+      return "ERROR: The shard does not exists in peer node";
     default:
       fprintf(stderr, "There are some status code message aren't added");
       abort();
@@ -76,6 +78,8 @@ char const *mmkv::protocol::StatusCode2Str(StatusCode code) noexcept
       return "expire disable";
     case S_SHARD_PROCESSING:
       return "Shard is processing";
+    case S_SHARD_NONEXISTS:
+      return "Shard does not exists";
     default:
       return "Unknown status code";
   }

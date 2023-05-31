@@ -44,15 +44,21 @@ using namespace kanon;
 
 #define CHECK_SHARD_IS_LOCKED_KEY(key_)                                                            \
   do {                                                                                             \
-    auto shard_id = MakeShardId(key_);                                                             \
-    if (IsShardLocked(shard_id) && !is_ignore_locked_shard) {                                      \
-      return S_SHARD_LOCKED;                                                                       \
+    if (mmkv_config().IsSharder()) {                                                               \
+      auto shard_id = MakeShardId(key_) % mmkv_config().shard_num;                                 \
+      LOG_INFO << "shard id = " << shard_id;                                                       \
+      if (!HasShard(shard_id)) {                                                                   \
+        return S_SHARD_NONEXISTS;                                                                  \
+      }                                                                                            \
+      if (IsShardLocked(shard_id) && !is_ignore_locked_shard) {                                    \
+        return S_SHARD_LOCKED;                                                                     \
+      }                                                                                            \
     }                                                                                              \
   } while (0)
 
 #define CHECK_HAS_SHARD_LOCKED_KEY                                                                 \
   do {                                                                                             \
-    if (HasShardLocked() && !is_ignore_locked_shard) {                                             \
+    if (mmkv_config().IsSharder() && HasShardLocked() && !is_ignore_locked_shard) {                \
       return S_SHARD_LOCKED;                                                                       \
     }                                                                                              \
   } while (0)
@@ -1240,6 +1246,7 @@ void MmkvDb::RemoveShard(shard_id_t shard_id)
       // FIXME don't compute again
       Delete(*key);
     }
+    LOG_INFO << "Remove shard id = " << shard_id;
     sdict_.Erase(shard_id);
   }
 }
@@ -1277,7 +1284,11 @@ String MmkvDb::GetShardInfo()
       ret += *key;
       ret += " ";
     }
+    ret += '\n';
   }
+  auto shard_num_str = std::to_string(sdict_.size());
+  ret                += "shard_num = ";
+  ret.append(shard_num_str.data(), shard_num_str.size());
   return ret;
 }
 
