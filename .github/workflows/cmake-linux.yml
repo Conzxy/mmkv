@@ -39,7 +39,7 @@ jobs:
         sudo apt-get install ninja-build
         wget https://github.com/protocolbuffers/protobuf/releases/download/v21.12/protobuf-cpp-3.21.12.tar.gz
         tar -xf protobuf-cpp-3.21.12.tar.gz
-        cd protobuf-3.21.21
+        cd protobuf-3.21.12
         mkdir build
         cd build
         cmake .. -GNinja
