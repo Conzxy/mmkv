@@ -36,7 +36,15 @@ jobs:
 
     - name: Install dependences
       run: |
-        sudo apt install protobuf-compiler libprotobuf-dev
+        apt-get install ninja-build
+        wget https://github.com/protocolbuffers/protobuf/releases/download/v21.12/protobuf-cpp-3.21.12.tar.gz
+        tar -xf protobuf-cpp-3.21.12.tar.gz
+        cd protobuf-3.21.21
+        mkdir build
+        cd build
+        cmake .. -GNinja
+        cmake --build . --parallel $(nproc)
+        cmake --install .
       shell: bash
 
     - name: Configure CMake
