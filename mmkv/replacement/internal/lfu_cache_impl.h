@@ -1,3 +1,4 @@
+// SPDX-LICENSE-IDENTIFIER: Apache-2.0
 #ifndef _MMKV_REPLACEMENT_LRU_CACHE_H__
 #  include "mmkv/replacement/lfu_cache.h"
 #endif
