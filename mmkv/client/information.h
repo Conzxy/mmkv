@@ -62,6 +62,7 @@ enum CliCommand {
 
 enum ConfigCommand {
   CONFIG_FETCH_CONF = 0,
+  CONFIG_SELECT,
   CONFIG_COMMAND_NUM,
 };
 

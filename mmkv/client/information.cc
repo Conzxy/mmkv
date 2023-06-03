@@ -20,7 +20,7 @@ namespace detail {
 std::string cli_command_strings[] =
     {"HELP", "QUIT", "EXIT", "HISTORY", "CLEAR", "CLEARHISTORY", "CACL_SHARD"};
 
-std::string config_command_strings[] = {"FETCH_CONF"};
+std::string config_command_strings[] = {"FETCH_CONF", "SELECT"};
 
 std::string help;
 
@@ -229,6 +229,9 @@ static KANON_INLINE int GenCommandMetadata() KANON_NOEXCEPT
     switch (i) {
       case CONFIG_FETCH_CONF:
         config_command_hints[i] += "";
+        break;
+      case CONFIG_SELECT:
+        config_command_hints[i] += " node_idx";
         break;
       default:
         LOG_FATAL << "Unknown config command, unable to register its hint";

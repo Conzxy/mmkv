@@ -3,9 +3,11 @@
 
 #include <inttypes.h>
 
+#include "kanon/net/inet_addr.h"
 #include "mmkv/protocol/command.h"
 #include "mmkv/protocol/mmbp_request.h"
 #include "mmkv/protocol/mmbp_response.h"
+#include "mmkv/tracker/common_type.h"
 #include "mmkv/util/macro.h"
 #include "mmkv/util/print_util.h"
 #include "mmkv/util/str_util.h"
@@ -20,6 +22,7 @@
 
 #include <kanon/net/tcp_client.h>
 #include <kanon/string/string_util.h>
+#include <kanon/string/string_view_util.h>
 #include <ternary_tree.h>
 #include <third-party/replxx/include/replxx.h>
 
@@ -112,8 +115,14 @@ bool MmkvClient::CliCommandProcess(kanon::StringView cmd, kanon::StringView line
 
       int i = 0;
       for (auto beg = history_arr.rbegin(); beg != history_arr.rend(); ++beg) {
-        const auto align_padding_size =
-            (int)(prompt_.size() - (sizeof(YELLOW) + sizeof(RESET) - 2));
+        int align_padding_size = prompt_.size();
+        if (client_) {
+          align_padding_size -= (sizeof(YELLOW) + sizeof(RESET) - 2);
+        }
+        if (p_conf_cli_) {
+          align_padding_size -= (sizeof(BLUE) + sizeof(RESET) - 2);
+        }
+
         if (i == 0) {
           PrintfAndFlush("%*s: %s\n", align_padding_size, "latest", beg->c_str());
         } else {
@@ -188,7 +197,7 @@ bool MmkvClient::ShellCommandProcess(kanon::StringView line)
     auto shell_cmd = line.substr(1);
 #endif
     if (::system(shell_cmd.data())) {
-      util::ErrorPrintf("Syntax error: no command\n");
+      util::ErrorPrintf("Syntax ERROR: no command\n");
     }
     return true;
   }
@@ -217,14 +226,19 @@ void MmkvClient::MmkvCommandProcess(kanon::StringView cmd, kanon::StringView lin
   switch (error_code) {
     case Translator::E_SYNTAX_ERROR: {
       util::ErrorPrintf(
-          "Syntax error: %s%s\n",
+          "Syntax ERROR: %s%s\n",
           GetCommandString(GetCommand(upper_cur_cmd_)).c_str(),
           GetCommandHint(GetCommand(upper_cur_cmd_)).c_str()
       );
     } break;
 
     case Translator::E_OK: {
-
+      // If configd is specified,
+      // consider select a suitable node to connect.
+      // If the command contains a key, this selection is automatical.
+      // If the command has no key, the selection has following cases:
+      // - Previous selected node
+      // - User specified node
       if (cli_option().is_conn_configd()) {
         ConfigdClient::NodeEndPoint node_ep;
         if (request.HasKey()) {
@@ -233,26 +247,32 @@ void MmkvClient::MmkvCommandProcess(kanon::StringView cmd, kanon::StringView lin
             return;
           }
           shard_id_t request_shard = MakeShardId(request.key) % p_conf_cli_->ShardNum();
-          auto       ret           = p_conf_cli_->QueryNodeEndpoint(request_shard, &node_ep);
+          LOG_INFO << "hash(key) = " << MakeShardId(request.key);
+          LOG_INFO << "shard num = " << p_conf_cli_->ShardNum();
+          auto ret = p_conf_cli_->QueryNodeEndpoint(request_shard, &node_ep);
+
+          LOG_INFO << "node endpoint = "
+                   << "(" << node_ep.node_id << ", " << node_ep.host << ":" << node_ep.port << ")";
           (void)ret;
           assert(ret);
+
+          LOG_INFO << "current peer node id = " << current_peer_node_id;
+          LOG_INFO << "node_ep node_id = " << node_ep.node_id;
+
+          SelectNode(InetAddr(node_ep.host, node_ep.port), node_ep.node_id);
         } else {
-          LOG_ERROR << "Not implemented";
-          return;
+          util::WarnPrintf("WARN: Command without key don't gather response from all nodes now\n"
+                           "ie. The command will get the response from current selected node only\n"
+          );
+          if (!client_) {
+            util::ErrorPrintf("ERROR: There is no selected node\n"
+                              "You can select a node by SELECT command\n"
+                              "OR a node is selected by command with key\n");
+            return;
+          }
         }
-
-        LOG_INFO << "current peer node id = " << current_peer_node_id;
-        LOG_INFO << "node_ep node_id = " << node_ep.node_id;
-
-        if (!client_ || node_ep.node_id != current_peer_node_id) {
-          SetupMmkvClient(InetAddr(node_ep.host, node_ep.port));
-          client_->Connect();
-          IoWait();
-          PrintfAndFlush("Connecting mmkvd in %s:%d\n", node_ep.host.c_str(), node_ep.port);
-        }
-
-        current_peer_node_id = node_ep.node_id;
       }
+
       codec_.Send(client_->GetConnection(), &request);
       start_time = util::GetTimeUs();
       IoWait();
@@ -273,7 +293,7 @@ void MmkvClient::ConsoleIoProcess()
   }
 
   if (line_len == 0) {
-    util::ErrorPrintf("Syntax error: no command\n");
+    util::ErrorPrintf("Syntax ERROR: no command\n");
     return;
   }
 
@@ -311,6 +331,30 @@ void MmkvClient::ConsoleIoProcess()
   MmkvCommandProcess(upper_cur_cmd_, line_view);
 }
 
+#define _CONFIG_CHECK_TOKEN_ITER                                                                   \
+  if (token_iter == tokenizer.end()) {                                                             \
+    is_syntax_error = true;                                                                        \
+    break;                                                                                         \
+  }
+
+#define _CONFIG_PARSE_INTEGER_TOKEN(__var)                                                         \
+  {                                                                                                \
+    auto token   = *token_iter;                                                                    \
+    auto val_opt = kanon::StringViewToU64(token);                                                  \
+    if (!val_opt) {                                                                                \
+      is_syntax_error = true;                                                                      \
+      break;                                                                                       \
+    }                                                                                              \
+    __var = *val_opt;                                                                              \
+    ++token_iter;                                                                                  \
+  }
+
+#define _CONFIG_CHECK_TOEKN_END                                                                    \
+  if (token_iter != tokenizer.end()) {                                                             \
+    is_syntax_error = true;                                                                        \
+    break;                                                                                         \
+  }
+
 bool MmkvClient::ConfigCommandProcess(kanon::StringView cmd, kanon::StringView line)
 {
   auto conf_cmd = GetConfigCommand(cmd);
@@ -323,15 +367,41 @@ bool MmkvClient::ConfigCommandProcess(kanon::StringView cmd, kanon::StringView l
     return true;
   }
 
+  line.remove_prefix(cmd.size());
+
+  Tokenizer tokenizer(line);
+  auto      token_iter      = tokenizer.begin();
+  bool      is_syntax_error = false;
   switch (conf_cmd) {
     case CONFIG_FETCH_CONF: {
       p_conf_cli_->FetchConfig();
       IoWait();
     } break;
 
+    case CONFIG_SELECT: {
+      u64 node_idx = -1;
+      _CONFIG_CHECK_TOKEN_ITER
+      _CONFIG_PARSE_INTEGER_TOKEN(node_idx)
+      _CONFIG_CHECK_TOEKN_END
+
+      ConfigdClient::NodeEndPoint ep;
+      p_conf_cli_->QueryNodeEndpointByNodeIdx(node_idx, &ep);
+
+      SelectNode(InetAddr(ep.host, ep.port), ep.node_id);
+    } break;
+
     default:
       LOG_ERROR << "The handler of config command: " << GetConfigCommandString(conf_cmd)
                 << " is not implemented";
+  }
+
+  if (is_syntax_error) {
+    util::ErrorPrintf(
+        "Syntax ERROR: %s%s\n",
+        GetConfigCommandString(conf_cmd).c_str(),
+        GetConfigCommandHint(conf_cmd).c_str()
+    );
+    return true;
   }
   return true;
 }
@@ -376,13 +446,13 @@ void MmkvClient::ConnectWait()
 void MmkvClient::SetupMmkvClient(InetAddr const &server_addr)
 {
   client_ = NewTcpClient(p_loop_, server_addr, "Mmkv console client");
+
   client_->SetConnectionCallback([this, &server_addr](TcpConnectionPtr const &conn) {
     if (conn->IsConnected()) {
       codec_.SetUpConnection(conn);
       PrintfAndFlush("Connect to %s successfully\n\n", server_addr.ToIpPort().c_str());
       // ConsoleIoProcess();
-      if (prompt_.empty())
-        ::mmkv::util::StrCat(prompt_, YELLOW "mmkv %a> " RESET, server_addr.ToIpPort().c_str());
+      SetPrompt();
       wait_cli_num_++;
       io_latch_.Countdown();
     } else {
@@ -445,10 +515,7 @@ void MmkvClient::SetupConfigClient()
       auto configd_addr = p_conf_cli_->cli_->GetServerAddr().ToIpPort();
       PrintfAndFlush("Connect to configd successfully\n\n");
       wait_cli_num_++;
-
-      if (prompt_.empty())
-        ::mmkv::util::StrCat(prompt_, YELLOW "configd %a> " RESET, configd_addr.c_str());
-
+      SetPrompt();
       io_latch_.Countdown();
     } else {
       if (--wait_cli_num_ == 0) {
@@ -653,4 +720,35 @@ void MmkvClient::InstallLinenoise() KANON_NOEXCEPT
   ::replxx_set_max_hint_rows(replxx_, COMMAND_NUM / 5);
   ::replxx_set_beep_on_ambiguous_completion(replxx_, true);
   //::replxx_set_modify_callback(replxx_, &OnCommandModify, nullptr);
+}
+
+void MmkvClient::SelectNode(InetAddr const &node_addr, node_id_t node_id)
+{
+  if (!client_ || node_id != current_peer_node_id) {
+    SetupMmkvClient(node_addr);
+    auto node_addr_str = node_addr.ToIpPort();
+    PrintfAndFlush("Connecting mmkvd in %s\n", node_addr_str.c_str());
+    client_->Connect();
+    IoWait();
+
+    SetPrompt();
+    current_peer_node_id = node_id;
+  }
+}
+
+void MmkvClient::SetPrompt()
+{
+  prompt_.clear();
+  if (p_conf_cli_) {
+    auto configd_addr = p_conf_cli_->cli_->GetServerAddr();
+    kanon::StrAppend(prompt_, BLUE "config ", configd_addr.ToIpPort(), RESET);
+  }
+  if (client_) {
+    auto serv_addr = client_->GetServerAddr();
+    if (!prompt_.empty()) {
+      prompt_ += ' ';
+    }
+    kanon::StrAppend(prompt_, YELLOW "mmkv ", serv_addr.ToIpPort(), RESET);
+  }
+  prompt_.append("> ", 2);
 }

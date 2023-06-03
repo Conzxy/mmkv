@@ -34,6 +34,7 @@ class ConfigdClient {
   void FetchConfig();
 
   bool QueryNodeEndpoint(shard_id_t shard_id, NodeEndPoint *p_ep);
+  bool QueryNodeEndpointByNodeIdx(node_id_t node_idx, NodeEndPoint *p_ep);
 
   void SetConfigdEndpoint(EventLoop *p_loop, InetAddr const &addr)
   {
@@ -43,9 +44,10 @@ class ConfigdClient {
   void OnMessage(TcpConnectionPtr const &conn, Buffer &buffer, size_t payload_size, TimeStamp);
   void OnConnection(TcpConnectionPtr const &conn);
 
-  shard_id_t ShardNum() { return node_conf_map_.size(); }
+  shard_id_t ShardNum() { return shard_node_idx_dict_.size(); }
 
   void PrintNodeConfiguration();
+  void PrintShardMap();
 
   std::function<void(ConfigResponse const &resp)> resp_cb_;
   ConfigdCodec                                    codec_;
@@ -56,8 +58,13 @@ class ConfigdClient {
 
   kanon::MutexLock conf_lock_;
 
-  algo::AvlDictionary<shard_id_t, NodeEndPoint, algo::Comparator<shard_id_t>> shard_endpoint_dict_;
-  ::google::protobuf::Map<uint64_t, ::mmkv::NodeConf>                         node_conf_map_;
+  // Used for print shard distribution
+  ::google::protobuf::Map<uint64_t, ::mmkv::NodeConf> node_conf_map_;
+
+  algo::AvlDictionary<shard_id_t, node_id_t, algo::Comparator<shard_id_t>> shard_node_idx_dict_;
+
+  // Optimize the performance of QueryNodeEndpointByNodeIdx()
+  std::vector<NodeEndPoint> node_idx_node_ep_map_;
 };
 
 } // namespace client

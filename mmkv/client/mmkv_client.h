@@ -41,6 +41,8 @@ class MmkvClient {
 
   KANON_INLINE bool ConfigCommandProcess(kanon::StringView cmd, kanon::StringView line);
   KANON_INLINE void MmkvCommandProcess(kanon::StringView cmd, kanon::StringView line);
+  KANON_INLINE void SelectNode(InetAddr const &node_addr, node_id_t node_id);
+  KANON_INLINE void SetPrompt();
 
   void InstallLinenoise() KANON_NOEXCEPT;
 
