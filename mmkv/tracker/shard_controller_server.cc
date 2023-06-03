@@ -21,6 +21,7 @@ ShardControllerServer::ShardControllerServer(EventLoop *loop, InetAddr const &ad
         ControllerRequest req;
         protobuf::ParseFromBuffer(&req, payload_size, &buffer);
 
+        LOG_INFO << "Controller Request: " << req.DebugString();
         auto *p_session = AnyCast2<ShardControllerSession *>(conn->GetContext());
 
         LOG_DEBUG << req.DebugString();

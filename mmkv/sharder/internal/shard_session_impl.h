@@ -1,5 +1,5 @@
 // SPDX-LICENSE-IDENTIFIER: Apache-2.0
-#include "sharder_session.h"
+#include "../sharder_session.h"
 
 #include "mmkv/sharder/sharder.h"
 
@@ -60,6 +60,7 @@ struct SharderSession::Impl {
     if (session->keys_.size() == session->send_key_index_) {
       session->send_key_index_ = 0;
     }
+
     codec->Send(conn, &resp);
   }
 

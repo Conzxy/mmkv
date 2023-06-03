@@ -15,6 +15,7 @@ Sharder::Sharder(EventLoop *loop, InetAddr const &addr)
     if (conn->IsConnected()) {
       auto *p_session = new SharderSession(conn.get());
       p_session->SetUp(this, &codec_);
+      codec_.SetUpConnection(conn);
       conn->SetContext(*p_session);
     } else {
       auto *p_session = AnyCast<SharderSession>(conn->GetContext());

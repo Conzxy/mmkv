@@ -1,5 +1,5 @@
 // SPDX-LICENSE-IDENTIFIER: Apache-2.0
-#include "shard_controller_client.h"
+#include "../shard_controller_client.h"
 
 #include "mmkv/tracker/type.h"
 #include "mmkv/sharder/util.h"
@@ -61,6 +61,8 @@ struct ShardControllerClient::Impl {
     assert(response.has_shard_num());
     mmkv_config().shard_num = response.shard_num();
 
+    ctl->node_id_ = response.node_id();
+
     // Controller return OK and no node infos indicates
     // this is the first node of the cluster.
     if (ctl->node_infos_.empty()) {
@@ -68,10 +70,9 @@ struct ShardControllerClient::Impl {
         // FIXME Error return, untrusted peer
       }
 
-      ctl->node_id_ = response.node_id();
       SetAllShardNode(ctl);
     } else {
-#if 1
+#if 0
       auto const               &resp_node_infos = response.node_infos();
       algo::HashSet<shard_id_t> resp_hold_shard_id_set;
       for (auto const &resp_node_info : resp_node_infos) {
@@ -122,7 +123,7 @@ struct ShardControllerClient::Impl {
         // Send the push shard ids to controller
       }
 #else
-      SendAllPeersRequest(ctler, peer_num, SharderClient::PULLING);
+      SendAllPeersRequest(ctl, peer_num, SharderClient::PULLING);
 #endif
     }
   }

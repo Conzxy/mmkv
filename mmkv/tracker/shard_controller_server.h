@@ -48,6 +48,8 @@ class ShardControllerServer : kanon::noncopyable {
     return &pending_conf_q_.front().conf;
   }
 
+  Configuration *GetCurrentConf() noexcept { return &config_; }
+
  private:
   void UpdateConfig(Configuration &&conf);
 
