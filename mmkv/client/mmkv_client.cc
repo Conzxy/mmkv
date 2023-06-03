@@ -88,11 +88,6 @@ bool MmkvClient::CliCommandProcess(kanon::StringView cmd, kanon::StringView line
     return false;
   }
 
-  line.remove_prefix(cmd.size());
-  Tokenizer           tokenizer(line);
-  Tokenizer::iterator token_iter      = tokenizer.begin();
-  bool                is_syntax_error = false;
-
   switch (cli_cmd) {
     case CLI_HELP:
       fwrite(GetHelp().c_str(), 1, GetHelp().size(), stdout);
@@ -146,43 +141,8 @@ bool MmkvClient::CliCommandProcess(kanon::StringView cmd, kanon::StringView line
       if (file) fclose(file);
     } break;
 
-    case CLI_CACL_SHARD: {
-      if (token_iter == tokenizer.end()) {
-        is_syntax_error = true;
-        break;
-      }
-      auto key = *token_iter;
-      ++token_iter;
-      if (token_iter != tokenizer.end()) {
-        is_syntax_error = true;
-        break;
-      }
-
-      auto shard_num = p_conf_cli_ ? p_conf_cli_->ShardNum() : 0;
-      auto shard_id  = MakeShardId(key);
-
-      if (shard_num > 0) {
-        shard_id %= p_conf_cli_->ShardNum();
-        PrintfAndFlush("The shard id is %llu\n", (unsigned long long)shard_id);
-        fflush(stdout);
-      } else {
-        util::ErrorPrintf(
-            "ERROR: Can't calculate the shard id since there is no shard num from configd\n"
-        );
-      }
-      return true;
-    } break;
-
     default:
       LOG_FATAL << "Don't implement the handler of " << GetCliCommandString(cli_cmd);
-  }
-
-  if (is_syntax_error) {
-    util::ErrorPrintf(
-        "Syntax ERROR: %s%s\n",
-        GetCliCommandString(cli_cmd).c_str(),
-        GetCliCommandHint(cli_cmd).c_str()
-    );
   }
   return true;
 }
@@ -197,7 +157,7 @@ bool MmkvClient::ShellCommandProcess(kanon::StringView line)
     auto shell_cmd = line.substr(1);
 #endif
     if (::system(shell_cmd.data())) {
-      util::ErrorPrintf("Syntax ERROR: no command\n");
+      util::ErrorPrintf("SYNTAX ERROR: no command\n");
     }
     return true;
   }
@@ -226,7 +186,7 @@ void MmkvClient::MmkvCommandProcess(kanon::StringView cmd, kanon::StringView lin
   switch (error_code) {
     case Translator::E_SYNTAX_ERROR: {
       util::ErrorPrintf(
-          "Syntax ERROR: %s%s\n",
+          "SYNTAX ERROR: %s%s\n",
           GetCommandString(GetCommand(upper_cur_cmd_)).c_str(),
           GetCommandHint(GetCommand(upper_cur_cmd_)).c_str()
       );
@@ -293,7 +253,7 @@ void MmkvClient::ConsoleIoProcess()
   }
 
   if (line_len == 0) {
-    util::ErrorPrintf("Syntax ERROR: no command\n");
+    util::ErrorPrintf("SYNTAX ERROR: no command\n");
     return;
   }
 
@@ -349,6 +309,19 @@ void MmkvClient::ConsoleIoProcess()
     ++token_iter;                                                                                  \
   }
 
+#define _CONFIG_PARSE_STRING_TOKEN(__var)                                                          \
+  {                                                                                                \
+    auto token = *token_iter;                                                                      \
+    __var      = token.ToString();                                                                 \
+    ++token_iter;                                                                                  \
+  }
+
+#define _CONFIG_PARSE_STRING_VIEW_TOKEN(__var)                                                     \
+  {                                                                                                \
+    __var = *token_iter;                                                                           \
+    ++token_iter;                                                                                  \
+  }
+
 #define _CONFIG_CHECK_TOEKN_END                                                                    \
   if (token_iter != tokenizer.end()) {                                                             \
     is_syntax_error = true;                                                                        \
@@ -385,11 +358,34 @@ bool MmkvClient::ConfigCommandProcess(kanon::StringView cmd, kanon::StringView l
       _CONFIG_CHECK_TOEKN_END
 
       ConfigdClient::NodeEndPoint ep;
-      p_conf_cli_->QueryNodeEndpointByNodeIdx(node_idx, &ep);
+      if (p_conf_cli_->QueryNodeEndpointByNodeIdx(node_idx, &ep)) {
+        SelectNode(InetAddr(ep.host, ep.port), ep.node_id);
+      } else {
+        util::ErrorPrintf("INDEX ERROR: The index is invalid\n");
+        return true;
+      };
 
-      SelectNode(InetAddr(ep.host, ep.port), ep.node_id);
     } break;
 
+    case CONFIG_CACL_SHARD: {
+      _CONFIG_CHECK_TOKEN_ITER
+      StringView key;
+      _CONFIG_PARSE_STRING_VIEW_TOKEN(key)
+      _CONFIG_CHECK_TOEKN_END
+
+      auto shard_num = p_conf_cli_ ? p_conf_cli_->ShardNum() : 0;
+      auto shard_id  = MakeShardId(key);
+
+      if (shard_num > 0) {
+        shard_id %= p_conf_cli_->ShardNum();
+        PrintfAndFlush("The shard id is %llu\n", (unsigned long long)shard_id);
+        fflush(stdout);
+      } else {
+        util::ErrorPrintf(
+            "ERROR: Can't calculate the shard id since there is no shard num from configd\n"
+        );
+      }
+    } break;
     default:
       LOG_ERROR << "The handler of config command: " << GetConfigCommandString(conf_cmd)
                 << " is not implemented";
@@ -397,7 +393,7 @@ bool MmkvClient::ConfigCommandProcess(kanon::StringView cmd, kanon::StringView l
 
   if (is_syntax_error) {
     util::ErrorPrintf(
-        "Syntax ERROR: %s%s\n",
+        "SYNTAX ERROR: %s%s\n",
         GetConfigCommandString(conf_cmd).c_str(),
         GetConfigCommandHint(conf_cmd).c_str()
     );
