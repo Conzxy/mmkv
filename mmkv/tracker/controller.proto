@@ -15,7 +15,8 @@ message ControllerRequest
   required ControllerOperation operation    = 1;
   required uint64              node_id      = 2;
   optional uint32              sharder_port = 3;
-  repeated uint64              shard_ids    = 4;
+  optional uint32              mmkvd_port   = 4;
+  repeated uint64              shard_ids    = 5;
 }
 
 enum ControllerStatusCode {
