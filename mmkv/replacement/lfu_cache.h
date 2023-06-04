@@ -1,3 +1,4 @@
+// SPDX-LICENSE-IDENTIFIER: Apache-2.0
 #ifndef _MMKV_REPLACEMENT_LFU_CACHE_H__
 #define _MMKV_REPLACEMENT_LFU_CACHE_H__
 
@@ -85,5 +86,7 @@ class LfuCache : public CacheInterface<K> {
 
 } // namespace replacement
 } // namespace mmkv
+
+#include "internal/lfu_cache_impl.h"
 
 #endif

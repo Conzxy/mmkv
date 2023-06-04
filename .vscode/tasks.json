@@ -1,0 +1,14 @@
+{
+  "tasks": [
+    {
+      "label": "copy_abort_core",
+      //"command": "copy-core abort /home/conzxy/other/core_abort",
+      "command": "${workspaceRoot}/scripts/copy-core",
+      "type": "process",
+      "args": [
+        "--key=abort",
+        "--output=/home/conzxy/other/core_abort"
+      ]
+    }
+  ]
+}

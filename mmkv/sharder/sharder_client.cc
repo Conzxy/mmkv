@@ -44,32 +44,39 @@ void SharderClient::SetUpCodec(Sharder *sharder, Codec *codec)
                 // assert(shard_index_ == resp.shard_id());
                 LOG_DEBUG << "Pull shard [" << sharder_cli->shard_index_ << "] successfully";
 
-                assert(resp.has_data() && resp.has_data_num());
+                // assert(resp.has_data() && resp.has_data_num());
+                const shard_id_t shard_id = resp.shard_id();
+                auto            *p_db     = &database_manager().GetShardDatabaseInstance(shard_id);
+
+                {
+                  WLockGuard guard(p_db->lock);
+                  p_db->db.AddShard(shard_id);
+                }
+
+                if (resp.has_data() && resp.has_data_num()) {
+                  const size_t data_num = resp.data_num();
+                  void const  *p_data   = &resp.data()[0];
+                  size_t       index    = resp.data().size();
+                  for (size_t i = 0; i < data_num; ++i) {
+                    /* The request has some members are unsafe after be moved. */
+                    MmbpRequest request;
+
+                    /* The ParseFrom() is override in the virtual table,
+                     * the non-virtual ParseFrom() isn't inherited implicitly.
+                     *
+                     * You can use "useing Base::ParseFrom()" to import this
+                     * but I don't likt it and rename it to ParseFrom2()
+                     */
+                    request.ParseFrom2(&p_data, &index);
+                    p_db->Execute(request, nullptr, 0);
+                  }
+                }
+
                 sharder_cli->shard_index_++;
                 if (sharder_cli->shard_index_ == sharder_cli->shard_num_) {
                   LOG_DEBUG << "Pull shards complete";
                   sharder_cli->controller_clie_->NotifyPullFinish();
                   sharder_cli->shard_index_ = 0;
-                }
-
-                const size_t     data_num = resp.data_num();
-                void const      *p_data   = &resp.data()[0];
-                size_t           index    = resp.data().size();
-                const shard_id_t shard_id = resp.shard_id();
-                auto            *p_db     = &database_manager().GetShardDatabaseInstance(shard_id);
-
-                for (size_t i = 0; i < data_num; ++i) {
-                  /* The request has some members are unsafe after be moved. */
-                  MmbpRequest request;
-
-                  /* The ParseFrom() is override in the virtual table,
-                   * the non-virtual ParseFrom() isn't inherited implicitly.
-                   *
-                   * You can use "useing Base::ParseFrom()" to import this
-                   * but I don't likt it and rename it to ParseFrom2()
-                   */
-                  request.ParseFrom2(&p_data, &index);
-                  p_db->Execute(request, nullptr, 0);
                 }
 
                 /* Currently, node in ADDING state.
@@ -80,6 +87,7 @@ void SharderClient::SetUpCodec(Sharder *sharder, Codec *codec)
                  */
                 MutexGuard guard(sharder->pending_session_lock_);
                 auto      *p_pending_session = sharder->pending_shard_session_dict_[shard_id];
+
                 if (p_pending_session) {
                   if (!sharder->canceling_sessions_set_.Find(p_pending_session)) {
                     p_pending_session->PushShard(sharder, shard_id);

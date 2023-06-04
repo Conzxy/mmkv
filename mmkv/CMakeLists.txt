@@ -92,6 +92,9 @@ file(GLOB MMKV_CLIENT_SRC
   util/*.cc
   ${TAKINA_DIR}/takina.cc
   ${TERNARY_DIR}/ternary_tree.c
+  configd/configd_client.cc
+  ${PB_OUTPUT_DIR}/configuration.pb.cc
+  ${PB_OUTPUT_DIR}/configd.pb.cc
 )
 
 file(GLOB RLOG_DUMP_SRC

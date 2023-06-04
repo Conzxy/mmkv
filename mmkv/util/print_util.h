@@ -10,24 +10,29 @@
 namespace mmkv {
 namespace util {
 
-#define COLOR_PRINTF(color) \
-  va_list vl; \
-  va_start(vl, fmt); \
-  ::fputs(color, stdout); \
-  ::vprintf(fmt, vl); \
-  ::fputs(RESET, stdout); \
+#define COLOR_PRINTF(color)                                                                        \
+  va_list vl;                                                                                      \
+  va_start(vl, fmt);                                                                               \
+  ::fputs(color, stdout);                                                                          \
+  ::vprintf(fmt, vl);                                                                              \
+  ::fputs(RESET, stdout);                                                                          \
   va_end(vl);
 
-inline void ErrorPrintf(char const *fmt, ...) noexcept {
+inline void ErrorPrintf(char const *fmt, ...) noexcept
+{
   COLOR_PRINTF(L_RED)
-  fflush(stdout);  
+  fflush(stdout);
 }
 
-inline void InfoPrintf(char const *fmt, ...) noexcept {
-  COLOR_PRINTF(GREEN);
+inline void InfoPrintf(char const *fmt, ...) noexcept { COLOR_PRINTF(GREEN); }
+
+inline void WarnPrintf(char const *fmt, ...) noexcept
+{
+  COLOR_PRINTF(YELLOW);
+  fflush(stdout);
 }
 
-} // util
-} // mmkv
+} // namespace util
+} // namespace mmkv
 
 #endif

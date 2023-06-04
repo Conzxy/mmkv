@@ -1,5 +1,7 @@
 // SPDX-LICENSE-IDENTIFIER: Apache-2.0
-#include "shard_controller_client_impl.h"
+#include "internal/shard_controller_client_impl.h"
+
+#include "mmkv/server/option.h"
 
 ShardControllerClient::ShardControllerClient(
     EventLoop         *loop,
@@ -65,6 +67,7 @@ ShardControllerClient::ShardControllerClient(
             LOG_DEBUG << "Leave complete, waiting peer update configuration";
           case IDLE:
           default:
+            LOG_DEBUG << "state = " << state();
             LOG_ERROR << "Incorrect state when receving completion wait";
         }
       } break; // CONTROL_STATUS_WAIT
@@ -144,6 +147,9 @@ void ShardControllerClient::Join()
   req.set_node_id(node_id_);
   req.set_operation(CONTROL_OP_ADD_NODE);
   req.set_sharder_port(sharder_port_);
+  req.set_mmkvd_port(mmkv_option().port);
+
+  LOG_INFO << "Controller request: " << req.DebugString();
   codec_.Send(cli_->GetConnection(), &req);
   state_ = JOINING;
 
@@ -190,6 +196,17 @@ void ShardControllerClient::NotifyJoinFinish()
   Impl::WaitConn(this);
   ControllerRequest req = Impl::MakeRequest(this, CONTROL_OP_ADD_NODE_COMPLETE);
   codec_.Send(conn_, &req);
+
+#ifndef NDEBUG
+  auto       p_db = &*database_manager().begin();
+  WLockGuard guard(p_db->lock);
+  size_t     shard_num = 0;
+  for (auto beg = p_db->db.ShardBegin(); beg != p_db->db.ShardEnd(); ++beg) {
+    // LOG_INFO << "Shard = " << beg->key;
+    shard_num++;
+  }
+  LOG_INFO << "Shard num  = " << shard_num;
+#endif
   finish_node_num_ = 0;
 }
 

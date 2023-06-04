@@ -23,7 +23,7 @@ Configd::Configd(EventLoop *loop, InetAddr const &addr, InetAddr const &ctler_ad
         switch (req.operation()) {
           case CONF_OP_FETCH: {
             MutexGuard guard(ctler_.pending_conf_lock_);
-            auto      *p_conf = ctler_.GetRecentConf();
+            auto      *p_conf = ctler_.GetCurrentConf();
             resp.set_status(CONF_STATUS_OK);
             *resp.mutable_conf()->mutable_node_conf_map() = p_conf->node_conf_map();
           } break;

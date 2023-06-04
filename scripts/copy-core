@@ -1,0 +1,30 @@
+#!/bin/bash
+PrintHelp() {
+  echo "Usage: copy-core [OPTIONS]"
+  echo "Options: "
+  echo "-k|--key    keyword used by grep"
+  echo "-o|--ouput  target output path"
+  exit 0
+}
+
+for arg in "$@"; do
+  case "$arg" in
+    -k=*|--key=*):
+      KEY="${arg#*=}"
+    ;;
+    -o=*|--output=*):
+      OUTPUT="${arg#*=}"
+    ;;
+    -h|--help):
+      PrintHelp
+    ;;
+    *):
+      echo "Unknown option, don't accpet" 
+      exit 1;
+    ;;
+  esac
+done
+
+cd /var/lib/systemd/coredump
+SRC_CORE=$(ls -t | grep $KEY | awk '{print $1}')
+cp $SRC_CORE $OUTPUT

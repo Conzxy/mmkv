@@ -36,20 +36,36 @@ void ConfigdClient::FetchConfig()
 
 bool ConfigdClient::QueryNodeEndpoint(shard_id_t shard_id, NodeEndPoint *p_ep)
 {
+  LOG_INFO << "query shard_id = " << shard_id;
   assert(p_ep);
 
   MutexGuard guard(conf_lock_);
 
-  auto *p_shard_end_point = shard_endpoint_dict_.Find(shard_id);
+  auto *p_shard_end_point = shard_node_idx_dict_.Find(shard_id);
 
   if (!p_shard_end_point) {
     return false;
   }
 
-  auto *p_end_point = &p_shard_end_point->value;
+  auto *p_end_point = &node_idx_node_ep_map_[p_shard_end_point->value];
   p_ep->host        = p_end_point->host;
   p_ep->port        = p_end_point->port;
   p_ep->node_id     = p_end_point->node_id;
+  return true;
+}
+
+bool ConfigdClient::QueryNodeEndpointByNodeIdx(node_id_t node_idx, NodeEndPoint *p_ep)
+{
+  assert(p_ep);
+  LOG_INFO << "Query node idx = " << node_idx;
+
+  MutexGuard guard(conf_lock_);
+  if (node_idx >= node_idx_node_ep_map_.size()) return false;
+
+  auto const &node_conf = node_idx_node_ep_map_[node_idx];
+  p_ep->node_id         = node_conf.node_id;
+  p_ep->host            = node_conf.host;
+  p_ep->port            = node_conf.port;
   return true;
 }
 
@@ -63,38 +79,43 @@ void ConfigdClient::OnMessage(
   ConfigResponse resp;
   protobuf::ParseFromBuffer(&resp, payload_size, &buffer);
 
+  LOG_INFO << "ConfigResponse: " << resp.DebugString();
   switch (resp.status()) {
     case CONF_STATUS_OK: {
-      auto                                        conf            = std::move(*resp.mutable_conf());
+      auto                                       &conf            = *resp.mutable_conf();
       auto                                       &node_conf_map   = conf.node_conf_map();
-      decltype(shard_endpoint_dict_)::value_type *p_dep_key_value = nullptr;
+      decltype(shard_node_idx_dict_)::value_type *p_dep_key_value = nullptr;
 
       MutexGuard guard(conf_lock_);
       LOG_DEBUG << "Node num = " << node_conf_map.size();
 
-      for (auto const &id_node_conf : node_conf_map) {
-        auto const  &node_conf = id_node_conf.second;
-        auto const  &shard_ids = node_conf.shard_ids();
-        NodeEndPoint node_end_point{
-            (node_id_t)id_node_conf.first,
-            node_conf.host(),
-            (uint16_t)node_conf.port()};
+      node_idx_node_ep_map_.clear();
+      node_idx_node_ep_map_.reserve(node_conf_map.size());
 
+      for (auto const &id_node_conf : node_conf_map) {
+        auto const  node_id   = id_node_conf.first;
+        auto const &node_conf = id_node_conf.second;
+        auto const &shard_ids = node_conf.shard_ids();
+
+        LOG_INFO << "peer = (" << node_conf.host() << ":" << node_conf.mmkvd_port() << ")";
+        NodeEndPoint node_end_point{node_id, node_conf.host(), (uint16_t)node_conf.mmkvd_port()};
+        node_idx_node_ep_map_.emplace_back(std::move(node_end_point));
+
+        auto shard_node_idx = node_idx_node_ep_map_.size() - 1;
         for (auto const shard_id : shard_ids) {
-          auto ok = shard_endpoint_dict_.InsertKvWithDuplicate(
+          auto ok = shard_node_idx_dict_.InsertKvWithDuplicate(
               (shard_id_t)shard_id,
-              std::move(node_end_point),
+              shard_node_idx,
               p_dep_key_value
           );
 
           if (!ok) {
-            p_dep_key_value->value = std::move(node_end_point);
+            p_dep_key_value->value = shard_node_idx;
           }
         }
-      }
-      conf.mutable_node_conf_map()->swap(node_conf_map_);
 
-      LOG_DEBUG << "node_conf_map_ size = " << node_conf_map_.size();
+        node_conf_map_ = std::move(node_conf_map);
+      }
     } break;
 
     case CONF_INVALID_REQ: {
@@ -137,15 +158,16 @@ MMKV_INLINE static void AppendShardInterval(
 
 void ConfigdClient::PrintNodeConfiguration()
 {
+  node_id_t node_idx = 0;
   for (auto &node_id_node_conf : node_conf_map_) {
-    auto  node_id   = node_id_node_conf.first;
+    // auto  node_id   = node_id_node_conf.first;
     auto &node_conf = node_id_node_conf.second;
     auto &shard_ids = *node_conf.mutable_shard_ids();
 
     std::sort(shard_ids.begin(), shard_ids.end());
-    std::string shard_str = "[";
-    shard_id_t  begin     = -1;
-    shard_id_t  end       = begin;
+    std::string shard_str;
+    shard_id_t  begin = -1;
+    shard_id_t  end   = begin;
     for (auto shard_id : shard_ids) {
       if (begin == (shard_id_t)-1) {
         begin = shard_id;
@@ -162,15 +184,21 @@ void ConfigdClient::PrintNodeConfiguration()
     if (begin != (shard_id_t)-1) {
       AppendShardInterval(shard_str, begin, end);
     }
+
+    // The node_id is useless for user,
+    // and the node idx can be used for selecting node
     printf(
         "[%lu]: %s:%d (#=%d){%s}\n",
-        node_id,
+        node_idx,
         node_conf.host().c_str(),
-        node_conf.port(),
+        node_conf.mmkvd_port(),
         shard_ids.size(),
         shard_str.c_str()
     );
+    node_idx++;
   }
 
   fflush(stdout);
 }
+
+auto ConfigdClient::PrintShardMap() -> void {}

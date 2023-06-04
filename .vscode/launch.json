@@ -1,0 +1,34 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "abort core",
+      "type": "cppdbg",
+      "request": "launch",
+      // "program": "/home/conzxy/other/abort",
+      "preLaunchTask": "copy_abort_core",
+      "program": "/home/conzxy/other/abort",
+      "cwd": "/home/conzxy/other",
+      "coreDumpPath": "/home/conzxy/other/core_abort",
+      "MIMode": "gdb",
+      "miDebuggerPath": "/usr/bin/gdb"
+    },
+    {
+      "type": "by-gdb",
+      "request": "launch",
+      "name": "configd core",
+      "program": "/var/lib/systemd/coredump/core.configd.1000.6cf7178ccd2545e39888df26a2d4ca1a.968814.1685617855000000.zst",
+      "cwd": "${workspaceRoot}/bin"
+    },
+    {
+      "type": "by-gdb",
+      "request": "launch",
+      "name": "mmkvd run",
+      "program": "${workspaceRoot}/bin/mmkv-server",
+      "cwd": "${workspaceRoot}/bin"
+    }
+  ]
+}

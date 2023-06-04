@@ -1,11 +1,11 @@
 // SPDX-LICENSE-IDENTIFIER: Apache-2.0
-#include "shard_controller_session.h"
+#include "../shard_controller_session.h"
 
 #include <kanon/protobuf/protobuf_codec2.h>
 
 #include "mmkv/util/macro.h"
 #include "controller.pb.h"
-#include "shard_controller_server.h"
+#include "../shard_controller_server.h"
 
 using namespace mmkv::server;
 using namespace kanon;
@@ -44,6 +44,11 @@ struct ShardControllerSession::Impl {
     {
       MutexGuard guard(server->pending_conf_lock_);
       auto       p_recent_conf = server->GetRecentPendingConf();
+      LOG_INFO << "Pending node id = " << p_recent_conf->node_id;
+      LOG_INFO << "request node id = " << node_id;
+
+      LOG_INFO << "pending conf state = " << p_recent_conf->state;
+      LOG_INFO << "conf_state = " << conf_state;
       if (p_recent_conf->node_id == node_id && p_recent_conf->state == conf_state) {
         resp.set_status(CONTROL_STATUS_CONF_CHANGE);
         server->UpdateConfig(std::move(p_recent_conf->conf));

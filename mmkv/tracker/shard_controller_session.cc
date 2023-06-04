@@ -1,5 +1,5 @@
 // SPDX-LICENSE-IDENTIFIER: Apache-2.0
-#include "shard_controller_session_impl.h"
+#include "internal/shard_controller_session_impl.h"
 
 #include "mmkv/tracker/shard_controller_codec.h"
 
@@ -47,6 +47,7 @@ void ShardControllerSession::Join(
   ControllerResponse response;
 
   const auto peer_node_id = server->GenerateNodeId();
+  // Tell the peer with its node id
   response.set_node_id(peer_node_id);
 
   auto new_node_num = p_recent_conf->node_conf_map_size() + 1;
@@ -71,6 +72,7 @@ void ShardControllerSession::Join(
   NodeConf new_node_conf;
   new_node_conf.set_host(conn->GetPeerAddr().ToIp());
   new_node_conf.set_port(req.sharder_port());
+  new_node_conf.set_mmkvd_port(req.mmkvd_port());
 
   // The first node can't steal any shard from other nodes
   // but return all shards to the first node
@@ -85,11 +87,10 @@ void ShardControllerSession::Join(
 
     // Don't send any node infos to peer to indicates
     // it is the first node of the cluster
-
-    // Tell the peer with its node id
-    response.set_node_id(peer_node_id);
-    response.set_shard_num(server->GetShardNum());
-    response.set_status(CONTROL_STATUS_OK);
+    p_new_conf_shard_ids->Reserve(server->GetShardNum());
+    for (shard_id_t i = 0; i < server->GetShardNum(); ++i) {
+      p_new_conf_shard_ids->AddAlreadyReserved(i);
+    }
   } else {
     LOG_DEBUG << "Node num > 1, Redistribute the shards";
 
@@ -131,7 +132,7 @@ void ShardControllerSession::Join(
         const auto old_shard_id = p_pending_node_conf_shard_ids->Get(i);
 
         // Update the conf of new node
-        p_new_conf_shard_ids->AddAlreadyReserved(old_shard_id);
+        p_new_conf_shard_ids->Add(old_shard_id);
         p_resp_node_info_shard_ids->AddAlreadyReserved(old_shard_id);
       }
       p_pending_node_conf_shard_ids->Truncate(p_pending_node_conf_shard_ids->size() - diff);
@@ -148,8 +149,10 @@ void ShardControllerSession::Join(
         LOG_DEBUG << "node id = " << shard_id;
       }
     }
-    response.set_status(CONTROL_STATUS_OK);
   }
+
+  response.set_shard_num(server->GetShardNum());
+  response.set_status(CONTROL_STATUS_OK);
 
   new_pending_conf.conf.mutable_node_conf_map()->emplace(peer_node_id, std::move(new_node_conf));
   LOG_TRACE << "(Join)Total node number=" << new_pending_conf.conf.node_conf_map_size();

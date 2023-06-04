@@ -1,3 +1,4 @@
+#!/bin/bash
 cloc cmake/ mmkv/algo mmkv/app mmkv/client mmkv/cluster mmkv/configd mmkv/db  \
   mmkv/disk mmkv/kraft/kraft mmkv/lua mmkv/protocol mmkv/replacement \
   mmkv/server mmkv/sharder mmkv/storage mmkv/tracker mmkv/util mmkv/zstl CMakeLists.txt mmkv/version.h test \

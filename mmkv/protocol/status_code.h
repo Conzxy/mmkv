@@ -29,6 +29,7 @@ enum StatusCode : uint8_t {
 
   S_SHARD_LOCKED,
   S_SHARD_PROCESSING,
+  S_SHARD_NONEXISTS,
 };
 
 /**
