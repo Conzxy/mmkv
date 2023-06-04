@@ -446,7 +446,9 @@ void MmkvClient::SetupMmkvClient(InetAddr const &server_addr)
   client_->SetConnectionCallback([this, &server_addr](TcpConnectionPtr const &conn) {
     if (conn->IsConnected()) {
       codec_.SetUpConnection(conn);
-      PrintfAndFlush("Connect to %s successfully\n\n", server_addr.ToIpPort().c_str());
+      if (!cli_option().is_conn_configd()) {
+        PrintfAndFlush("Connect to %s successfully\n\n", server_addr.ToIpPort().c_str());
+      }
       // ConsoleIoProcess();
       SetPrompt();
       wait_cli_num_++;
@@ -454,10 +456,10 @@ void MmkvClient::SetupMmkvClient(InetAddr const &server_addr)
     } else {
       if (--wait_cli_num_ == 0) {
         if (is_exit) {
-          puts("Disconnect successfully!");
+          PrintfAndFlush("Disconnect to mmkvd successfully!\n");
           ::exit(EXIT_SUCCESS);
         } else {
-          puts("\nConnection is closed by peer server");
+          PrintfAndFlush("\nConnection is closed by peer mmkvd\n");
           if (!cli_option().reconnect) ::exit(EXIT_SUCCESS);
         }
       }
@@ -516,10 +518,10 @@ void MmkvClient::SetupConfigClient()
     } else {
       if (--wait_cli_num_ == 0) {
         if (is_exit) {
-          puts("Disconnect configd successfully!");
+          PrintfAndFlush("Disconnect configd successfully!\n");
           ::exit(EXIT_SUCCESS);
         } else {
-          puts("\nConnection is closed by configd");
+          PrintfAndFlush("\nConnection is closed by configd\n");
           if (!cli_option().reconnect) ::exit(EXIT_SUCCESS);
         }
       }
@@ -723,7 +725,7 @@ void MmkvClient::SelectNode(InetAddr const &node_addr, node_id_t node_id)
   if (!client_ || node_id != current_peer_node_id) {
     SetupMmkvClient(node_addr);
     auto node_addr_str = node_addr.ToIpPort();
-    PrintfAndFlush("Connecting mmkvd in %s\n", node_addr_str.c_str());
+    PrintfAndFlush("Connecting node in %s...\n", node_addr_str.c_str());
     client_->Connect();
     IoWait();
 

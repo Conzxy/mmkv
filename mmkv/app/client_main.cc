@@ -25,12 +25,20 @@ int main(int argc, char *argv[])
 
   InstallInformation();
 
-  kanon::SetKanonLog(cli_option().log);
   kanon::KanonInitialize();
-  EventLoopThread loop_thread;
-  auto loop = loop_thread.StartRun();
 
-  InetAddr server_addr(cli_option().host, cli_option().port);
+  // If user don't specify the log option,
+  // disable the log of kanon lib
+  // and set the log level to disable the log of mmkv-cli
+  kanon::SetKanonLog(cli_option().log);
+  if (!cli_option().log) {
+    kanon::Logger::SetLogLevel(kanon::Logger::KANON_LL_ERROR);
+  }
+
+  EventLoopThread loop_thread;
+  auto            loop = loop_thread.StartRun();
+
+  InetAddr   server_addr(cli_option().host, cli_option().port);
   MmkvClient client(loop, server_addr);
   client.Start();
 
