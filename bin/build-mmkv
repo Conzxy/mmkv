@@ -63,5 +63,5 @@ done
 [[ $VERBOSE == 1 ]] && VERBOSE="-v" || VERBOSE=""
 
 cd $MMKV_BUILD_PATH
-cmake .. -DCMAKE_BUILD_TYPE=$MODE -GNinja
+cmake .. -DCMAKE_BUILD_TYPE=$MODE -G'Ninja' -DKANON_BUILD_PROTOBUF=ON
 cmake --build . --target $TARGET --parallel $(nproc) $VERBOSE
