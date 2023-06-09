@@ -1,12 +1,15 @@
-mmkv_gen_proto_code(PROTOC_PATH "protoc" 
+find_package(Protobuf REQUIRED)
+
+message(STATUS "mmkv-protoc = ${PROTOBUF_PROTOC_EXECUTABLE}")
+mmkv_gen_proto_code(PROTOC_PATH "${PROTOBUF_PROTOC_EXECUTABLE}" 
   FILES 
   "${CMAKE_CURRENT_SOURCE_DIR}/tracker/controller.proto"
   "${CMAKE_CURRENT_SOURCE_DIR}/tracker/configuration.proto"
   "${CMAKE_CURRENT_SOURCE_DIR}/sharder/sharder.proto"
-  "${CMAKE_CURRENT_SOURCE_DIR}/forwarder/forwarder.proto"
+  # "${CMAKE_CURRENT_SOURCE_DIR}/forwarder/forwarder.proto"
 )
 
-mmkv_gen_proto_code(PROTOC_PATH "protoc" 
+mmkv_gen_proto_code(PROTOC_PATH "${PROTOBUF_PROTOC_EXECUTABLE}" 
   FILES
   "${CMAKE_CURRENT_SOURCE_DIR}/configd/configd.proto"
   IMPORT_PATHS
@@ -21,7 +24,7 @@ set(
   ${PB_OUTPUT_DIR}/sharder.pb.cc
   ${PB_OUTPUT_DIR}/configuration.pb.cc
   ${PB_OUTPUT_DIR}/controller.pb.cc
-  ${PB_OUTPUT_DIR}/forwarder.pb.cc
+  # ${PB_OUTPUT_DIR}/forwarder.pb.cc
   ${PB_OUTPUT_DIR}/configd.pb.cc
 )
 
@@ -60,12 +63,13 @@ file(GLOB MMKV_SERVER_SRC
   storage/*.cc
   tracker/*.cc
   sharder/*.cc
-  forwarder/*.cc
+  # forwarder/*.cc
   configd/*.cc
   ${TAKINA_DIR}/takina.cc
   ${CHISATO_DIR}/chisato.cc
-  ${PB_SRC}
 )
+
+list(APPEND MMKV_SERVER_SRC ${PB_SRC})
 
 file(GLOB CONFIGD_SRC
   app/configd_main.cc
@@ -81,8 +85,9 @@ file(GLOB CONFIGD_SRC
   server/config.cc
   server/option.cc
   ${TAKINA_DIR}/takina.cc
-  ${PB_SRC}
 )
+
+list(APPEND CONFIGD_SRC ${PB_SRC})
 
 file(GLOB MMKV_CLIENT_SRC
   app/client_main.cc
@@ -93,8 +98,11 @@ file(GLOB MMKV_CLIENT_SRC
   ${TAKINA_DIR}/takina.cc
   ${TERNARY_DIR}/ternary_tree.c
   configd/configd_client.cc
-  ${PB_OUTPUT_DIR}/configuration.pb.cc
-  ${PB_OUTPUT_DIR}/configd.pb.cc
+)
+
+list(APPEND MMKV_CLIENT_SRC
+  "${PB_OUTPUT_DIR}/configuration.pb.cc"
+  "${PB_OUTPUT_DIR}/configd.pb.cc"
 )
 
 file(GLOB RLOG_DUMP_SRC
@@ -127,7 +135,7 @@ endif ()
 mmkv_gen_lib(mmkv_xxhash ${XXHASH_DIR}/xxhash.c)
 
 SetLibName(HKLUA_LIB hklua)
-set(MMKV_COMMON_LIBS kanon_protobuf kanon_net kanon_base mmkv_xxhash)
+set(MMKV_COMMON_LIBS kanon_protobuf kanon_net kanon_base mmkv_xxhash protobuf::libprotobuf)
 set(MMKV_SERVER_LIBS ${MMKV_COMMON_LIBS} dl ${HKLUA_LIB})
 set(MMKV_CONFIGD_LIBS ${MMKV_COMMON_LIBS} ${HKLUA_LIB})
 set(MMKV_CLIENT_LIBS ${MMKV_COMMON_LIBS} replxx)
@@ -169,3 +177,5 @@ target_include_directories(${CONFIGD_EXE_NAME}
   PRIVATE ${HKLUA_DIR}
   PRIVATE ${PB_OUTPUT_DIR}
 )
+
+add_subdirectory(kraft)

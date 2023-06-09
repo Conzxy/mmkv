@@ -6,14 +6,14 @@ function (mmkv_gen_proto_code)
     message(STATUS "Generate the pb files of ${proto_file_fullpath}")
     message(STATUS "proto_filename = ${proto_filename}")
     message(STATUS "proto_dir = ${proto_dir}")
-    set(protoc_args --cpp_out=. ${proto_file_fullpath} -I${proto_dir})
+    set(protoc_args --cpp_out . ${proto_file_fullpath} -I${proto_dir})
     foreach (import_path ${CONZXY_IMPORT_PATHS})
       list(APPEND protoc_args -I${import_path})
     endforeach()
     message(STATUS "protoc_args = ${protoc_args}")
     add_custom_command(
       OUTPUT ${proto_filename}.pb.cc ${proto_filename}.pb.h
-      COMMAND protoc
+      COMMAND ${CONZXY_PROTOC_PATH} 
       ARGS  ${protoc_args}
       DEPENDS ${proto_file_fullpath}
       VERBATIM
