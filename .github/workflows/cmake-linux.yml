@@ -7,7 +7,9 @@ on:
       - "**.cc"
       - "**.h"
       - "**.hh"
+      - "CMakeLists.txt"
       - "**/cmake-linux.yml"
+      - "conanfile.**"
   pull_request:
     branches: [ "main" ]
     paths:
@@ -15,6 +17,8 @@ on:
       - "**.h"
       - "**.hh"
       - "**/cmake-linux.yml"
+      - "CMakeLists.txt"
+      - "conanfile.**"
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
