@@ -47,6 +47,7 @@ jobs:
         cd ${{ github.workspace }}
         ls
         mkdir build
+        conan profile detect --force
         conan install . -of=build --build=missing
         cd build
         cmake .. -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} \
