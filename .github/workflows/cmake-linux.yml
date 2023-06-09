@@ -58,7 +58,7 @@ jobs:
         cmake .. -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} \
           -DKANON_BUILD_PROTOBUF=ON \
           -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake
-        ls build
+        ls
       shell: bash
 
     - name: Build Mmkv Server
