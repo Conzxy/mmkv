@@ -1,0 +1,6 @@
+[requires]
+protobuf/[>=3.21.5]
+
+[generators]
+CMakeDeps
+CMakeToolchain
