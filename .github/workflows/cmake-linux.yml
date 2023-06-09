@@ -36,30 +36,35 @@ jobs:
 
     - name: Install dependences
       run: |
-        sudo apt install protobuf-compiler libprotobuf-dev
+        sudo apt install python3-pip
+        pip install conan
       shell: bash
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: | 
+      run: |
         cd ${{ github.workspace }}
         ls
         mkdir build
+        conan install . -of=build --build=missing
         cd build
-        cmake .. -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} 1>/dev/null
+        cmake .. -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} \
+          -DKANON_BUILD_PROTOBUF=ON \
+          -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake
+        ls build
       shell: bash
 
     - name: Build Mmkv Server
       # Build your program with the given configuration
       run: |
         cd ${{github.workspace}}/build
-        cmake --build . --target mmkv-server --parallel $(nproc) 1>/dev/null
+        cmake --build . --target mmkv-server --parallel $(nproc)
       shell: bash
 
     - name: Build Mmkv Cli
       # Build your program with the given configuration
       run: |
         cd ${{github.workspace}}/build
-        cmake --build . --target mmkv-cli --parallel $(nproc) 1>/dev/null
+        cmake --build . --target mmkv-cli --parallel $(nproc)
       shell: bash
